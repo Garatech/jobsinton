@@ -1,0 +1,24 @@
+# Credenciales y configuración local
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Dependencias y resultados de compilación
+node_modules/
+target/
+dist/
+build/
+coverage/
+playwright-report/
+test-results/
+
+# Datos locales, logs y editor
+local-data/
+*.log
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
