@@ -1,11 +1,11 @@
-# Credenciales y configuración local
+# Credentials and local configuration
 .env
 .env.*
 !.env.example
 *.pem
 *.key
 
-# Dependencias y resultados de compilación
+# Dependencies and build output
 node_modules/
 target/
 dist/
@@ -14,7 +14,7 @@ coverage/
 playwright-report/
 test-results/
 
-# Datos locales, logs y editor
+# Local data, logs, and editor files
 local-data/
 *.log
 .idea/
