@@ -1,56 +1,60 @@
-# Cómo construimos JobSinton
+# Contributing to JobSinton
 
-## Objetivo
+Build small, understandable, and verifiable changes. The initial commits establish the documentation baseline; subsequent increments follow the issue and pull request workflow.
 
-Avanzar con cambios pequeños, comprensibles y verificables. El primer commit establece la base documental; los siguientes incrementos seguirán el flujo de issues y pull requests.
+## Language and documentation
 
-## Contribuciones externas
+Use English for code identifiers, comments, tests, developer-facing messages, repository documentation, commit messages, and issue/PR text. Localized interface copy and original provider content may use their respective languages.
 
-El repositorio es público y su propietario es `Garatech`. Si no eres el propietario, trabaja en un fork y abre una pull request para proponer cambios. La creación de una PR no concede permisos de escritura ni garantiza que se integre. El propietario decide qué incorporar; no hay fusión automática habilitada.
+Keep the [README](README.md) concise and product-focused. Maintain scope, decisions, milestones, and session notes in [the project plan](docs/PROJECT_PLAN.md). Our working conversation may remain in Spanish.
 
-Las herramientas autorizadas por el propietario pueden actuar en su nombre. No se añaden colaboradores externos automáticamente por aceptar una contribución.
+## External contributions
 
-## Ciclo de una actualización
+This public repository is owned by `Garatech`. External contributors should work in a fork and open a pull request. Opening a PR does not grant write access or guarantee acceptance. The owner decides what to merge; automatic merging is disabled.
 
-1. Definir una tarea con problema, alcance y criterios observables de aceptación.
-2. Crear una rama con un propósito, por ejemplo `feat/profile-preferences`, `fix/missing-salary` o `docs/local-setup`.
-3. Explicar el diseño y construir conjuntamente la solución.
-4. Ejecutar las comprobaciones pertinentes y registrar sus resultados reales.
-5. Abrir una PR con motivo, cambios, evidencia y limitaciones.
-6. Revisar el cambio y resolver observaciones bloqueantes.
-7. Integrar y comprobar el estado resultante de `main`.
+Authorized tools may act on the owner's behalf. Accepting a contribution does not automatically add its author as a collaborator.
 
-Se propone usar commits descriptivos con prefijos `feat`, `fix`, `docs`, `test` y `chore`. Las reglas de protección de ramas y comprobaciones automáticas todavía no están configuradas.
+## Change workflow
 
-## Evaluación por riesgo
+1. Define an issue with the problem, scope, and observable acceptance criteria.
+2. Create a focused branch, such as `feat/profile-preferences`, `fix/missing-salary`, or `docs/local-setup`.
+3. Explain the design and build the solution together.
+4. Run relevant checks and record their actual results.
+5. Open a PR explaining the motivation, changes, evidence, and limitations.
+6. Review the change and resolve blocking findings.
+7. Merge and verify the resulting state of `main`.
 
-| Tipo de cambio | Evidencia mínima prevista |
+Use descriptive commit messages with prefixes such as `feat`, `fix`, `docs`, `test`, and `chore`. Branch protection and automated checks have not been configured yet.
+
+## Verification by risk
+
+| Change | Expected evidence |
 | --- | --- |
-| Documentación | Exactitud, enlaces internos y ausencia de instrucciones obsoletas |
-| Interfaz | Flujo afectado, teclado, tamaños relevantes y estados de error o vacío |
-| Afinidad | Casos de referencia, restricciones, datos ausentes, pesos y explicación |
-| Persistencia | Integración con base de datos y efecto de la migración |
-| Conector | Contrato, paginación, error, timeout y límites sin depender de credenciales en CI |
-| Cuentas | Autenticación, autorización y aislamiento entre dos usuarios |
-| Recorrido crítico | Prueba de extremo a extremo del comportamiento afectado |
+| Documentation | Accurate content, valid internal links, and current instructions |
+| Interface | Affected journey, keyboard use, relevant screen sizes, and empty/error states |
+| Matching | Reference cases, constraints, missing data, weights, and explanations |
+| Persistence | Database integration and migration impact |
+| Connector | Contract, pagination, failures, timeouts, and limits without requiring credentials in CI |
+| Accounts | Authentication, authorization, and isolation between two users |
+| Critical journey | An end-to-end check of the affected behavior |
 
-No añadimos pruebas que solo repitan la implementación. No exigimos un porcentaje arbitrario de cobertura. Las pruebas deben proteger comportamientos y riesgos concretos. Los cambios de reglas de afinidad se compararán contra un conjunto estable de ejemplos revisados.
+Tests should protect behavior and concrete risks rather than repeat implementation details. Do not impose an arbitrary coverage percentage. Evaluate matching-rule changes against a stable set of reviewed examples.
 
-## Criterios de integración
+## Merge criteria
 
-- Se cumplen los criterios de aceptación de la tarea.
-- Compilación, análisis estático y pruebas aplicables pasan cuando estén configurados.
-- No hay secretos, datos personales de prueba ni regresiones conocidas sin resolver.
-- La lógica de dominio es comprensible y está separada del formato de cada proveedor.
-- La experiencia contempla entradas inválidas, fallos y datos incompletos relevantes.
-- README y documentación reflejan el estado real.
-- Los cambios de datos o configuración delicados incluyen un plan de recuperación.
-- Se documenta quién revisó y qué fue asistido por IA; una autoevaluación no se presenta como revisión humana independiente.
+- Acceptance criteria are satisfied.
+- Applicable build, static analysis, and tests pass once configured.
+- No credentials, personal test data, or known unresolved regressions are introduced.
+- Domain logic is understandable and separate from provider-specific formats.
+- Relevant invalid inputs, failures, and incomplete data are handled.
+- Documentation reflects the actual state of the project.
+- Sensitive data or configuration changes include a recovery plan.
+- Review authorship and AI assistance are stated honestly; self-review is not presented as independent human review.
 
-## Cierre de sesión
+## Session close
 
-Registrar objetivo, decisiones, archivos relevantes, comprobaciones realizadas, limitaciones y siguiente paso. Explicar con palabras propias una decisión del cambio y una alternativa descartada. Si algo no se ha entendido, revisarlo antes de ampliar el alcance.
+Record the objective, decisions, relevant files, checks, limitations, and next step in the project plan. Explain an important decision and an alternative considered. Revisit anything that is not understood before increasing the scope.
 
-## Datos y servicios externos
+## Data and external services
 
-Usar datos ficticios en pruebas y demos. Mantener claves fuera del repositorio. Revisar acceso, cuotas, atribución y retención de cada fuente antes de incorporarla. El presupuesto acordado es 0 €: cualquier cambio que requiera un servicio de pago debe replantearse con el propietario del proyecto.
+Use fictional data in tests and demonstrations. Keep credentials outside version control. Review provider access, quotas, attribution, and retention before integration. The agreed budget is EUR 0; discuss any proposed paid dependency with the project owner.

@@ -1,29 +1,30 @@
-## Problema y objetivo
+## Problem and objective
 
-<!-- Enlaza la issue y explica por qué hace falta este cambio. -->
+<!-- Link the issue and explain why this change is needed. -->
 
-## Qué cambia
+## Changes
 
-## Criterios de aceptación
+## Acceptance criteria
 
-- [ ] Comportamiento esperado verificado.
+- [ ] Expected behavior verified.
 
-## Validación realizada
+## Validation
 
-<!-- Comandos y resultados reales; capturas si ayudan. Indica lo que no has podido comprobar. -->
+<!-- Record actual checks and results; include screenshots when useful. State what could not be verified. -->
 
-## Riesgos y recuperación
+## Risks and recovery
 
-<!-- Migraciones, compatibilidad, proveedores o datos afectados. Indica «No aplica» cuando corresponda. -->
+<!-- Note affected migrations, compatibility, providers, or data. Use "Not applicable" where appropriate. -->
 
-## Documentación y revisión
+## Documentation and review
 
-- [ ] Documentación actualizada cuando corresponde.
-- [ ] Sin credenciales ni datos personales de prueba.
-- [ ] Revisada la claridad del código y los errores relevantes.
+- [ ] Relevant documentation updated.
+- [ ] English used for code and documentation, except intentional localization or original provider content.
+- [ ] No credentials or personal test data introduced.
+- [ ] Code clarity and relevant error handling reviewed.
 
-Revisión realizada por:
+Reviewed by:
 
-Asistencia de IA y revisión posterior:
+AI assistance and subsequent review:
 
-Pendientes conocidos:
+Known limitations:
