@@ -2,7 +2,7 @@
 
 **Job opportunities in tune with you.**
 
-I'm building JobSinton to help software professionals find job opportunities that align with their skills, experience, location, and working preferences.
+JobSinton is built to help software professionals find job opportunities that align with their skills, experience, location, and working preferences.
 
 ## Planned capabilities
 
@@ -16,7 +16,7 @@ Match scores will express compatibility with a profile, not the likelihood of re
 
 ## Project status
 
-JobSinton is in early development. The first runnable foundation connects a React interface to a Java API, with automated build and integration checks. My next stages cover job search, matching, and live provider integrations.
+Early development. The first runnable foundation connects a React interface to a Java API, with automated build and integration checks. Job search, matching, and live provider integrations are planned.
 
 Stack: **Java · Spring Boot · React · TypeScript**.
 
