@@ -25,7 +25,9 @@ All notable changes to JobSinton are recorded here in English. Entries describe 
 
 ### Verification and limits
 
-- CI is configured to run Maven verification, strict TypeScript checks, a frontend production build, and Playwright journeys on desktop/mobile Chromium. Consult the PR's linked run for the actual result at its commit.
+- Initial cloud verification passed: 2 backend HTTP tests, strict TypeScript checking, a frontend production build, and 8 browser checks across desktop/mobile Chromium ([run 39141434566](https://github.com/Garatech/jobsinton/actions/runs/39141434566)).
+- Committed the generated npm lockfile, removed the one-time bootstrap step, and updated GitHub Actions from deprecated runtime versions to current pinned releases. The final PR check verifies these changes using only locked installs.
+- Review [PR #4](https://github.com/Garatech/jobsinton/pull/4) for the final checked commit and validation result.
 - The local Windows checkout could not be inspected in this session because the assistant terminal failed to initialize its sandbox. No claim of local synchronization or local test success is made.
 - Codespaces configuration has not yet been exercised; no cloud environment or paid resource was created.
 - There is no database, profile editor, job search, matching, live provider, or production deployment yet.

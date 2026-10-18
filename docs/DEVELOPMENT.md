@@ -149,3 +149,10 @@ Inspect the workflow linked from the PR before merging. Branch protection has no
 ## Verification limits
 
 The first implementation is verified in GitHub Actions when its run passes. The owner's Windows checkout and first Codespaces startup still need separate verification. During the 2026-10-18 session, the assistant's local terminal could not initialize its sandbox, so no local changes, installed versions, or checkout cleanliness could be certified.
+
+## Platform references
+
+- [Codespaces included usage and billing](https://docs.github.com/en/billing/concepts/product-billing/github-codespaces)
+- [Codespaces default environment variables](https://docs.github.com/en/codespaces/developing-in-a-codespace/default-environment-variables-for-your-codespace)
+- [Codespaces port forwarding](https://docs.github.com/en/codespaces/developing-in-a-codespace/forwarding-ports-in-your-codespace)
+- [Vite host allowlists](https://vite.dev/config/server-options#server-allowedhosts)

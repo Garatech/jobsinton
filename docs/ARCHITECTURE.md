@@ -6,7 +6,7 @@ The first increment establishes one real request through the complete stack:
 
 Browser → Vite development proxy → Spring Boot → JSON response → connection state.
 
-The browser calls `/api/status` on its own origin. Vite forwards `/api` to `http://127.0.0.1:8080`, so local development and private Codespaces port forwarding use the same frontend code. No broad CORS policy is needed. Production routing is not configured.
+The browser calls `/api/status` on its own origin. Vite forwards `/api` to `http://127.0.0.1:8080`, so local development and private Codespaces port forwarding use the same frontend code. The Vite host allowlist is derived from this Codespace's name and forwarding domain; it does not trust every host. No broad CORS policy is needed. Production routing is not configured.
 
 ## Responsibilities
 
