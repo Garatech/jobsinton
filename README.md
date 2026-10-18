@@ -16,12 +16,12 @@ Match scores will express compatibility with a profile, not the likelihood of re
 
 ## Project status
 
-Early development. This repository currently contains project documentation and workspace configuration. A runnable application and live job-provider integrations are not available yet.
+Early development. The first runnable foundation connects a React interface to a Java API, with automated build and integration checks. Job search, matching, and live provider integrations are planned.
 
-Planned stack: **Java · Spring Boot · React · TypeScript**.
+Stack: **Java · Spring Boot · React · TypeScript**.
 
 ## Project documentation
 
-[Development plan](docs/PROJECT_PLAN.md) · [Contributing](CONTRIBUTING.md)
+[Run the project](docs/DEVELOPMENT.md) · [Architecture](docs/ARCHITECTURE.md) · [Changelog](CHANGELOG.md) · [Development plan](docs/PROJECT_PLAN.md) · [Contributing](CONTRIBUTING.md)
 
 A **Gara's Workshop** project.

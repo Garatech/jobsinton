@@ -6,7 +6,7 @@ The [README](../README.md) is the concise product introduction. Keep implementat
 
 ## Current status
 
-Documentation and repository preparation are underway. There is no runnable application, production deployment, CI pipeline, or live provider integration yet.
+The first runnable foundation connects a React interface to a Spring Boot status endpoint. Build and integration checks are defined in GitHub Actions. There is no production deployment, database, matching, or live provider integration yet. See the PR checks for actual validation results; Windows checkout synchronization and the first Codespaces startup remain unverified.
 
 The public repository is [Garatech/jobsinton](https://github.com/Garatech/jobsinton). Initial documentation was published on 2026-10-17.
 
@@ -21,13 +21,13 @@ Help software professionals prioritize job opportunities that match their experi
 | Product name | JobSinton | Agreed on 2026-10-17 |
 | Portfolio | Gara's Workshop | Agreed |
 | Professional focus | Java backend / full stack development | Agreed |
-| Backend | Java and Spring Boot | Agreed; versions pending |
-| Frontend | React and TypeScript | Agreed; versions pending |
+| Backend | Java 21 and Spring Boot 4.0.8 | Foundation implemented |
+| Frontend | React and strict TypeScript | Foundation implemented; versions pinned in package.json |
 | Database | PostgreSQL | Technical proposal; not yet finalized |
 | Editor | Visual Studio Code | Agreed |
 | Weekly commitment | 6–10 hours | Agreed |
 | Working method | Build together, step by step, with ongoing documentation | Agreed |
-| Budget | EUR 0; local development | Agreed |
+| Budget | EUR 0; local development or available included cloud quota | Agreed; no paid resources created |
 | Initial market | Spain, with a model prepared for other European countries | Agreed |
 | Hosting | Evaluate a free option once a demo exists | Pending |
 | Project language | English for code and repository documentation | Agreed on 2026-10-17 |
@@ -116,7 +116,9 @@ Use one repository for the frontend, backend, and documentation.
 
 The backend will be a modular monolith organized around profiles, opportunities, connectors, matching, and applications. Connectors will translate provider responses into a common model so the matching engine does not depend on provider-specific formats.
 
-Proposals still to finalize: PostgreSQL, versioned database migrations, a documented REST API, Docker Compose, and GitHub Actions. Pin versions after checking the development environment and compatibility.
+The foundation implements the documented status API and GitHub Actions checks. A small system package owns the connectivity endpoint; feature modules will follow when needed. See [architecture](ARCHITECTURE.md).
+
+Proposals still to finalize: PostgreSQL, versioned database migrations, and Docker Compose. No database is needed to run this increment.
 
 ## Roadmap
 
@@ -125,7 +127,7 @@ Milestones have exit criteria rather than fixed deadlines. Estimate them when th
 | Milestone | Deliverable | Exit criteria | Status |
 | --- | --- | --- | --- |
 | 0. Definition | Name, scope, stack, and quality criteria | Main decisions recorded and open questions identified | In progress |
-| 1. Foundation | Remote repository, reproducible environment, and automated checks | A clean clone starts using verified instructions | In progress: repository published; runtime setup pending |
+| 1. Foundation | Remote repository, reproducible environment, and automated checks | A clean clone starts using verified instructions | In progress: runnable foundation and CI added; owner environment startup pending |
 | 2. First journey | Profile, fictional catalog, details, and saved opportunities | The journey works with loading, empty, and error states | Pending |
 | 3. Matching v1 | Constraints, weights, and explanations | Reviewed cases cover mismatches, missing data, and changed weights | Pending |
 | 4. Live provider | One connector and normalized listings | Authorized access; limits, duplicates, and failures handled | Pending |
@@ -135,19 +137,13 @@ Milestones have exit criteria rather than fixed deadlines. Estimate them when th
 
 ## Local development
 
-The repository currently contains documentation and workspace configuration only. There are no application startup commands, dependencies, or application tests yet.
+See [the development guide](DEVELOPMENT.md) for local and optional Codespaces setup, startup commands, verification, and switching devices without losing changes.
 
-Open `JobSinton.code-workspace` in VS Code, or open the repository folder directly. Use `Ctrl+Shift+V` to preview Markdown.
+GitHub is the source of truth for shared work. Commit and push changes to a feature branch before switching machines. A Codespace can be reopened from either device, but its unpushed commits are not yet backed up in the repository.
 
-Before implementing the first feature:
+The current Windows checkout could not be inspected because the assistant terminal could not initialize. Preserve any local changes and inspect Git status before synchronizing. Codespaces startup also remains to be verified; do not mark milestone 1 complete until an owner environment starts successfully.
 
-1. Check the installed versions and functionality of Java, Node, Git, and Docker.
-2. Choose compatible runtime and framework versions.
-3. Finalize the database choice.
-4. Record exact installation, startup, and verification steps.
-5. Build the smallest backend/frontend startup increment together.
-
-No provider API keys are required for this stage.
+No provider API keys or database are required for this stage.
 
 ## Development and evaluation
 
@@ -188,3 +184,15 @@ Do not publish credentials, real CVs, personal demonstration profiles, or job li
 - Preserved the detailed scope, provider notes, roadmap, review process, and session history.
 - Translated the contribution guide, access review, pull request template, and configuration comments.
 - Local terminal access was unavailable during this documentation update because the execution environment could not initialize its sandbox. Remote changes can be completed through GitHub; refresh the local checkout before the next coding session.
+
+### 2026-10-18 — Runnable foundation and shared development
+
+- Confirmed that owner-approved PR #2 is merged into main at `3a73c67`.
+- Opened issue #3 and implemented the first real Java-to-browser connection on a focused branch.
+- Added a bounded connection check, retry behavior, backend HTTP tests, and desktop/mobile browser integration tests.
+- Added GitHub Actions, a development guide, an optional dev container, architecture notes, and CHANGELOG.md.
+- Decision: keep this increment free of database/provider setup so its startup and connectivity behavior can be understood and checked independently.
+- Alternative deferred: building profile, storage, and matching scaffolding together would make the first review much larger without validating user value.
+- Local terminal initialization failed before checkout inspection. Local cleanliness, installed tools, and synchronization cannot be certified.
+- Review CI evidence in the implementation PR; Codespaces and owner Windows startup remain separate acceptance checks.
+- Next session: start this foundation together, review the request path and visual direction, then define the smallest profile-preferences contract before implementing it.
