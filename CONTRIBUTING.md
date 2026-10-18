@@ -6,7 +6,7 @@ Build small, understandable, and verifiable changes. The initial commits establi
 
 Use English for code identifiers, comments, tests, developer-facing messages, repository documentation, commit messages, and issue/PR text. Localized interface copy and original provider content may use their respective languages.
 
-Keep the [README](README.md) concise and product-focused. Maintain scope, decisions, milestones, and session notes in [the project plan](docs/PROJECT_PLAN.md). Our working conversation may remain in Spanish.
+Keep the [README](README.md) concise and product-focused. Maintain scope, decisions, milestones, and session notes in [the project plan](docs/PROJECT_PLAN.md). Record every implementation increment in [CHANGELOG.md](CHANGELOG.md): purpose, behavior, verification, and limitations. Document non-obvious contracts and decisions alongside the code. Our working conversation may remain in Spanish.
 
 ## External contributions
 
@@ -24,7 +24,7 @@ Authorized tools may act on the owner's behalf. Accepting a contribution does no
 6. Review the change and resolve blocking findings.
 7. Merge and verify the resulting state of `main`.
 
-Use descriptive commit messages with prefixes such as `feat`, `fix`, `docs`, `test`, and `chore`. Branch protection and automated checks have not been configured yet.
+Use descriptive commit messages with prefixes such as `feat`, `fix`, `docs`, `test`, and `chore`. GitHub Actions runs build and integration checks. Branch protection has not been configured yet; the owner must check the results before merging.
 
 ## Verification by risk
 
@@ -47,9 +47,11 @@ Tests should protect behavior and concrete risks rather than repeat implementati
 - No credentials, personal test data, or known unresolved regressions are introduced.
 - Domain logic is understandable and separate from provider-specific formats.
 - Relevant invalid inputs, failures, and incomplete data are handled.
-- Documentation reflects the actual state of the project.
+- Documentation and CHANGELOG.md reflect the actual state of the project.
 - Sensitive data or configuration changes include a recovery plan.
 - Review authorship and AI assistance are stated honestly; self-review is not presented as independent human review.
+
+Use [the development guide](docs/DEVELOPMENT.md) to synchronize work safely between devices. Push work branches before switching machines.
 
 ## Session close
 

@@ -1,0 +1,59 @@
+name: Verify foundation
+
+on:
+  push:
+    branches: [main, 'feat/**', 'fix/**', 'chore/**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Build and integration tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '24'
+      - name: Verify backend HTTP contract
+        run: mvn -B -ntp -f backend/pom.xml verify
+      - name: Bootstrap dependency lock for initial repository setup
+        run: |
+          npm --prefix frontend install --package-lock-only --ignore-scripts
+          node -e "console.log('JOBSINTON_LOCKFILE_START'+JSON.stringify(JSON.parse(require('fs').readFileSync('frontend/package-lock.json','utf8')))+'JOBSINTON_LOCKFILE_END')"
+      - name: Install locked frontend dependencies
+        run: npm --prefix frontend ci
+      - name: Check TypeScript and build frontend
+        run: npm --prefix frontend run build
+      - name: Install browser
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Verify browser and API integration
+        run: npm --prefix frontend run test:e2e
+      - name: Preserve failure evidence
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: foundation-failure-evidence
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+            backend/target/surefire-reports/
+          retention-days: 7

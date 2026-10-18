@@ -1,0 +1,38 @@
+{
+  "name": "JobSinton",
+  "image": "mcr.microsoft.com/devcontainers/base:bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/java:1": {
+      "version": "21",
+      "jdkDistro": "tem",
+      "installMaven": true,
+      "mavenVersion": "3.9.11",
+      "installGradle": false
+    },
+    "ghcr.io/devcontainers/features/node:2": {
+      "version": "24"
+    }
+  },
+  "forwardPorts": [
+    5173,
+    8080
+  ],
+  "portsAttributes": {
+    "5173": {
+      "label": "JobSinton frontend",
+      "onAutoForward": "notify"
+    },
+    "8080": {
+      "label": "JobSinton API",
+      "onAutoForward": "silent"
+    }
+  },
+  "postCreateCommand": "npm --prefix frontend ci",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscjava.vscode-java-pack"
+      ]
+    }
+  }
+}

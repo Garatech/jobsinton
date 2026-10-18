@@ -18,7 +18,7 @@
 
 ## Documentation and review
 
-- [ ] Relevant documentation updated.
+- [ ] Relevant documentation and CHANGELOG.md updated with purpose, behavior, checks, and limits.
 - [ ] English used for code and documentation, except intentional localization or original provider content.
 - [ ] No credentials or personal test data introduced.
 - [ ] Code clarity and relevant error handling reviewed.
