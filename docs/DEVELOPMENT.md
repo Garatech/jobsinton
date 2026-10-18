@@ -1,6 +1,6 @@
 # Development guide
 
-GitHub is the source of truth for shared code and history. A commit on your computer or in a Codespace is not backed up to GitHub until it is pushed.
+I use GitHub as the source of truth for shared code and history. A commit on a computer or in a Codespace is not backed up to GitHub until it is pushed.
 
 ## What works today
 
@@ -12,7 +12,7 @@ The services are development processes. This guide does not deploy a public appl
 
 ### Browser development with GitHub Codespaces (optional)
 
-This is the most direct way to use the same development environment from a desktop and a laptop.
+Codespaces gives me access to the same development environment from a desktop and a laptop.
 
 1. In the repository, select the branch you want to work on.
 2. Open **Code → Codespaces** and create an environment on that branch, or reopen your existing one.
@@ -21,7 +21,7 @@ This is the most direct way to use the same development environment from a deskt
 5. Open the forwarded frontend port **5173**. Keep forwarded ports **private**; the frontend proxies API requests internally to port 8080.
 6. Commit and push work before finishing. Stop the Codespace when you are done and reopen the same one from your other computer.
 
-Codespaces is optional and has limited included usage depending on your GitHub plan. Check remaining usage and billing settings before creating it. Do not enable paid overages for this EUR 0 project. This update does not create a Codespace or change billing settings. If the included quota is unavailable, use local development.
+Codespaces is optional and has limited included usage depending on your GitHub plan. Check remaining usage and billing settings before creating it. My budget for this project is EUR 0, so paid overages must stay disabled. This update does not create a Codespace or change billing settings. If the included quota is unavailable, use local development.
 
 The dev container configuration is provided but has not yet been started and verified in Codespaces. Its first startup remains a milestone acceptance check.
 
@@ -78,9 +78,9 @@ No environment variables, API keys, real CVs, or database are needed.
 
 ## Move safely between devices
 
-Work on one shared branch at a time. Keep source files in Git; do not synchronize `node_modules`, build output, or the Git directory through a general-purpose cloud folder.
+When moving between devices, I work on one shared branch at a time. I keep source files in Git; `node_modules`, build output, and the Git directory must not be synchronized through a general-purpose cloud folder.
 
-Before changing machines, inspect your changes, stage only intended files, commit, and push:
+Before changing machines, I inspect my changes, stage only intended files, commit, and push:
 
 ```sh
 git status --short --branch
@@ -98,7 +98,7 @@ On the other machine:
 2. If there are uncommitted changes, review and commit them on their existing work branch before switching. Do not discard or overwrite them.
 3. Run `git fetch origin --prune`.
 4. Switch to the shared branch with `git switch <your-branch>`. If it is not present locally, use `git switch --track origin/<your-branch>`.
-5. Run `git pull --ff-only`. If Git reports divergent history, stop and inspect the commits together; do not force push or reset.
+5. Run `git pull --ff-only`. If Git reports divergent history, stop and review the commits before proceeding; do not force push or reset.
 6. Run `npm --prefix frontend ci` after dependency changes.
 
 After a PR has been merged, update a **clean** checkout:
@@ -132,7 +132,7 @@ On a Linux machine missing browser system libraries, use `npx playwright install
 
 GitHub Actions runs the backend HTTP tests, TypeScript checking, frontend build, and Playwright tests on desktop and mobile Chromium. Its job token is read-only, checkout credentials are not persisted, and failure reports are retained for seven days. A green run is evidence for that commit; it is not a production-readiness claim.
 
-Inspect the workflow linked from the PR before merging. Branch protection has not yet been enabled, so passing checks are currently a review rule rather than a GitHub-enforced merge gate.
+I check the workflow linked from the PR before merging. Branch protection has not yet been enabled, so passing checks are currently a review rule rather than a GitHub-enforced merge gate.
 
 ## Troubleshooting
 
@@ -148,7 +148,7 @@ Inspect the workflow linked from the PR before merging. Branch protection has no
 
 ## Verification limits
 
-The first implementation is verified in GitHub Actions when its run passes. The owner's Windows checkout and first Codespaces startup still need separate verification. During the 2026-10-18 session, the assistant's local terminal could not initialize its sandbox, so no local changes, installed versions, or checkout cleanliness could be certified.
+The first implementation is verified in GitHub Actions when its run passes. My Windows checkout and first Codespaces startup still need separate verification. During the 2026-10-18 session, the assistant's local terminal could not initialize its sandbox, so local changes, installed versions, and checkout cleanliness remain unverified.
 
 ## Platform references
 

@@ -2,7 +2,7 @@
 
 ## Scope and request path
 
-The first increment establishes one real request through the complete stack:
+I started with one real request through the complete stack:
 
 Browser → Vite development proxy → Spring Boot → JSON response → connection state.
 
@@ -21,7 +21,7 @@ The browser calls `/api/status` on its own origin. Vite forwards `/api` to `http
 | `.github/workflows/ci.yml` | Reproduce builds and integration checks in GitHub |
 | `.devcontainer/` | Optional shared cloud development environment |
 
-Future profile, opportunity, connector, and matching modules will live in this repository. They are not generated as empty abstractions in the foundation.
+I will add profile, opportunity, connector, and matching modules in this repository as development progresses. I have left them out of the foundation rather than introducing empty abstractions.
 
 ## API contract
 
@@ -41,15 +41,15 @@ Each request owns an `AbortController`. Cleanup cancels work when the component 
 
 ## Why this stack and scope
 
-Java 21 provides a stable JDK baseline. Spring Boot supplies HTTP routing and JSON serialization. React and strict TypeScript own the interface. Maven manages the backend; an npm lockfile makes frontend installs reproducible.
+I chose Java 21 as a stable JDK baseline and Spring Boot for HTTP routing and JSON serialization. React and strict TypeScript own the interface. Maven manages the backend; an npm lockfile makes frontend installs reproducible.
 
 Vite handles development and the static production build. The initial application does not need an additional React bundler plugin. Playwright tests the actual browser-to-Java connection and failure recovery on two viewport configurations.
 
-A database and provider credentials would introduce setup and data concerns without helping prove this first connection. Those decisions remain in the project plan. GitHub Codespaces is an optional development environment, not application hosting.
+A database and provider credentials would introduce setup and data concerns without helping prove this first connection. I keep those decisions in the project plan. GitHub Codespaces is an optional development environment, not application hosting.
 
 ## Documentation policy
 
-Document API contracts, design reasons, boundary validation, and non-obvious behavior next to the code. Avoid comments that only restate syntax. Update this document when responsibilities change, `CHANGELOG.md` for observable increments and verification, and the project plan for decisions and next steps.
+I document API contracts, design reasons, boundary validation, and non-obvious behavior next to the code, avoiding comments that only restate syntax. I update this document when responsibilities change, `CHANGELOG.md` for observable increments and verification, and the project plan for decisions and next steps.
 
 ## Current limitations
 
