@@ -1,8 +1,8 @@
 # JobSinton — Project Plan
 
-This is the working document for the project owner and their development assistant. It contains scope, decisions, milestones, open questions, and session notes. It is versioned in the public repository; do not add credentials or private personal information.
+I use this document to track JobSinton's scope, decisions, milestones, open questions, and session notes as I develop the project with assistance. It is versioned in the public repository, so credentials and private personal information do not belong here.
 
-The [README](../README.md) is the concise product introduction. Keep implementation planning and the development journal here.
+The [README](../README.md) is the concise product introduction. I keep implementation planning and my development journal here.
 
 ## Current status
 
@@ -12,7 +12,7 @@ The public repository is [Garatech/jobsinton](https://github.com/Garatech/jobsin
 
 ## Purpose
 
-Help software professionals prioritize job opportunities that match their experience, skills, and working preferences. The project also serves as a professional portfolio: decisions, limitations, and verification results must be understandable and reproducible.
+I'm building JobSinton to help software professionals prioritize job opportunities that match their experience, skills, and working preferences. It is also part of my professional portfolio, so I want decisions, limitations, and verification results to be understandable and reproducible.
 
 ## Decisions and constraints
 
@@ -26,7 +26,7 @@ Help software professionals prioritize job opportunities that match their experi
 | Database | PostgreSQL | Technical proposal; not yet finalized |
 | Editor | Visual Studio Code | Agreed |
 | Weekly commitment | 6–10 hours | Agreed |
-| Working method | Build together, step by step, with ongoing documentation | Agreed |
+| Working method | Develop step by step with assistance and ongoing documentation | Agreed |
 | Budget | EUR 0; local development or available included cloud quota | Agreed; no paid resources created |
 | Initial market | Spain, with a model prepared for other European countries | Agreed |
 | Hosting | Evaluate a free option once a demo exists | Pending |
@@ -34,9 +34,9 @@ Help software professionals prioritize job opportunities that match their experi
 | Documentation structure | Product README; separate working plan | Agreed on 2026-10-17 |
 | Code license | No open-source license declared yet | Pending |
 
-The name was chosen after a preliminary web search found no exact matches. Trademark registration, domains, and hosting identifiers have not been verified.
+I chose the name after a preliminary web search found no exact matches. Trademark registration, domains, and hosting identifiers have not been verified.
 
-English applies to identifiers, comments, tests, developer-facing messages, documentation, commit messages, and issue/PR text. Our working conversation may remain in Spanish. Future localized interface text and original provider content may use other languages.
+English applies to identifiers, comments, tests, developer-facing messages, documentation, commit messages, and issue/PR text. Development discussions may remain in Spanish. Future localized interface text and original provider content may use other languages.
 
 ## Initial release scope
 
@@ -52,7 +52,7 @@ Initially out of scope: automatic job applications, AI-based CV extraction, mult
 
 ## Profile configuration
 
-Provide a short setup flow and optional advanced controls. Proposed dimensions:
+I plan to offer a short setup flow with optional advanced controls. These are the proposed dimensions:
 
 | Dimension | Examples |
 | --- | --- |
@@ -73,7 +73,7 @@ Provide a short setup flow and optional advanced controls. Proposed dimensions:
 4. Show the available information and the reasons behind each score.
 5. Version the rules so results can be reproduced.
 
-**A match score is not a probability of being hired.** Do not infer professional suitability from personal characteristics unrelated to the role.
+**A match score is not a probability of being hired.** The matching rules must not infer professional suitability from personal characteristics unrelated to the role.
 
 Pending design work:
 
@@ -85,9 +85,9 @@ Pending design work:
 
 ## European scope
 
-Keep company location, job location, and countries eligible for remote work separate. A remote listing may still restrict the employee's country of residence.
+I will keep company location, job location, and countries eligible for remote work separate. A remote listing may still restrict the employee's country of residence.
 
-Preserve currency, pay period, and gross/net classification. Do not compare incompatible salary amounts directly. Prepare the interface for localization without promising coverage that the selected providers cannot deliver.
+I will preserve currency, pay period, and gross/net classification so incompatible salary amounts are not compared directly. I will prepare the interface for localization, with coverage limited to what the selected providers can deliver.
 
 ## Job providers
 
@@ -112,7 +112,7 @@ Each connector must address pagination, normalization, attribution, rate limits,
 
 ## Proposed architecture
 
-Use one repository for the frontend, backend, and documentation.
+I keep the frontend, backend, and documentation in one repository.
 
 The backend will be a modular monolith organized around profiles, opportunities, connectors, matching, and applications. Connectors will translate provider responses into a common model so the matching engine does not depend on provider-specific formats.
 
@@ -122,12 +122,12 @@ Proposals still to finalize: PostgreSQL, versioned database migrations, and Dock
 
 ## Roadmap
 
-Milestones have exit criteria rather than fixed deadlines. Estimate them when they are broken down into small tasks.
+I track milestones by their exit criteria rather than fixed deadlines, and estimate them once I have broken them down into small tasks.
 
 | Milestone | Deliverable | Exit criteria | Status |
 | --- | --- | --- | --- |
 | 0. Definition | Name, scope, stack, and quality criteria | Main decisions recorded and open questions identified | In progress |
-| 1. Foundation | Remote repository, reproducible environment, and automated checks | A clean clone starts using verified instructions | In progress: runnable foundation and CI added; owner environment startup pending |
+| 1. Foundation | Remote repository, reproducible environment, and automated checks | A clean clone starts using verified instructions | In progress: runnable foundation and CI added; startup in my development environment pending |
 | 2. First journey | Profile, fictional catalog, details, and saved opportunities | The journey works with loading, empty, and error states | Pending |
 | 3. Matching v1 | Constraints, weights, and explanations | Reviewed cases cover mismatches, missing data, and changed weights | Pending |
 | 4. Live provider | One connector and normalized listings | Authorized access; limits, duplicates, and failures handled | Pending |
@@ -141,29 +141,29 @@ See [the development guide](DEVELOPMENT.md) for local and optional Codespaces se
 
 GitHub is the source of truth for shared work. Commit and push changes to a feature branch before switching machines. A Codespace can be reopened from either device, but its unpushed commits are not yet backed up in the repository.
 
-The current Windows checkout could not be inspected because the assistant terminal could not initialize. Preserve any local changes and inspect Git status before synchronizing. Codespaces startup also remains to be verified; do not mark milestone 1 complete until an owner environment starts successfully.
+Verification of my current Windows checkout was blocked because the assistant terminal could not initialize. Before synchronizing, I need to preserve any local changes and inspect Git status. Codespaces startup also remains to be verified; milestone 1 stays open until one of my development environments starts successfully.
 
 No provider API keys or database are required for this stage.
 
 ## Development and evaluation
 
-Each session follows: **small objective → explanation → joint implementation → verification → documentation**.
+I work through each session in this order: **small objective → explanation → joint implementation → verification → documentation**.
 
-Each update records what changed, why, how it was checked, and what remains unresolved. Use an issue with observable acceptance criteria, a focused branch, and a pull request. Review correctness, clarity, relevant security risks, user experience, and the effect on data or integrations before merging.
+For each update, I record what changed, why, how it was checked, and what remains unresolved. I use an issue with observable acceptance criteria, a focused branch, and a pull request. Before merging, I review correctness, clarity, relevant security risks, user experience, and the effect on data or integrations.
 
-Verification is proportional to the change: reference cases for matching, integration checks for persistence and connectors, and end-to-end checks for critical journeys. Documentation changes require accurate content and valid internal links. Do not claim tests or independent reviews that did not take place.
+Verification is proportional to the change: reference cases for matching, integration checks for persistence and connectors, and end-to-end checks for critical journeys. Documentation changes require accurate content and valid internal links. I only record tests and independent reviews that actually took place.
 
 See [CONTRIBUTING](../CONTRIBUTING.md) for the detailed review process and [the pull request template](../.github/pull_request_template.md) for change records.
 
-At the end of each milestone, explain the implementation, one important design decision, and an alternative considered. Revisit anything that is not understood before expanding the scope.
+At the end of each milestone, I explain the implementation, one important design decision, and an alternative I considered. I revisit anything I do not yet understand before expanding the scope.
 
 ## Repository access and data
 
-The repository is public. Direct changes and merges are reserved for `Garatech` and tools explicitly authorized by the owner. Others can work in forks and propose pull requests; submitting a PR does not integrate it or grant write access.
+The repository is public. I manage direct changes and merges through `Garatech` and tools I explicitly authorize. Others can work in forks and propose pull requests; submitting a PR does not integrate it or grant write access.
 
 See the [repository access review](repository-access.md). GitHub settings enforce permissions; documentation only records their reviewed state.
 
-Do not publish credentials, real CVs, personal demonstration profiles, or job listings we cannot redistribute. The code license remains undecided.
+I keep credentials, real CVs, personal demonstration profiles, and job listings that cannot be redistributed out of the public repository. I have not yet decided on a code license.
 
 ## Session log
 
@@ -175,7 +175,7 @@ Do not publish credentials, real CVs, personal demonstration profiles, or job li
 - Published the initial documentation in `Garatech/jobsinton`.
 - Reviewed repository permissions and required workflow approval for all external contributors.
 - No application, CI pipeline, deployment, or live integrations were implemented.
-- Next technical step: inspect the development environment and build the first runnable increment together.
+- Next technical step: inspect my development environment and build the first runnable increment with assistance.
 
 ### 2026-10-17 — English documentation and product README
 
@@ -187,12 +187,19 @@ Do not publish credentials, real CVs, personal demonstration profiles, or job li
 
 ### 2026-10-18 — Runnable foundation and shared development
 
-- Confirmed that owner-approved PR #2 is merged into main at `3a73c67`.
+- Confirmed that PR #2, which I approved, is merged into main at `3a73c67`.
 - Opened issue #3 and implemented the first real Java-to-browser connection on a focused branch.
 - Added a bounded connection check, retry behavior, backend HTTP tests, and desktop/mobile browser integration tests.
 - Added GitHub Actions, a development guide, an optional dev container, architecture notes, and CHANGELOG.md.
 - Decision: keep this increment free of database/provider setup so its startup and connectivity behavior can be understood and checked independently.
 - Alternative deferred: building profile, storage, and matching scaffolding together would make the first review much larger without validating user value.
 - Local terminal initialization failed before checkout inspection. Local cleanliness, installed tools, and synchronization cannot be certified.
-- Review CI evidence in the implementation PR; Codespaces and owner Windows startup remain separate acceptance checks.
-- Next session: start this foundation together, review the request path and visual direction, then define the smallest profile-preferences contract before implementing it.
+- Review CI evidence in the implementation PR; Codespaces startup and startup on my Windows machine remain separate acceptance checks.
+- Next session: start this foundation with assistance, review the request path and visual direction, then define the smallest profile-preferences contract before implementing it.
+
+### 2026-10-18 — Documentation update
+
+- Opened `docs/documentation-update` to refine wording across the project documentation.
+- Kept the existing scope, decisions, technical instructions, and verification records.
+- Checked command examples and link targets against the previous revision; application code and configuration are unchanged.
+- Next step remains starting the foundation and reviewing the first profile-preferences contract.

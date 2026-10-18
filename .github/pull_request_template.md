@@ -1,6 +1,6 @@
 ## Problem and objective
 
-<!-- Link the issue and explain why this change is needed. -->
+<!-- Which issue does this address, and why am I making this change? -->
 
 ## Changes
 
@@ -10,11 +10,11 @@
 
 ## Validation
 
-<!-- Record actual checks and results; include screenshots when useful. State what could not be verified. -->
+<!-- What did I check, and what were the results? Include screenshots when useful and note anything still unverified. -->
 
 ## Risks and recovery
 
-<!-- Note affected migrations, compatibility, providers, or data. Use "Not applicable" where appropriate. -->
+<!-- What could this affect: migrations, compatibility, providers, or data? How would I recover? Use "Not applicable" where appropriate. -->
 
 ## Documentation and review
 
