@@ -4,11 +4,13 @@ GitHub is the source of truth for shared code and history. A commit on your comp
 
 ## What works today
 
-The React interface checks a real Java service through `GET /api/status`. It displays loading, connected, and unavailable states, allows retries, and stops waiting after five seconds. There is no profile, matching engine, job catalog, database, or live provider yet.
+The React interface checks a real Java service through `GET /api/status`. It displays loading, connected, and unavailable states, allows retries, and stops waiting after five seconds. The professional profile editor saves preferences in this browser and restores them after reload. There is no matching engine, job catalog, database, or live provider yet. See [the profile verification guide](PROFILE.md) for its rules and acceptance checklist.
 
 The services are development processes. This guide does not deploy a public application.
 
 ## Choose an environment
+
+Local development is the primary workflow for the EUR 0 budget. Codespaces remains optional and is not required to complete the local setup.
 
 ### Browser development with GitHub Codespaces (optional)
 
@@ -27,13 +29,14 @@ The dev container configuration is provided but has not yet been started and ver
 
 ### Local development on either computer
 
-Install Git, VS Code, a Java 21 JDK, Maven 3.9.x, and Node.js 24 (including npm). Java 21 must be the JDK used by Maven. Docker is not required for the local workflow.
+Install Git, VS Code, a Java 21 JDK, Maven 3.9.x or 3.10.x, and Node.js 24 (including npm). Java 21 must be the JDK used by Maven. Docker is not required for the local workflow.
 
-Check the tools:
+Check the tools in the same terminal that will run the application:
 
 ```sh
 git --version
 java --version
+javac --version
 mvn --version
 node --version
 npm --version
@@ -48,7 +51,7 @@ code JobSinton.code-workspace
 npm --prefix frontend ci
 ```
 
-An existing checkout must be inspected and synchronized using the next section; do not clone over it. Before the foundation PR is merged, check out `feat/runnable-foundation` to try this increment.
+An existing checkout must be inspected and synchronized using the next section; do not clone over it.
 
 ## Start the application
 
@@ -112,7 +115,9 @@ Create the next feature branch from this updated `main`.
 
 ## Verify an increment
 
-From the repository root:
+Stop the frontend, backend, and test runners with Ctrl+C before verification. In particular, `npm ci` replaces `node_modules`; a running Vite/esbuild process can lock `esbuild.exe` on Windows and cause an EPERM error.
+
+From the repository root, run each command separately and continue only if it succeeds:
 
 ```sh
 mvn -B -ntp -f backend/pom.xml verify
@@ -134,10 +139,15 @@ GitHub Actions runs the backend HTTP tests, TypeScript checking, frontend build,
 
 Inspect the workflow linked from the PR before merging. Branch protection has not yet been enabled, so passing checks are currently a review rule rather than a GitHub-enforced merge gate.
 
+For this increment, follow the [profile verification checklist](PROFILE.md#verify-after-merging-the-pull-request) after pulling the merged changes.
+
 ## Troubleshooting
 
 | Symptom | Check |
 | --- | --- |
+| Port 8080 already in use | Check `/api/status`; JobSinton may already be running. Stop its existing terminal with Ctrl+C before starting a second instance. Identify an unknown process before stopping it. |
+| EPERM while removing esbuild.exe | Stop the frontend and any test runners, then retry `npm ci`. If it persists, identify the process holding the file before changing permissions. |
+| VS Code uses an older Java or Node | Close all VS Code windows and reopen from a terminal with Java 21 and Node 24. Check `mvn --version` as well as `java --version`. |
 | API unavailable | Start Java, inspect its terminal, confirm port 8080 is free, then retry |
 | Frontend port already used | Stop the previous frontend process; Vite intentionally fails rather than silently selecting another port |
 | Java compilation/version error | Check `mvn --version`; it must show Java 21 |
@@ -148,7 +158,9 @@ Inspect the workflow linked from the PR before merging. Branch protection has no
 
 ## Verification limits
 
-The first implementation is verified in GitHub Actions when its run passes. The owner's Windows checkout and first Codespaces startup still need separate verification. During the 2026-10-18 session, the development terminal could not initialize its sandbox, so local changes, installed versions, and checkout cleanliness remain unverified.
+On 2026-10-20, the owner reported successful Windows startup and completion of the foundation verification commands after configuring Java 21 and Node 24. The reported Maven installation is 3.10.0. This records a local user verification; its terminal logs were not independently captured.
+
+The profile increment is checked separately in its PR and requires the manual checklist after merging. The development terminal used to prepare remote changes remains unavailable, so local checkout cleanliness and synchronization have not been independently inspected. Codespaces startup remains unverified and optional.
 
 ## Platform references
 

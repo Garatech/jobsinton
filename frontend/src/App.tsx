@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { fetchSystemStatus } from './api/status';
+import { ProfileEditor } from './profile/ProfileEditor';
 
 type ConnectionState = 'checking' | 'connected' | 'unavailable';
 
@@ -9,7 +10,7 @@ const connectionCopy: Record<ConnectionState, string> = {
   unavailable: 'The API is unavailable. Start the backend and try again.',
 };
 
-/** First runnable slice: an honest product introduction and a real API connection. */
+/** Product introduction, local profile editor, and independent API connectivity check. */
 export function App() {
   const [connection, setConnection] = useState<ConnectionState>('checking');
   const [attempt, setAttempt] = useState(0);
@@ -46,7 +47,7 @@ export function App() {
           <span className="brand-mark" aria-hidden="true">js</span>
           <span>JobSinton<span className="brand-dot">.</span></span>
         </a>
-        <span className="release-label">Foundation preview</span>
+        <span className="release-label">Profile preview</span>
       </header>
       <main id="main">
         <section className="hero" aria-labelledby="hero-title">
@@ -58,7 +59,7 @@ export function App() {
               JobSinton is taking shape to help you find opportunities
               that make sense for you.
             </p>
-            <a className="text-link" href="#direction">Explore the direction <span aria-hidden="true">↗</span></a>
+            <a className="text-link" href="#profile">Set up your profile <span aria-hidden="true">↗</span></a>
           </div>
           <aside className="connection-card" aria-labelledby="connection-title">
             <p className="eyebrow">FIRST CONNECTION</p>
@@ -67,7 +68,7 @@ export function App() {
             </div>
             <h2 id="connection-title">A foundation that connects.</h2>
             <p className="card-description">The interface checks the Java service in real time.</p>
-            <p className={'connection-status ' + connection} role="status" aria-live="polite" aria-atomic="true">
+            <p className={'connection-status ' + connection} role="status" aria-label="API connection" aria-live="polite" aria-atomic="true">
               <span className="status-dot" aria-hidden="true" />
               {connectionCopy[connection]}
             </p>
@@ -77,13 +78,14 @@ export function App() {
             <p className="card-note">This checks connectivity only. Job search is not available yet.</p>
           </aside>
         </section>
+        <ProfileEditor />
         <section id="direction" className="direction" aria-labelledby="direction-title">
           <div className="section-heading">
             <h2 id="direction-title">Built around what matters to you.</h2>
             <span className="planned-label">Planned capabilities</span>
           </div>
           <div className="feature-grid">
-            <article><span className="feature-number">01 / YOUR PRIORITIES</span><h3>A profile with purpose</h3><p>Bring your skills, experience, location, and preferred working conditions together.</p></article>
+            <article><span className="feature-number">01 / YOUR PRIORITIES</span><h3>A profile with purpose</h3><p>Use your saved preferences to shape future job searches.</p></article>
             <article><span className="feature-number">02 / CLEAR REASONS</span><h3>Understand the fit</h3><p>See why an opportunity matches, where it differs, and which details are still unknown.</p></article>
             <article><span className="feature-number">03 / ROOM TO EXPLORE</span><h3>A wider horizon</h3><p>Start with Spain, with future support for opportunities across Europe.</p></article>
           </div>

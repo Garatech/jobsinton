@@ -6,7 +6,7 @@ The [README](../README.md) provides a concise product introduction. Implementati
 
 ## Current status
 
-The first runnable foundation connects a React interface to a Spring Boot status endpoint. Build and integration checks are defined in GitHub Actions. There is no production deployment, database, matching, or live provider integration yet. See the PR checks for actual validation results; Windows checkout synchronization and the first Codespaces startup remain unverified.
+The runnable foundation connects a React interface to a Spring Boot status endpoint. A professional profile editor adds explicit browser-local saving, validation, recovery, and a summary. Build and integration checks run in GitHub Actions. There is no production deployment, database, matching, or live provider integration yet. The owner reported successful Windows foundation startup and verification on 2026-10-20; the profile increment has its own acceptance checklist. Checkout synchronization has not been independently inspected; Codespaces startup remains optional and unverified.
 
 The public repository is [Garatech/jobsinton](https://github.com/Garatech/jobsinton). Initial documentation was published on 2026-10-17.
 
@@ -27,7 +27,7 @@ JobSinton helps software professionals prioritize job opportunities that match t
 | Editor | Visual Studio Code | Agreed |
 | Weekly commitment | 6–10 hours | Agreed |
 | Working method | Incremental development with ongoing documentation | Agreed |
-| Budget | EUR 0; local development or available included cloud quota | Agreed; no paid resources created |
+| Budget | EUR 0; local development as the primary workflow, included cloud quota optional | Agreed; no paid resources created |
 | Initial market | Spain, with a model prepared for other European countries | Agreed |
 | Hosting | Evaluate a free option once a demo exists | Pending |
 | Documentation structure | Product README; separate working plan | Agreed on 2026-10-17 |
@@ -48,6 +48,8 @@ Target journey: **configure a profile → browse opportunities → understand th
 Initially out of scope: automatic job applications, automated CV extraction, multiple simultaneous providers, microservices, and paid services. Public user accounts require verified data isolation; earlier demonstrations use fictional data.
 
 ## Profile configuration
+
+The first increment implements one target role, technologies, whole years of experience, residence, one preferred work mode, and conditional on-site days. See [the implemented contract and manual checklist](PROFILE.md). Other dimensions below remain proposals.
 
 Profile configuration will offer a short setup flow with optional advanced controls. Proposed dimensions:
 
@@ -124,8 +126,8 @@ Milestones have exit criteria rather than fixed deadlines. Estimates follow once
 | Milestone | Deliverable | Exit criteria | Status |
 | --- | --- | --- | --- |
 | 0. Definition | Name, scope, stack, and quality criteria | Main decisions recorded and open questions identified | In progress |
-| 1. Foundation | Remote repository, reproducible environment, and automated checks | A clean clone starts using verified instructions | In progress: runnable foundation and CI added; owner environment startup pending |
-| 2. First journey | Profile, fictional catalog, details, and saved opportunities | The journey works with loading, empty, and error states | Pending |
+| 1. Foundation | Remote repository, reproducible environment, and automated checks | A clean clone starts using verified instructions | Complete for local workflow: owner reported Windows startup and verification on 2026-10-20; Codespaces remains optional and unverified |
+| 2. First journey | Profile, fictional catalog, details, and saved opportunities | The journey works with loading, empty, and error states | In progress: browser-local profile implemented; manual acceptance pending, catalog and saved opportunities next |
 | 3. Matching v1 | Constraints, weights, and explanations | Reviewed cases cover mismatches, missing data, and changed weights | Pending |
 | 4. Live provider | One connector and normalized listings | Authorized access; limits, duplicates, and failures handled | Pending |
 | 5. Personal use | Persistence, application tracking, and accounts | User isolation and data deletion verified | Pending |
@@ -138,7 +140,7 @@ See [the development guide](DEVELOPMENT.md) for local and optional Codespaces se
 
 GitHub is the source of truth for shared work. Commit and push changes to a feature branch before switching machines. A Codespace can be reopened from either device, but its unpushed commits are not yet backed up in the repository.
 
-The current Windows checkout could not be inspected because the development terminal could not initialize. Preserve any local changes and inspect Git status before synchronizing. Codespaces startup also remains to be verified; do not mark milestone 1 complete until an owner environment starts successfully.
+The owner confirmed successful local foundation startup and verification on 2026-10-20. Local Git status has not been independently inspected because the remote development terminal cannot initialize. Preserve local changes and inspect Git status before synchronizing. Codespaces remains optional; its unverified startup does not block the local workflow.
 
 No provider API keys or database are required for this stage.
 
@@ -200,3 +202,15 @@ Credentials, real CVs, personal demonstration profiles, and job listings without
 - Preserved the technical scope, decisions, instructions, and verification records.
 - Checked command examples and link targets against the previous revision; application code and configuration are unchanged.
 - Next step remains starting the foundation and reviewing the first profile-preferences contract.
+
+### 2026-10-20 — Professional profile and local verification
+
+- Recorded owner-reported Windows foundation startup and verification after selecting Java 21 and Node 24; Maven 3.10.0 was reported during setup.
+- Opened issue #9 and branch `feat/profile-preferences` for the first profile editor.
+- Added explicit browser-local saving, editing, a last-saved summary, confirmed clearing, and recovery from invalid or unavailable storage.
+- Added validation and browser tests, including keyboard use, narrow viewports, conditional day limits, and backend outages.
+- Decision: keep one profile in the current browser without introducing accounts or database setup. Profiles do not transfer between devices with Git.
+- Alternative deferred: a profile API and database would require server-side validation, persistence, and isolation beyond this increment.
+- Added `docs/PROFILE.md` with post-merge commands and a manual acceptance checklist. Updated Windows troubleshooting in `docs/DEVELOPMENT.md`.
+- Verification: see the profile PR checks for the final tested commit. Local execution of this increment and human visual acceptance remain pending.
+- Next step: complete the profile acceptance checklist, then define the fictional job catalog and first browsing journey.

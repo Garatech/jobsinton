@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test('connects through the frontend proxy to the real Java API', async ({ page }) => {
   await page.goto('/');
   await expect(page.getByRole('heading', { level: 1 })).toContainText('Good work starts');
-  await expect(page.getByRole('status')).toHaveText('Connected to the JobSinton API');
+  await expect(page.getByRole('status', { name: 'API connection' })).toHaveText('Connected to the JobSinton API');
   await expect(page.getByText('Planned capabilities')).toBeVisible();
 
   // The first tab must expose a working skip link for keyboard navigation.
@@ -23,11 +23,11 @@ test('explains an outage and reconnects when the service returns', async ({ page
     status: 503, contentType: 'application/json', body: '{}',
   }));
   await page.goto('/');
-  await expect(page.getByRole('status')).toContainText('The API is unavailable');
+  await expect(page.getByRole('status', { name: 'API connection' })).toContainText('The API is unavailable');
 
   await page.unroute('**/api/status');
   await page.getByRole('button', { name: 'Check connection again' }).click();
-  await expect(page.getByRole('status')).toHaveText('Connected to the JobSinton API');
+  await expect(page.getByRole('status', { name: 'API connection' })).toHaveText('Connected to the JobSinton API');
 });
 
 test('does not report malformed API responses as a successful connection', async ({ page }) => {
@@ -35,7 +35,7 @@ test('does not report malformed API responses as a successful connection', async
     status: 200, contentType: 'application/json', body: '{"status":"UP"}',
   }));
   await page.goto('/');
-  await expect(page.getByRole('status')).toContainText('The API is unavailable');
+  await expect(page.getByRole('status', { name: 'API connection' })).toContainText('The API is unavailable');
 });
 
 test('bounds a stalled request and permits another attempt', async ({ page }) => {
@@ -48,8 +48,8 @@ test('bounds a stalled request and permits another attempt', async ({ page }) =>
     }).catch(() => { /* The client may already have cancelled this request. */ });
   });
   await page.goto('/');
-  await expect(page.getByRole('status')).toContainText('Checking the connection');
+  await expect(page.getByRole('status', { name: 'API connection' })).toContainText('Checking the connection');
   await expect(page.getByRole('button', { name: 'Checking…' })).toBeDisabled();
-  await expect(page.getByRole('status')).toContainText('The API is unavailable', { timeout: 8000 });
+  await expect(page.getByRole('status', { name: 'API connection' })).toContainText('The API is unavailable', { timeout: 8000 });
   await expect(page.getByRole('button', { name: 'Check connection again' })).toBeEnabled();
 });

@@ -1,4 +1,4 @@
-# Foundation architecture
+# Application architecture
 
 ## Scope and request path
 
@@ -15,13 +15,16 @@ The browser calls `/api/status` on its own origin. Vite forwards `/api` to `http
 | `backend/.../JobSintonApplication.java` | Start Spring Boot |
 | `backend/.../system/SystemStatusController.java` | Own the public service-status contract |
 | `frontend/src/api/status.ts` | HTTP request and runtime validation of external JSON |
-| `frontend/src/App.tsx` | Accessible introduction and connection state |
+| `frontend/src/App.tsx` | Product introduction, profile composition, and connection state |
+| `frontend/src/profile/model.ts` | Profile contract, normalization, validation, and saved-data parsing |
+| `frontend/src/profile/storage.ts` | Guarded reads, writes, and removal of the browser-local profile |
+| `frontend/src/profile/ProfileEditor.tsx` | Editable draft, validation feedback, and last-saved summary |
 | `frontend/src/styles.css` | Responsive visual foundation without external assets |
 | `frontend/tests/` | Browser journeys against the real API, plus controlled failures |
 | `.github/workflows/ci.yml` | Reproduce builds and integration checks in GitHub |
 | `.devcontainer/` | Optional shared cloud development environment |
 
-Future profile, opportunity, connector, and matching modules will live in this repository. They are not generated as empty abstractions in the foundation.
+The profile module currently lives in the frontend because its data stays in the browser. Opportunity, connector, and matching modules will follow when their behavior is implemented.
 
 ## API contract
 
@@ -47,10 +50,20 @@ Vite handles development and the static production build. The initial applicatio
 
 A database and provider credentials would introduce setup and data concerns without helping prove this first connection. Those decisions remain in the project plan. GitHub Codespaces is an optional development environment, not application hosting.
 
+## Local profile
+
+The profile editor keeps its draft separate from the last successful save. Saving validates and normalizes the draft, then writes a versioned record to browser storage. Only a successful write updates the saved summary. Invalid input focuses the first affected control; failed storage operations retain the draft and show an error.
+
+Saved records are untrusted input: loading checks their version, shape, size, and values before rendering. There are no storage writes on mount or while typing. Invalid records are preserved until an explicit successful save or clear. The same pure validation functions protect submission and loading.
+
+The profile never passes through the status API and remains usable during an API outage. Storage is scoped to the browser and origin, with no account or device synchronization. Multiple tabs use last-save-wins behavior. These frontend checks are not a substitute for server validation when a profile API is introduced.
+
+See [the profile contract and verification guide](PROFILE.md).
+
 ## Documentation policy
 
 API contracts, design reasons, boundary validation, and non-obvious behavior are documented next to the code. Comments explain intent rather than restate syntax. This document tracks changes in responsibilities, `CHANGELOG.md` records observable increments and verification, and the project plan covers decisions and next steps.
 
 ## Current limitations
 
-No persistence, user accounts, matching, provider access, production deployment, or published release. The visual layout is a foundation subject to design review. Desktop/mobile browser automation covers the first journey but does not replace a complete accessibility audit or human visual review.
+Persistence is limited to browser-local profile storage. There are no user accounts, server-side profile storage, matching, provider access, production deployment, or published release. The visual layout is a foundation subject to design review. Desktop/mobile browser automation covers the first journey but does not replace a complete accessibility audit or human visual review.
