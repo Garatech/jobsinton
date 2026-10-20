@@ -8,7 +8,7 @@ Checks cover search and combined filters; zero-result recovery; detail opening, 
 
 The review page is checked for comparison-pane loading, mobile overflow and review-note download. Screenshots are captured for catalog, details and profile states.
 
-Palette contrast calculations are in `RESEARCH.md`.
+Primary action hover contrast is measured in the browser. Palette contrast calculations are in `RESEARCH.md`.
 
 ## Evidence
 

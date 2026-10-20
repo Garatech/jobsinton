@@ -148,3 +148,5 @@ h1{font-size:39px;font-weight:500;letter-spacing:-1.5px}
 @media(max-width:700px){.shell{display:block}.site-header{flex-direction:row;align-items:center;flex-wrap:wrap;border-right:0;border-bottom:1px solid var(--line);padding:24px 0;gap:10px}.site-nav{flex-direction:row;gap:4px}.site-nav a{padding:8px 12px}.profile-form{padding:20px}.view-intro{padding-top:28px}.profile-summary dl{display:block}.profile-summary dt{margin-top:18px}.profile-summary dd{margin-top:6px}.filters button{grid-column:1/-1}.job{padding:22px}.job-main{flex-basis:auto}}
 
 .title-button:focus-visible,.catalog .title-button:focus-visible{outline:3px solid var(--focus);outline-offset:4px}
+
+button.primary:hover:not(:disabled){background:var(--green);color:var(--on-green)}

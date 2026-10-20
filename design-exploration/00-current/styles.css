@@ -269,3 +269,6 @@ footer { display: flex; justify-content: space-between; gap: 12px; padding: 24px
 @media(max-width:640px){.site-header{flex-direction:row;align-items:center}.hero h1{font-size:44px}.catalog h1{font-size:36px}.review-bar{gap:6px}.profile-form .form-tools{align-items:start}}
 
 .title-button:focus-visible,.catalog .title-button:focus-visible{outline:3px solid var(--focus);outline-offset:4px}
+
+button.primary:hover:not(:disabled){background:var(--green);color:var(--on-green)}
+.profile-form button.primary:hover:not(:disabled){background:#e4f6bd;color:#173e35}

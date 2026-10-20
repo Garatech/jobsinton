@@ -137,3 +137,5 @@ dialog h2{font-size:29px;font-weight:600}
 @media(max-width:640px){.catalog-layout{grid-template-columns:1fr;gap:18px}.filters{padding:0 0 18px;border-right:0;border-bottom:1px solid var(--line)}.job-end{min-width:0}h1{font-size:32px}.site-header{padding:20px 0}.profile-layout{gap:24px}}
 
 .title-button:focus-visible,.catalog .title-button:focus-visible{outline:3px solid var(--focus);outline-offset:4px}
+
+button.primary:hover:not(:disabled){background:var(--green);color:var(--on-green)}

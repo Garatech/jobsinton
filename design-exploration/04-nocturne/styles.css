@@ -138,3 +138,13 @@ dialog{border-top:3px solid var(--green)}
 @media(max-width:640px){h1{font-size:40px}.view-intro{padding:32px 0 26px}.filters{padding:18px}.filters button{grid-column:1/-1}.job h2{font-size:27px}.profile-summary{padding:24px}}
 
 .title-button:focus-visible,.catalog .title-button:focus-visible{outline:3px solid var(--focus);outline-offset:4px}
+
+button.primary:hover:not(:disabled){background:var(--green);color:var(--on-green)}
+
+/* Allow intrinsic form and result content to shrink within the responsive grid. */
+.catalog-layout{grid-template-columns:minmax(0,1fr)}
+.filters,.results,.jobs,.job,.job-main,.view-intro>div{min-width:0;max-width:100%}
+.filters{grid-template-columns:minmax(0,2fr) minmax(0,1fr) minmax(0,1fr) auto}
+.filters>div{min-width:0}
+.jobs{grid-template-columns:repeat(2,minmax(0,1fr))}
+@media(max-width:900px){.filters{grid-template-columns:repeat(2,minmax(0,1fr))}.jobs{grid-template-columns:minmax(0,1fr)}}

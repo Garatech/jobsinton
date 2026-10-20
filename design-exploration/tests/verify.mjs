@@ -13,9 +13,20 @@ const variants=['00-current','01-folio','02-ledger','03-atlas','04-nocturne'];
 const report=[];
 const errors=[];
 let activePage;
+async function buttonContrast(locator){
+ await locator.hover();
+ const pair=await locator.evaluate(e=>{const s=getComputedStyle(e);return [s.color,s.backgroundColor];});
+ const lum=css=>{const values=css.match(/[\d.]+/g).slice(0,3).map(Number).map(n=>n/255).map(n=>n<=.04045?n/12.92:((n+.055)/1.055)**2.4);return values[0]*.2126+values[1]*.7152+values[2]*.0722;};
+ const a=lum(pair[0]),b=lum(pair[1]),ratio=(Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+ assert.ok(ratio>=4.5,'Hovered action contrast '+ratio.toFixed(2)+' '+pair.join(' / '));
+}
 async function fit(page,label){
  await page.evaluate(()=>document.fonts.ready);
  const dims=await page.evaluate(()=>({width:innerWidth,scroll:document.documentElement.scrollWidth}));
+ if(dims.scroll>dims.width+1){
+  const outside=await page.evaluate(()=>[...document.querySelectorAll('body *')].filter(e=>{const r=e.getBoundingClientRect();return r.width&&r.right>innerWidth+1;}).slice(0,15).map(e=>({tag:e.tagName,id:e.id,cls:e.className,width:e.getBoundingClientRect().width,right:e.getBoundingClientRect().right})));
+  console.log('Overflow detail',JSON.stringify(outside));
+ }
  assert.ok(dims.scroll<=dims.width+1,label+' horizontal overflow: '+JSON.stringify(dims));
 }
 try {
@@ -49,6 +60,7 @@ try {
    await expect(page.locator('#detail')).toHaveJSProperty('open',true);
    await fit(page,variant+' detail '+width);
    await page.screenshot({path:path.join(out,variant+'-detail-'+width+'.png'),fullPage:true});
+   await buttonContrast(page.locator('#detail-save'));
    await page.locator('#detail-save').click();
    await expect(page.locator('#detail-save')).toHaveAttribute('aria-pressed','true');
    await page.keyboard.press('Escape');
@@ -59,6 +71,7 @@ try {
    await page.locator('[data-save="northline"]').click();
    await expect(page.locator('.job')).toHaveCount(0);
    await page.locator('[data-view="profile"]').click();
+   await buttonContrast(page.locator('#profile-form button[type="submit"]'));
    await page.locator('#fill-example').click();
    await page.locator('#profile-workmode').selectOption('Hybrid');
    await expect(page.locator('#days-field')).toBeVisible();

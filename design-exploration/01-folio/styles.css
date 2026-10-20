@@ -131,3 +131,5 @@ dialog p,dialog li{font-size:14px}
 @media(max-width:640px){.view-intro{padding:32px 0 24px}.filters{gap:14px}.filters button{grid-column:1/-1}.job h2{font-size:25px}.job-end{min-width:0}.brand{font-size:28px}}
 
 .title-button:focus-visible,.catalog .title-button:focus-visible{outline:3px solid var(--focus);outline-offset:4px}
+
+button.primary:hover:not(:disabled){background:var(--green);color:var(--on-green)}

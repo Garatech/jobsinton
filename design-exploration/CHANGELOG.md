@@ -8,3 +8,5 @@
 - Recorded color, layout and accessibility research, source limitations and measured palette contrast.
 - Added browser verification across desktop and mobile widths and a downloadable package.
 - Kept this exploration on `design/visual-exploration`; the production application remains unchanged.
+- Preserved primary-action text contrast on hover across light and dark palettes.
+- Refined Nocturne's responsive grid to contain intrinsic form and result widths.
