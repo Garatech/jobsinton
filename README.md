@@ -16,7 +16,7 @@ Match scores will express compatibility with a profile, not the likelihood of re
 
 ## Project status
 
-Early development. The first runnable foundation connects a React interface to a Java API, with automated build and integration checks. Job search, matching, and live provider integrations are planned.
+Early development. A professional profile editor supports skills, experience, location, and working preferences, with browser-local saving and a summary. The React interface also connects to a Java API, with automated build and integration checks. Job search, matching, and live provider integrations are planned.
 
 Stack: **Java · Spring Boot · React · TypeScript**.
 
