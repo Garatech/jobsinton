@@ -118,6 +118,12 @@ Use fictional details such as Backend developer, Java, React, 0 years, Spain, Ma
 
 Storage denial, failed writes/removals, malformed records, unknown versions, and long-value layout checks are covered by automated tests. To manually inspect recovery, use a separate browser profile with fictional data and change this application's storage key to malformed JSON in browser developer tools, then reload. A notice should appear and a new valid save should recover the profile.
 
+## Automated verification record
+
+[GitHub Actions run 39445633841](https://github.com/Garatech/jobsinton/actions/runs/39445633841) passed for implementation commit `25d971b`: backend build and 2 HTTP tests, locked frontend installation, strict TypeScript checking, production build, and 40 Playwright executions. These comprise 30 browser journeys across desktop/mobile Chromium and 5 pure validation cases repeated in both project configurations.
+
+The run also retains desktop/mobile screenshots in the `profile-previews` artifact for seven days. These are review aids, not evidence of human visual acceptance. See [PR #10](https://github.com/Garatech/jobsinton/pull/10) for the final checked revision.
+
 ## Implementation map
 
 - `frontend/src/profile/model.ts`: data types, normalization, validation, and saved-data parsing.

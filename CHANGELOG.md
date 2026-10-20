@@ -23,7 +23,7 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ### Profile verification and limits
 
-- Review the profile PR for the final build and test results.
+- Implementation commit `25d971b` passed [GitHub Actions run 39445633841](https://github.com/Garatech/jobsinton/actions/runs/39445633841): 2 backend HTTP tests, locked dependency installation, TypeScript checking, production build, and 40 Playwright executions (30 browser journeys plus 5 validation cases repeated in both project configurations). See [PR #10](https://github.com/Garatech/jobsinton/pull/10) for the final checked revision.
 - The profile is stored only in this browser and origin; there is no device synchronization, account, backend profile endpoint, or database.
 - Unsaved edits are lost on reload. Clearing browser data removes the profile; multiple tabs use last-save-wins behavior.
 - Automated viewport and keyboard checks do not replace human visual acceptance. The manual checklist remains pending.
