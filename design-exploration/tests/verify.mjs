@@ -4,7 +4,7 @@ import path from 'node:path';
 import { createRequire } from 'node:module';
 import { pathToFileURL } from 'node:url';
 const require=createRequire(path.resolve('frontend/package.json'));
-const {chromium}=require('@playwright/test');
+const {chromium,expect}=require('@playwright/test');
 const root=path.resolve('design-exploration');
 const out=path.resolve('design-preview-evidence');
 await fs.mkdir(out,{recursive:true});
@@ -21,6 +21,7 @@ async function fit(page,label){
 try {
  for(const variant of variants){
   for(const width of [320,390,768,1440]){
+   console.log('Checking',variant,width);
    const page=await browser.newPage({viewport:{width,height:960}});
    activePage=page;
    const localErrors=[];
@@ -29,17 +30,17 @@ try {
    const url=pathToFileURL(path.join(root,variant,'index.html')).href;
    await page.goto(url+'#discover');
    await page.waitForSelector('.job');
-   assert.equal(await page.locator('.job').count(),6);
+   await expect(page.locator('.job')).toHaveCount(6);
    await fit(page,variant+' catalog '+width);
    await page.screenshot({path:path.join(out,variant+'-catalog-'+width+'.png'),fullPage:true});
    await page.locator('#search').fill('java');
-   assert.equal(await page.locator('.job').count(),4);
+   await expect(page.locator('.job')).toHaveCount(4);
    await page.locator('#filter-mode').selectOption('Remote');
-   assert.equal(await page.locator('.job').count(),2);
+   await expect(page.locator('.job')).toHaveCount(2);
    await page.locator('#filter-role').selectOption('SAP');
-   assert.equal(await page.locator('.job').count(),0);
+   await expect(page.locator('.job')).toHaveCount(0);
    await page.locator('#empty-reset').click();
-   assert.equal(await page.locator('.job').count(),6);
+   await expect(page.locator('.job')).toHaveCount(6);
    await page.keyboard.press('Tab');
    await page.locator('[data-open="northline"]').focus();
    const outline=await page.locator('[data-open="northline"]').evaluate(e=>getComputedStyle(e).outlineStyle);
@@ -54,9 +55,9 @@ try {
    assert.equal(await page.locator('#detail').evaluate(e=>e.open),false);
    assert.equal(await page.locator('[data-open="northline"]').evaluate(e=>e===document.activeElement),true);
    await page.locator('[data-view="saved"]').click();
-   assert.equal(await page.locator('.job').count(),1);
+   await expect(page.locator('.job')).toHaveCount(1);
    await page.locator('[data-save="northline"]').click();
-   assert.equal(await page.locator('.job').count(),0);
+   await expect(page.locator('.job')).toHaveCount(0);
    await page.locator('[data-view="profile"]').click();
    await page.locator('#fill-example').click();
    await page.locator('#profile-workmode').selectOption('Hybrid');
