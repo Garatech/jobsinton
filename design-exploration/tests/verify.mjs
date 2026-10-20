@@ -40,6 +40,7 @@ try {
    assert.equal(await page.locator('.job').count(),0);
    await page.locator('#empty-reset').click();
    assert.equal(await page.locator('.job').count(),6);
+   await page.keyboard.press('Tab');
    await page.locator('[data-open="northline"]').focus();
    const outline=await page.locator('[data-open="northline"]').evaluate(e=>getComputedStyle(e).outlineStyle);
    assert.notEqual(outline,'none','Job title must retain a focus indicator');
