@@ -6,7 +6,7 @@ The [README](../README.md) provides a concise product introduction. Implementati
 
 ## Current status
 
-The runnable foundation connects a React interface to a Spring Boot status endpoint. A professional profile editor adds explicit browser-local saving, validation, recovery, and a summary. Build and integration checks run in GitHub Actions. There is no production deployment, database, matching, or live provider integration yet. The owner reported successful Windows foundation startup and verification on 2026-10-20; the profile increment has its own acceptance checklist. Checkout synchronization has not been independently inspected; Codespaces startup remains optional and unverified.
+The runnable foundation connects a React interface to a Spring Boot status endpoint. A professional profile editor adds explicit browser-local saving, validation, recovery, and a summary. Build and integration checks run in GitHub Actions. There is no production deployment, database, matching, or live provider integration yet. The owner reported successful Windows foundation startup and verification on 2026-10-20; the owner has also confirmed successful completion of the profile acceptance checklist. The next checkpoint is visual design selection using the standalone [design studies](../design-exploration/README.md). Checkout synchronization has not been independently inspected; Codespaces startup remains optional and unverified.
 
 The public repository is [Garatech/jobsinton](https://github.com/Garatech/jobsinton). Initial documentation was published on 2026-10-17.
 
@@ -127,7 +127,7 @@ Milestones have exit criteria rather than fixed deadlines. Estimates follow once
 | --- | --- | --- | --- |
 | 0. Definition | Name, scope, stack, and quality criteria | Main decisions recorded and open questions identified | In progress |
 | 1. Foundation | Remote repository, reproducible environment, and automated checks | A clean clone starts using verified instructions | Complete for local workflow: owner reported Windows startup and verification on 2026-10-20; Codespaces remains optional and unverified |
-| 2. First journey | Profile, fictional catalog, details, and saved opportunities | The journey works with loading, empty, and error states | In progress: browser-local profile implemented; manual acceptance pending, catalog and saved opportunities next |
+| 2. First journey | Profile, fictional catalog, details, and saved opportunities | The journey works with loading, empty, and error states | In progress: browser-local profile accepted by the owner; visual direction selection precedes catalog and saved opportunities |
 | 3. Matching v1 | Constraints, weights, and explanations | Reviewed cases cover mismatches, missing data, and changed weights | Pending |
 | 4. Live provider | One connector and normalized listings | Authorized access; limits, duplicates, and failures handled | Pending |
 | 5. Personal use | Persistence, application tracking, and accounts | User isolation and data deletion verified | Pending |
@@ -214,3 +214,14 @@ Credentials, real CVs, personal demonstration profiles, and job listings without
 - Added `docs/PROFILE.md` with post-merge commands and a manual acceptance checklist. Updated Windows troubleshooting in `docs/DEVELOPMENT.md`.
 - Verification: see the profile PR checks for the final tested commit. Local execution of this increment and human visual acceptance remain pending.
 - Next step: complete the profile acceptance checklist, then define the fictional job catalog and first browsing journey.
+
+### 2026-10-29 — Visual design studies
+
+- Prepared a source-based Current reference and four standalone HTML/CSS/JavaScript alternatives on `design/visual-exploration`, tracked in issue #11.
+- Added color and layout research, an offline comparison page, review-note export and browser verification.
+- Resolved the interrupted study's mobile layout failure and completed the pending keyboard focus correction.
+- Decision: compare fictional journeys in an isolated package before applying a design system to the application.
+- Alternative deferred: selecting a palette and immediately restyling the production interface would make visual comparison and review harder.
+- Verification evidence is supplied by the design workflow and the implementation PR. Package creation requires successful browser checks.
+- Owner confirmation of the existing profile's manual checklist is recorded above; it is separate from visual acceptance of these new studies.
+- Next step: review the alternatives, record the chosen combination in `docs/DESIGN.md`, then implement the selected system before the fictional catalog.

@@ -10,3 +10,11 @@
 - Kept this exploration on `design/visual-exploration`; the production application remains unchanged.
 - Preserved primary-action text contrast on hover across light and dark palettes.
 - Refined Nocturne's responsive grid to contain intrinsic form and result widths.
+
+## 2026-10-29
+
+- Resolved Nocturne's mobile overflow by preventing column wrapping in job entries.
+- Restored the Current reference's original canvas and sans-serif heading family.
+- Restored keyboard focus after removing the last saved opportunity from its detail dialog.
+- Added regression checks and a machine-readable verification result to successful packages.
+- Enabled design checks on pull requests and relevant changes to main.

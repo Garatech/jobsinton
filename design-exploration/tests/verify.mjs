@@ -11,6 +11,10 @@ await fs.mkdir(out,{recursive:true});
 const browser=await chromium.launch();
 const variants=['00-current','01-folio','02-ledger','03-atlas','04-nocturne'];
 const report=[];
+const scriptReference=await fs.readFile(path.join(root,variants[0],'app.js'),'utf8');
+for(const variant of variants){
+ assert.equal(await fs.readFile(path.join(root,variant,'app.js'),'utf8'),scriptReference,'Preview behavior must remain equivalent across variants');
+}
 const errors=[];
 let activePage;
 async function buttonContrast(locator){
@@ -70,7 +74,22 @@ try {
    await expect(page.locator('.job')).toHaveCount(1);
    await page.locator('[data-save="northline"]').click();
    await expect(page.locator('.job')).toHaveCount(0);
+   await page.locator('[data-view="discover"]').click();
+   await expect(page.locator('.job')).toHaveCount(6);
+   await page.locator('[data-save="northline"]').click();
+   await page.locator('[data-view="saved"]').click();
+   await expect(page.locator('.job')).toHaveCount(1);
+   await page.locator('[data-open="northline"]').click();
+   await page.locator('#detail-save').click();
+   await page.keyboard.press('Escape');
+   await expect(page.locator('#view-heading')).toBeFocused();
+   await expect(page.locator('.job')).toHaveCount(0);
    await page.locator('[data-view="profile"]').click();
+   if(variant==='00-current'){
+    await expect(page.locator('#current-hero')).toBeVisible();
+    await expect(page.locator('body')).toHaveCSS('background-color','rgb(245, 245, 239)');
+    await expect(page.locator('#hero-title')).toHaveCSS('font-family',/Segoe UI/);
+   }
    await buttonContrast(page.locator('#profile-form button[type="submit"]'));
    await page.locator('#fill-example').click();
    await page.locator('#profile-workmode').selectOption('Hybrid');
@@ -125,7 +144,10 @@ try {
  await fit(portal,'Review portal mobile');
  await portal.screenshot({path:path.join(out,'review-portal-mobile.png'),fullPage:true});
  assert.equal(errors.length,0,errors.join('\n'));
- await fs.writeFile(path.join(out,'verification.json'),JSON.stringify({status:'passed',transport:'file://',browser:'Chromium',cases:report,portal:'passed'},null,2));
+ const result={status:'passed',sourceCommit:process.env.GITHUB_SHA||'local',transport:'file://',browser:'Chromium',cases:report,portal:'passed'};
+ await fs.writeFile(path.join(out,'verification.json'),JSON.stringify(result,null,2));
+ await fs.writeFile(path.join(root,'VERIFICATION_RESULT.json'),JSON.stringify(result,null,2));
+ await fs.appendFile(path.join(root,'VERIFICATION.md'),'\n## Packaged result\n\nPassed: 20 variant/viewport journeys and the review portal in Chromium using file URLs. Source commit: '+result.sourceCommit+'. See VERIFICATION_RESULT.json.\n');
  console.log(JSON.stringify({status:'passed',variantViewportCases:report.length,portal:'passed'}));
 } catch(error){
  if(activePage&&!activePage.isClosed())await activePage.screenshot({path:path.join(out,'failure.png'),fullPage:true}).catch(()=>{});

@@ -4,7 +4,7 @@ Five independent static previews for choosing JobSinton's visual direction.
 
 ## Open the previews
 
-1. Download and extract the complete folder.
+1. Download the **JobSinton-designs** artifact from a successful **Verify design previews** run and extract it. A repository ZIP is also usable; see the archive path below.
 2. Open `index.html` in Chrome or Edge.
 3. Open any design, or use the comparison section.
 4. Review **Discover**, **Saved**, **Profile**, and an opportunity's details.
@@ -57,5 +57,7 @@ These are visual prototypes. They do not replace the production profile validati
 Each design has `index.html`, `styles.css` and `app.js`. Shared behavior is copied into each folder to preserve portability. Browser checks in `tests/` are maintainer tooling; they are not needed to open the previews.
 
 ## Decision status
+
+Approval of this study adds the comparison package to the repository; it does not select or apply a product redesign.
 
 No visual direction has been selected. Individual elements can be combined after review. Production application files are unchanged by this study.

@@ -50,7 +50,10 @@ function openJob(id){
 }
 $('#detail-save').addEventListener('click',()=>{toggleSave(state.activeJob);$('#detail-save').focus();});
 $('#detail-close').addEventListener('click',()=>$('#detail').close());
-$('#detail').addEventListener('close',()=>{$('#job-list [data-open="'+state.activeJob+'"]')?.focus();});
+$('#detail').addEventListener('close',()=>{
+ const opener=$('#job-list [data-open="'+state.activeJob+'"]');
+ (opener||$('#view-heading')).focus();
+});
 function setView(){
  const target=location.hash.slice(1);
  state.view=['discover','saved','profile'].includes(target)?target:(current?'profile':'discover');

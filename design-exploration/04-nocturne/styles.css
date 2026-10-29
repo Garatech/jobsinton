@@ -119,7 +119,7 @@ h1{font-size:56px;max-width:600px}
 .filters{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:16px;align-items:end;padding:22px;background:var(--surface);border-radius:var(--radius)}
 .filters h2{display:none}
 .jobs{grid-template-columns:1fr 1fr;gap:0 32px}
-.job{position:relative;padding:30px 0;flex-direction:column;gap:18px}
+.job{position:relative;padding:30px 0;flex-flow:column nowrap;gap:18px}
 .job-index{display:none}
 .job-main{width:100%}
 .job h2{font-size:29px}

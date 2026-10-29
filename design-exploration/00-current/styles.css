@@ -272,3 +272,7 @@ footer { display: flex; justify-content: space-between; gap: 12px; padding: 24px
 
 button.primary:hover:not(:disabled){background:var(--green);color:var(--on-green)}
 .profile-form button.primary:hover:not(:disabled){background:#e4f6bd;color:#173e35}
+
+/* Match the reference's actual canvas and sans-serif heading inheritance. */
+:root{--paper:#f5f5ef;--ink:#172d2a;--muted:#51635c;--green:#173e35;--tint:#eff4e8;--heading:Inter,"Segoe UI",system-ui,sans-serif}
+body{font-family:Inter,"Segoe UI",system-ui,sans-serif}

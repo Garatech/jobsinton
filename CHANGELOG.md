@@ -4,6 +4,19 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Visual design studies (2026-10-29)
+
+**Purpose:** compare visual directions before extending the product frontend. Tracked in issue #11.
+
+- A source-based Current reference and four independent static alternatives: Folio, Ledger, Atlas and Nocturne.
+- Comparable fictional catalog, details, saved-opportunity and profile interactions with session-only state.
+- An offline comparison page and downloadable notes for selecting elements across versions.
+- [Research and sources](design-exploration/RESEARCH.md), a [review guide](design-exploration/REVIEW.md), and [verification scope and limits](design-exploration/VERIFICATION.md).
+- Browser checks for five designs across four widths, with a ZIP package produced only after successful verification.
+- Corrected Nocturne's narrow layout, Current's reference styling and focus recovery after removing a saved item.
+- The design workflow runs on relevant branch pushes and pull requests. Review the PR checks for the tested revision and result.
+- This study does not select or apply a redesign to the production application. The owner reviews the alternatives before the next frontend increment.
+
 ### Added — Professional profile (2026-10-20)
 
 **Purpose:** turn professional goals and working preferences into an editable, browser-local profile. Tracked in issue #9.
@@ -26,7 +39,7 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 - Implementation commit `25d971b` passed [GitHub Actions run 39445633841](https://github.com/Garatech/jobsinton/actions/runs/39445633841): 2 backend HTTP tests, locked dependency installation, TypeScript checking, production build, and 40 Playwright executions (30 browser journeys plus 5 validation cases repeated in both project configurations). See [PR #10](https://github.com/Garatech/jobsinton/pull/10) for the final checked revision.
 - The profile is stored only in this browser and origin; there is no device synchronization, account, backend profile endpoint, or database.
 - Unsaved edits are lost on reload. Clearing browser data removes the profile; multiple tabs use last-save-wins behavior.
-- Automated viewport and keyboard checks do not replace human visual acceptance. The manual checklist remains pending.
+- Automated viewport and keyboard checks do not replace human visual acceptance. The owner has reported completing the profile manual checklist successfully, including browser-local persistence.
 - The development terminal is unavailable; remote changes do not automatically update the local checkout.
 
 ### Documentation update — 2026-10-18

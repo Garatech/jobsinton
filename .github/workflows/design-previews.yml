@@ -2,7 +2,12 @@ name: Verify design previews
 
 on:
   push:
-    branches: [design/visual-exploration]
+    branches: [main, design/visual-exploration]
+    paths:
+      - 'design-exploration/**'
+      - '.github/workflows/design-previews.yml'
+  pull_request:
+    branches: [main]
     paths:
       - 'design-exploration/**'
       - '.github/workflows/design-previews.yml'
