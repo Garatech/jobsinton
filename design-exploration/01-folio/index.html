@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"><title>JobSinton — Folio</title><link rel="stylesheet" href="styles.css"><script src="app.js" defer></script></head>
+<body data-variant="01-folio"><a class="skip-link" href="#main">Skip to content</a><div class="review-bar"><a href="../index.html">← All designs</a><span>Folio · Warm editorial · Fictional data · Session only</span></div><div class="shell "><header class="site-header"><a class="brand" href="#discover"><span class="brand-mark" aria-hidden="true">js</span>JobSinton.</a><nav class="site-nav" aria-label="Main navigation"><a class="view-link" data-view="discover" href="#discover">Discover</a><a class="view-link" data-view="saved" href="#saved">Saved <span class="saved-count">0</span></a><a class="view-link" data-view="profile" href="#profile">Profile</a></nav></header><main id="main"><section id="catalog-view" class="catalog" aria-labelledby="view-heading">
+<div class="view-intro"><div><p class="eyebrow" id="catalog-kicker">The next chapter</p><h1 id="view-heading" tabindex="-1">Discover opportunities</h1><p id="catalog-caption">A considered next step.</p></div><span class="profile-badge">Spain · Sample catalog</span></div>
+<div class="catalog-layout"><aside class="filters" aria-label="Opportunity filters"><h2>Refine</h2>
+<div class="search-field"><label for="search">Search</label><input id="search" type="search" placeholder="Role, skill or company"></div>
+<div><label for="filter-role">Role</label><select id="filter-role"><option value="">All roles</option><option>Backend</option><option>Frontend</option><option>Full stack</option><option>SAP</option></select></div>
+<div><label for="filter-mode">Work mode</label><select id="filter-mode"><option value="">All modes</option><option>Remote</option><option>Hybrid</option><option>On-site</option></select></div>
+<button type="button" id="clear-filters">Clear filters</button></aside>
+<div class="results"><div class="results-toolbar"><span id="result-count">6 opportunities</span><span>Fictional listings</span></div><div id="job-list" class="jobs"></div></div></div></section><section id="profile-view" hidden aria-labelledby="profile-title">
+<div class="view-intro section-heading"><div><p class="eyebrow">Your starting point</p><h1 id="profile-title">Professional profile</h1></div><span class="profile-badge" id="profile-badge">No saved profile</span></div>
+<div class="profile-layout">
+<form id="profile-form" class="profile-form" novalidate aria-label="Professional profile">
+<div class="form-tools"><p>All fields required. Preview session only.</p><button type="button" id="fill-example">Use example</button></div>
+<p id="form-error" class="field-error" role="alert"></p>
+<fieldset><legend>Your direction</legend><div class="field-grid">
+<div class="field"><label for="profile-role">Target role</label><select id="profile-role" required><option value="">Choose a role</option><option>Backend developer</option><option>Frontend developer</option><option>Full stack developer</option><option>SAP developer</option></select></div>
+<div class="field"><label for="profile-years">Years of relevant experience</label><input id="profile-years" type="number" min="0" max="60" step="1" required inputmode="numeric"><p class="field-hint">Whole years. Zero is valid.</p></div>
+</div></fieldset>
+<fieldset><legend>Technologies</legend><div class="field"><label for="technology">Technology</label><div class="technology-entry"><input id="technology" maxlength="40" placeholder="e.g. Java" aria-describedby="technology-error"><button id="add-technology" type="button">Add technology</button></div><p id="technology-error" class="field-error" role="alert"></p><ul id="technology-list" class="technology-list" aria-label="Selected technologies"></ul></div></fieldset>
+<fieldset><legend>Location and work</legend><div class="field-grid">
+<div class="field"><label for="profile-country">Country of residence</label><input id="profile-country" maxlength="80" required autocomplete="country-name"></div>
+<div class="field"><label for="profile-city">City of residence</label><input id="profile-city" maxlength="80" required autocomplete="address-level2"></div>
+<div class="field"><label for="profile-workmode">Preferred work mode</label><select id="profile-workmode" required><option value="">Choose a work mode</option><option>Remote</option><option>Hybrid</option><option>On-site</option></select></div>
+<div class="field" id="days-field" hidden><label for="profile-days">Maximum on-site days per week</label><select id="profile-days"><option value="">Choose a limit</option><option value="1">1 day</option><option value="2">2 days</option><option value="3">3 days</option><option value="4">4 days</option><option value="5">5 days</option></select></div>
+</div></fieldset>
+<p id="draft-state" class="draft-state">No unsaved changes</p>
+<div class="profile-actions"><button type="submit" class="primary">Save profile</button><button type="button" id="clear-profile" class="secondary-button">Clear profile</button></div>
+<p id="profile-message" class="profile-message" role="status" aria-live="polite"></p>
+</form>
+<aside class="profile-summary" aria-labelledby="summary-title"><p class="eyebrow">At a glance</p><h2 id="summary-title">Saved profile</h2><div id="profile-summary-content"></div></aside>
+</div></section></main><footer class="page-footer"><span>A Gara’s Workshop project</span><span>Design study · Folio</span></footer></div><dialog id="detail" aria-labelledby="detail-title"><div class="dialog-top"><p id="detail-company"></p><button id="detail-close" type="button">Close</button></div><h2 id="detail-title"></h2><p id="detail-meta"></p><dl id="detail-facts"></dl><p id="detail-description"></p><h3>Requirements</h3><ul id="detail-requirements"></ul><p class="field-hint">Fictional opportunity. No application is submitted.</p><button id="detail-save" type="button" class="primary" aria-pressed="false">Save opportunity</button></dialog><p id="live-status" class="sr-only" role="status" aria-live="polite"></p><noscript><p>This interactive preview needs JavaScript enabled.</p></noscript></body></html>
