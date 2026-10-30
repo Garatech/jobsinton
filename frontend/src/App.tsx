@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { findCompany, findOpportunity, opportunities } from './catalog/data';
 import { clearSaved, loadSaved, SAVED_STORAGE_KEY, writeSaved } from './catalog/saved';
 import { useRoute } from './navigation';
+import { usePageFade } from './usePageFade';
 import { Companies, CompanyDetail } from './pages/Companies';
 import { Home } from './pages/Home';
 import { OpportunityDetail } from './pages/Opportunity';
@@ -17,6 +18,7 @@ const nav = [['home', 'Overview'], ['opportunities', 'Opportunities'], ['compani
 /** Current is the shared application shell; routes retain ordinary browser history. */
 export function App() {
   const route = useRoute();
+  const main = useRef<HTMLElement>(null);
   const [initial] = useState(loadSaved);
   const [saved, setSaved] = useState(initial.ids);
   const [storageError, setStorageError] = useState(initial.error);
@@ -45,14 +47,15 @@ export function App() {
     || (route.page === 'opportunities' && (!route.id || Boolean(job)))
     || (route.page === 'companies' && (!route.id || Boolean(company)));
   const title = !valid ? 'Page not found' : job?.title || company?.name || ({ home: 'Overview', opportunities: 'Opportunities', companies: 'Companies', saved: 'Saved opportunities', profile: 'Your profile', status: 'Service status' } as Record<string, string>)[route.page];
-  useEffect(() => {
+  useLayoutEffect(() => {
     document.title = title + ' · JobSinton';
     if (previousRoute.current !== route.hash) {
       document.getElementById('main')?.focus({ preventScroll: true });
-      window.scrollTo(0, 0);
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
       previousRoute.current = route.hash;
     }
   }, [route.hash, title]);
+  usePageFade(main, valid ? route.page + '/' + route.id : 'not-found');
   function toggle(id: string) {
     const exists = saved.includes(id);
     const next = exists ? saved.filter(value => value !== id) : [...saved, id];
@@ -81,7 +84,7 @@ export function App() {
         {label}{page === 'saved' && <span className="saved-count">{saved.length}</span>}
       </a>)}</nav>
     </header>
-    <main id="main" tabIndex={-1}>
+    <main ref={main} id="main" tabIndex={-1}>
       {storageError && <p className="notice notice-error storage-notice" role="alert">{storageError} <a href="#saved">Review shortlist</a></p>}
       {!valid && <><PageHeading eyebrow="A DIFFERENT DIRECTION" title="Page not found." /><div className="app-empty"><a className="button primary" href="#opportunities">Explore opportunities</a></div></>}
       {valid && route.page === 'home' && <Home profile={profile} {...actions} />}

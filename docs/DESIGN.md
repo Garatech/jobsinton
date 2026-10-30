@@ -2,9 +2,9 @@
 
 ## Decision
 
-On 2026-10-30, the owner selected the Current preversion as the application's primary design. It is the working baseline for future frontend increments. Further visual changes require a new design decision.
+On 2026-10-30, the owner selected the Current preversion as the application's primary design. It is the working baseline for future frontend increments. Further visual changes require a new design decision. The owner has verified the integrated interface and closed this design stage, with the short page fade as its final refinement.
 
-Source reference: [`design/current-preversion`](https://github.com/Garatech/jobsinton/tree/design/current-preversion), commit `d2e3b7666eb3ade7da2c1baf26d219fe44c33914`. That exploratory branch remains separate and is not merged. Its approved design is implemented in the existing application on a focused feature branch.
+Source reference: [`design/current-preversion`](https://github.com/Garatech/jobsinton/tree/design/current-preversion), commit `d2e3b7666eb3ade7da2c1baf26d219fe44c33914`. That exploratory branch remains separate and is not merged. Its approved design was integrated into the application through PR #14, merged on 2026-10-30.
 
 - Current defines the palette, typography, wordmark, signal motif, spacing and rounded surfaces.
 - Ledger informs the compact search list and filter organization.
@@ -28,6 +28,36 @@ Source reference: [`design/current-preversion`](https://github.com/Garatech/jobs
 | Interaction | Visible keyboard focus, native controls and restrained hover states |
 
 No external font, image or icon request is required. The interface uses the approved CSS foundation and shared components, rather than separate styles per route.
+
+## Page transitions
+
+A 200 ms ease-out opacity fade introduces the incoming page. The header, navigation and footer remain outside the effect. There is no slide, zoom, exit delay or interaction lock.
+
+- Initial loads and reloads display immediately.
+- Switching to another page or another opportunity/company detail starts one fade.
+- Search parameters, filtering, layout selection, saved actions and profile editing do not restart it.
+- The same main element and profile editor remain mounted, preserving drafts and state.
+- Rapid navigation cancels the previous animation; Back and Forward use the same behavior.
+- Route focus and scroll position update before paint. A new page starts at the top without an additional scrolling animation.
+- `prefers-reduced-motion: reduce` skips the fade and cancels it immediately if the preference changes during navigation.
+- Browsers without the native animation API keep immediate navigation.
+
+The small `usePageFade` hook uses the browser's animation API. No dependency or data migration is required. Cancellation and completion restore the ordinary opaque style, so content never depends on a completion callback to become usable.
+
+## Transition acceptance checklist
+
+After merging and updating the checkout with the commands below:
+
+- [ ] Switch between Overview, Opportunities, Companies, Saved and Profile: only the incoming content fades briefly.
+- [ ] Open different offers and companies, then use Back and Forward.
+- [ ] Navigate rapidly: the latest page wins and remains fully visible.
+- [ ] Edit a profile field, navigate away and return: the draft remains.
+- [ ] Change filters, result layout or saved state: the page does not fade again.
+- [ ] Use keyboard navigation: page focus, skip navigation and dialog dismissal remain usable.
+- [ ] Enable reduced motion in the operating system or browser emulation: navigation is immediate. Enabling it during a fade restores full opacity.
+- [ ] Repeat on a narrow viewport.
+
+This closes the current visual-design stage. The next planned increment is the matching v1 contract and reviewed reference cases, followed by implementation against the fictional catalog. The established design remains the baseline.
 
 ## Application pages
 
@@ -65,6 +95,7 @@ The home direction and opportunity facts use the last saved profile. The detail 
 - `frontend/src/styles.css`: approved page layouts and application states.
 - `frontend/src/App.tsx`: shared navigation, saved state, retained profile draft and route composition.
 - `frontend/src/navigation.ts`: hash-route reading and browser navigation.
+- `frontend/src/usePageFade.ts`: cancellable page-entry fade with reduced-motion support.
 - `frontend/src/ui.tsx`: shared cards, actions, headings and application dialog.
 - `frontend/src/pages/`: home, search, companies, opportunity details and service status.
 - `frontend/src/catalog/`: fictional data and guarded shortlist storage.
@@ -113,4 +144,4 @@ Start the two services as described in [DEVELOPMENT.md](DEVELOPMENT.md), then op
 
 CI runs the backend HTTP contract, strict TypeScript build, existing profile and service tests, and the new application journeys. The explicit responsive matrix covers 15 routes at 320, 390, 768 and 1440 px, plus card search at each width. The `current-interface-previews` artifact contains those screenshots for 14 days.
 
-The PR records the actual tested commit and results. Automated Chromium checks are not human visual approval or a complete accessibility audit. Local terminal provisioning was unavailable during preparation; the verification runs in GitHub Actions.
+The transition tests additionally cover intermediate opacity, completion, reduced motion (including live changes), rapid navigation, browser history, draft retention, in-page updates and fallback without the animation API. The PR records the actual tested commit and results. Automated Chromium checks are not human visual approval or a complete accessibility audit. Local terminal provisioning was unavailable during preparation; the verification runs in GitHub Actions.

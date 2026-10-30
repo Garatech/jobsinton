@@ -4,6 +4,17 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Changed — Page transitions (2026-10-30)
+
+- Added a 200 ms opacity fade when navigating to another page, with the shared header and navigation kept stable.
+- Preserved immediate interaction, profile drafts, browser history and normal page focus. Initial loads and in-page actions do not animate.
+- Cancelled superseded transitions and respected reduced motion, including preference changes during an active fade.
+- Kept immediate navigation as the fallback when the browser animation API is unavailable; no new dependency was added.
+- Added transition-specific browser checks and a [manual acceptance checklist](docs/DESIGN.md#transition-acceptance-checklist).
+- Recorded owner acceptance of the integrated Current interface and the close of this design stage. Matching v1 definition is the next planned increment.
+
+Verification results and the tested commit are recorded in the implementation PR.
+
 ### Added — Current application interface (2026-10-30)
 
 **Purpose:** apply the owner-selected design to the real application and use it as the baseline for subsequent frontend work.

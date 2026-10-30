@@ -6,7 +6,7 @@ The [README](../README.md) provides a concise product introduction. Implementati
 
 ## Current status
 
-The runnable foundation connects a React interface to a Spring Boot status endpoint. A professional profile editor adds explicit browser-local saving, validation, recovery, and a summary. Build and integration checks run in GitHub Actions. There is no production deployment, database, matching, or live provider integration yet. The owner reported successful Windows foundation startup and verification on 2026-10-20; the owner has also confirmed successful completion of the profile acceptance checklist. The owner selected the Current preversion on 2026-10-30. Its application integration adds the fictional catalog, company and opportunity pages, and browser-local saved opportunities. [DESIGN.md](DESIGN.md) records the baseline and post-merge acceptance steps. Matching scores and live providers remain separate milestones. Checkout synchronization has not been independently inspected; Codespaces startup remains optional and unverified.
+The runnable foundation connects a React interface to a Spring Boot status endpoint. A professional profile editor adds explicit browser-local saving, validation, recovery, and a summary. Build and integration checks run in GitHub Actions. There is no production deployment, database, matching, or live provider integration yet. The owner reported successful Windows foundation startup and verification on 2026-10-20; the owner has also confirmed successful completion of the profile acceptance checklist. The owner selected the Current preversion on 2026-10-30. Its application integration adds the fictional catalog, company and opportunity pages, and browser-local saved opportunities. [DESIGN.md](DESIGN.md) records the baseline and post-merge acceptance steps. The owner has verified the integrated application and closed the visual-design stage with a brief page-entry fade. The next planned work is the matching v1 contract and reviewed reference cases. Matching scores and live providers remain separate milestones. Checkout synchronization has not been independently inspected; Codespaces startup remains optional and unverified.
 
 The public repository is [Garatech/jobsinton](https://github.com/Garatech/jobsinton). Initial documentation was published on 2026-10-17.
 
@@ -128,8 +128,8 @@ Milestones have exit criteria rather than fixed deadlines. Estimates follow once
 | --- | --- | --- | --- |
 | 0. Definition | Name, scope, stack, and quality criteria | Main decisions recorded and open questions identified | In progress |
 | 1. Foundation | Remote repository, reproducible environment, and automated checks | A clean clone starts using verified instructions | Complete for local workflow: owner reported Windows startup and verification on 2026-10-20; Codespaces remains optional and unverified |
-| 2. First journey | Profile, fictional catalog, details, and saved opportunities | The journey works with loading, empty, and error states | Implemented for a fictional catalog with browser-local profile and shortlist; owner application acceptance pending |
-| 3. Matching v1 | Constraints, weights, and explanations | Reviewed cases cover mismatches, missing data, and changed weights | Pending |
+| 2. First journey | Profile, fictional catalog, details, and saved opportunities | The journey works with loading, empty, and error states | Complete for the fictional catalog journey: browser-local profile and shortlist, with owner verification reported on 2026-10-30 |
+| 3. Matching v1 | Constraints, weights, and explanations | Reviewed cases cover mismatches, missing data, and changed weights | Next: agree the rule contract and reference cases before implementing scores |
 | 4. Live provider | One connector and normalized listings | Authorized access; limits, duplicates, and failures handled | Pending |
 | 5. Personal use | Persistence, application tracking, and accounts | User isolation and data deletion verified | Pending |
 | 6. Demonstration | Refined interface and a viable zero-cost deployment | Main journey works accessibly on mobile and desktop with fictional data | Pending |
@@ -237,3 +237,13 @@ Credentials, real CVs, personal demonstration profiles, and job listings without
 - The fictional catalog supports the first complete journey; descriptive profile facts do not implement matching v1 or live applications.
 - Verification: the PR records build, integration, storage-recovery and responsive results. Local terminal access remains unavailable; owner acceptance follows the checklist in DESIGN.md after merge.
 - Next step: verify the integrated journey, then define deterministic matching rules and a reviewed set of reference cases using this visual baseline.
+
+### 2026-10-30 — Page transitions and design-stage close
+
+- Recorded owner confirmation that the integrated Current application works as expected.
+- Added a 200 ms incoming-page fade, preserving the shared shell, profile drafts and immediate interaction.
+- Respected reduced-motion preferences, including changes during a transition, and retained immediate navigation when the animation API is unavailable.
+- Decision: animate only page identity changes with a small native hook. Exit delays and remounting the page tree would add latency or risk losing local drafts.
+- Added focused browser coverage for animation completion, keyboard navigation, history, rapid changes, reduced motion and fallback behavior. The PR records the actual results for its tested commit.
+- The current visual-design stage is closed. Further work uses Current as the baseline; no additional redesign is planned.
+- Next step: define deterministic matching constraints, missing-data treatment and a reviewed set of examples before implementing matching v1.
