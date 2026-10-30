@@ -4,6 +4,15 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Matching domain engine (2026-10-30)
+
+- Implemented the owner-accepted matching rules in a standalone Java module, tracked in issue #19.
+- Added immutable normalized inputs, structured validation errors and versioned assessments with stable reasons, compared facts and limitations.
+- Kept advisory preferences separate from explicit attendance and residence constraints. Unknown evidence is preserved alongside conflicts.
+- Added executable M01–M24 reference cases and checks for incomplete facts, invalid inputs, deterministic ordering and defensive snapshots.
+- Added [engine verification instructions and the catalog mapping plan](docs/MATCHING_ENGINE.md); recorded contract acceptance and the next integration step.
+- The implementation PR records build and test results for its checked commit. No endpoint, frontend change, score, dependency or data migration is introduced.
+
 ### Added — Matching rule contract (2026-10-30)
 
 - Opened `docs/matching-v1-contract` for the first matching definition, tracked in issue #17.

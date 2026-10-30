@@ -1,6 +1,6 @@
 # Matching v1 — Rule contract
 
-Status: proposed for owner review in this documentation increment. Merging its PR accepts this baseline for implementation; it does not enable matching in the application.
+Status: accepted by the owner on 2026-10-30 and merged in PR #18. The Java domain implementation follows this baseline; matching is not connected to the application interface yet. See [the engine guide](MATCHING_ENGINE.md) for types, verification and the next integration boundary.
 
 JobSinton will explain how a saved profile relates to an opportunity using reproducible comparisons. Each conclusion must identify the supplied facts behind it. A compatibility result is not a hiring probability or a judgment of professional ability.
 
@@ -13,9 +13,9 @@ JobSinton will explain how a saved profile relates to an opportunity using repro
 | 3. Application integration | Backend request/response contract and explanations in the existing interface | Browser checks cover saved profiles, loading, errors and incomplete results |
 | 4. Ranking | Separately reviewed weights, coverage, formula and tie-breaking | Reference cases justify ordering and show the effect of changing weights |
 
-This increment changes documentation only. Accounts, persistence, providers and additional profile controls remain separate work. There is no percentage, overall suitability label or automatic exclusion of listings in the first engine delivery.
+The contract was introduced as a documentation-only increment. The domain engine is a separate implementation. Accounts, persistence, providers and additional profile controls remain separate work. There is no percentage, overall suitability label or automatic exclusion of listings in the first engine delivery.
 
-## Decisions for review
+## Accepted decisions
 
 - Keep the existing role and work-mode selections as preferences. They are not exclusion switches.
 - Treat an explicitly supplied maximum number of office days as a limit. A remote profile currently stores `null`; do not silently reinterpret that as an explicit zero-day limit.
@@ -111,7 +111,7 @@ Languages, education, contract type, hours, travel, on-call duties, relocation a
 
 ## Reference cases
 
-These are authored fictional expectations for owner review, not executed tests or results for the current catalog. Each case starts from the baseline below and changes only the stated facts. Unless specified, every other assessment retains its baseline outcome.
+These are owner-accepted fictional expectations, implemented in MatchingEngineTest. They are not live-catalog results. Each case starts from the baseline below and changes only the stated facts. Unless specified, every other assessment retains its baseline outcome. The implementation PR records actual execution results.
 
 Baseline profile: backend; technologies Java and Spring Boot; 2 total years; resolved country ES and city Madrid; remote preference; office-day maximum null.
 
@@ -146,28 +146,28 @@ Baseline outcomes: role aligned; both technology overlaps aligned; experience un
 | M23 | Listing remote but regular office days 2 | Validation error; no compatibility result | not produced |
 | M24 | Office days 6, negative experience, or explicit empty accepted-country list | Each is independently invalid; no compatibility result | not produced |
 
-The aggregate rule also needs a direct unit case with zero applicable constraints: it returns not_assessed, never no_known_conflict. Assessment order and input tag ordering must not change semantic results. Re-evaluating identical normalized inputs with the same rules version must return the same assessments.
+The aggregate rule also has a direct unit case with zero applicable constraints: it returns not_assessed, never no_known_conflict. Assessment order and input tag ordering must not change semantic results. Re-evaluating identical normalized inputs with the same rules version must return the same assessments.
 
 ## Owner review checklist
 
 No installation or application startup is needed for this documentation change.
 
-- [ ] Accept role and work mode as advisory preferences, without automatically filtering listings.
-- [ ] Accept explicit office-day limits and residence policies as separate constraints, with missing information preserved.
-- [ ] Accept that null office-day limits in existing remote profiles are not silently converted into zero.
-- [ ] Accept the distinction between total experience and scoped experience, and between unlisted and absent skills.
-- [ ] Review M01, M11, M14, M15 and M20 in particular: they cover limited evidence, a known conflict and mixed outcomes.
-- [ ] Accept explanations before scores, with salary, weights and ranking deferred.
-- [ ] Merge this documentation PR only when these rules express the intended product behavior.
+- [x] Accept role and work mode as advisory preferences, without automatically filtering listings.
+- [x] Accept explicit office-day limits and residence policies as separate constraints, with missing information preserved.
+- [x] Accept that null office-day limits in existing remote profiles are not silently converted into zero.
+- [x] Accept the distinction between total experience and scoped experience, and between unlisted and absent skills.
+- [x] Review M01, M11, M14, M15 and M20 in particular: they cover limited evidence, a known conflict and mixed outcomes.
+- [x] Accept explanations before scores, with salary, weights and ranking deferred.
+- [x] Merge the documentation PR after accepting the intended behavior (PR #18).
 
 Requested adjustments belong in this contract and its reference cases before implementation. Owner approval must not be inferred from automated checks.
 
 ## Implementation handoff
 
-After this contract is accepted, start a new branch from updated main for the Java domain engine. Turn the cases into executable tests before adding an endpoint. The engine should accept normalized values and return versioned structured assessments without storage, network calls or frontend dependencies.
+The Java domain engine is delivered separately from the accepted contract. It accepts normalized values and returns versioned structured assessments without storage, network calls or frontend dependencies. The reference cases are executable before an endpoint is introduced.
 
-The engine increment must settle concrete Java types, validation errors and stable reason codes consistent with this contract. Record an adapter mapping for the existing fictional catalog, including unknown scope and residence policy. Preserve the profile storage format; any new preference controls require a separate reviewed change.
+The [engine guide](MATCHING_ENGINE.md) documents concrete Java types, validation errors, stable reason codes and the intended mapping for the existing fictional catalog, including unknown scope and residence policy. The profile storage format is preserved; any new preference controls require a separate reviewed change.
 
 Record the rules version in each result. Later changes to semantics, aliases or constraints require updated reference cases and a version change. HTTP delivery, UI integration, ranking and providers each follow in their own focused PR.
 
-Verification for this increment consists of checking the contract against the current models, reviewing the case outcomes and resolving internal document links. The cases remain proposed expectations until implemented and run.
+The original documentation increment checked the current models, case outcomes and internal document links. Engine verification now runs the accepted cases and additional validation, reproducibility and immutability checks. Consult the implementation PR for the checked commit and actual results.

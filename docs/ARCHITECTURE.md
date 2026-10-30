@@ -14,6 +14,7 @@ The browser calls `/api/status` on its own origin. Vite forwards `/api` to `http
 | --- | --- |
 | `backend/.../JobSintonApplication.java` | Start Spring Boot |
 | `backend/.../system/SystemStatusController.java` | Own the public service-status contract |
+| `backend/.../matching/` | Pure Java matching domain, immutable facts, validation and versioned explanations |
 | `frontend/src/api/status.ts` | HTTP request and runtime validation of external JSON |
 | `frontend/src/App.tsx` | Shared Current shell, route composition, profile and shortlist state |
 | `frontend/src/navigation.ts` | Hash navigation and direct-link handling |
@@ -27,7 +28,7 @@ The browser calls `/api/status` on its own origin. Vite forwards `/api` to `http
 | `.github/workflows/ci.yml` | Reproduce builds and integration checks in GitHub |
 | `.devcontainer/` | Optional shared cloud development environment |
 
-The profile module currently lives in the frontend because its data stays in the browser. The catalog module supplies fictional data and browser-local saved IDs. Connectors and a scoring engine remain future modules.
+The profile module currently lives in the frontend because its data stays in the browser. The catalog module supplies fictional data and browser-local saved IDs. The matching domain module is independent of the HTTP and frontend boundaries. Connectors and numerical ranking remain future work.
 
 ## API contract
 
@@ -69,7 +70,7 @@ API contracts, design reasons, boundary validation, and non-obvious behavior are
 
 ## Current limitations
 
-Persistence is limited to browser-local profile and shortlist storage. There are no user accounts, server-side profile storage, matching, provider access, production deployment, or published release. Current is the owner-selected visual baseline; see [DESIGN.md](DESIGN.md) for the selected system and acceptance checklist. Desktop/mobile browser automation covers the first journey but does not replace a complete accessibility audit or human visual review.
+Persistence is limited to browser-local profile and shortlist storage. There are no user accounts, server-side profile storage, matching API/interface integration, provider access, production deployment, or published release. Current is the owner-selected visual baseline; see [DESIGN.md](DESIGN.md) for the selected system and acceptance checklist. Desktop/mobile browser automation covers the first journey but does not replace a complete accessibility audit or human visual review.
 
 ## Current application composition
 
@@ -80,3 +81,11 @@ The profile editor stays mounted while hidden on other routes, preserving an uns
 The shortlist uses its own versioned localStorage record. Reads are bounded and validated; unknown catalog IDs are ignored without rewriting storage. A failed write or clear leaves the displayed saved state unchanged and reports the error. Storage events refresh open tabs. There is no cross-device synchronization or user account.
 
 The catalog is bundled fictional content, not an API response. Opportunity facts compare explicit values without scoring or eligibility inference. Application actions explain that no submission occurs. Backend contracts, provider credentials and database setup remain unchanged.
+
+## Matching domain
+
+The `matching` package implements the accepted [rule contract](MATCHING.md) using Java records and enums. `MatchingEngine.evaluate` returns either a complete versioned evaluation or structured validation errors. It has no Spring annotations, external I/O, clock, database or provider dependency.
+
+Input snapshots preserve unknown facts and explicit limits. Assessments retain compared evidence, stable reasons and scope limitations. Only constraint outcomes influence the constraint summary; advisory differences never remove offers. Technology terms and country evidence are ordered deterministically, and result collections are immutable.
+
+No matching controller or frontend caller is introduced in this increment. The existing status endpoint and browser-local profile remain unchanged. The [engine guide](MATCHING_ENGINE.md) records Java types, the future fictional-catalog mapping and verification commands. The API adapter and interface integration follow after domain review; ranking follows separately.
