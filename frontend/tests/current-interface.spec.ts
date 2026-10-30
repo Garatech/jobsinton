@@ -32,6 +32,10 @@ test('searches, combines filters, orders results and retains the selected layout
   await expect(page.locator('.job')).toHaveCount(2);
   await page.getByRole('button', { name: 'Reset', exact: true }).click();
   await expect(page.locator('.job')).toHaveCount(6);
+  await page.getByLabel('Search opportunities').fill('java');
+  await page.locator('.site-nav a[href="#opportunities"]').click();
+  await expect(page.getByLabel('Search opportunities')).toHaveValue('');
+  await expect(page.locator('.job')).toHaveCount(6);
 });
 
 test('saves across navigation and reload, then restores keyboard focus in the empty shortlist', async ({ page }) => {
@@ -73,6 +77,8 @@ test('companies, direct links, browser history and unknown routes work', async (
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Vela Systems.');
   await page.goto('/#opportunities/missing');
   await expect(page.getByRole('heading', { name: 'Page not found.' })).toBeVisible();
+  await page.goto('/#companies/northline/extra');
+  await expect(page.getByRole('heading', { name: 'Page not found.' })).toBeVisible();
   await page.goto('/#missing');
   await expect(page.getByRole('heading', { name: 'Page not found.' })).toBeVisible();
   await page.getByRole('link', { name: 'Explore opportunities', exact: true }).click();
@@ -84,7 +90,7 @@ test('existing v1 profiles remain intact and drive the shared interface only aft
   const raw = JSON.stringify({ version: 1, profile });
   await page.evaluate(({ key, raw }) => localStorage.setItem(key, raw), { key: PROFILE_STORAGE_KEY, raw });
   await page.reload();
-  await expect(page.locator('.connection-card .card-description')).toContainText('Backend developer');
+  await expect(page.locator('.hero .connection-card .card-description')).toContainText('Backend developer');
   expect(await page.evaluate(key => localStorage.getItem(key), PROFILE_STORAGE_KEY)).toBe(raw);
   await page.getByRole('link', { name: 'Explore this direction' }).click();
   await expect(page.locator('.job')).toHaveCount(1);
