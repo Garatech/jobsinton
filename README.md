@@ -16,12 +16,12 @@ Match scores will express compatibility with a profile, not the likelihood of re
 
 ## Project status
 
-Early development. A professional profile editor supports skills, experience, location, and working preferences, with browser-local saving and a summary. The React interface also connects to a Java API, with automated build and integration checks. Job search, matching, and live provider integrations are planned.
+The approved Current design now supports a complete browsing journey: professional profile, searchable fictional opportunities, company pages, details and a browser-local shortlist. Profiles and saved opportunities persist in this browser. The interface also connects to a Java status API, with automated build and integration checks. Matching scores, live providers, accounts and server-side persistence remain planned.
 
 Stack: **Java · Spring Boot · React · TypeScript**.
 
 ## Project documentation
 
-[Run the project](docs/DEVELOPMENT.md) · [Architecture](docs/ARCHITECTURE.md) · [Changelog](CHANGELOG.md) · [Development plan](docs/PROJECT_PLAN.md) · [Contributing](CONTRIBUTING.md)
+[Run the project](docs/DEVELOPMENT.md) · [Design and acceptance checklist](docs/DESIGN.md) · [Architecture](docs/ARCHITECTURE.md) · [Changelog](CHANGELOG.md) · [Development plan](docs/PROJECT_PLAN.md) · [Contributing](CONTRIBUTING.md)
 
 A **Gara's Workshop** project.

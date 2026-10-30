@@ -4,13 +4,14 @@ import {
   type ProfileDraft, type ProfileErrors, type ProfessionalProfile,
 } from './model';
 import { loadProfile, removeProfile, saveProfile } from './storage';
+import { profileSearch } from '../pages/Home';
 
 const fieldOrder: (keyof ProfileDraft)[] = [
   'role', 'technologies', 'experienceYears', 'country', 'city', 'workMode', 'maxOnsiteDays',
 ];
 
 /** Draft edits and the last successful save stay separate, including when storage fails. */
-export function ProfileEditor() {
+export function ProfileEditor({ onSaved }: { onSaved: (profile: ProfessionalProfile | null) => void }) {
   const [initial] = useState(loadProfile);
   const [saved, setSaved] = useState<ProfessionalProfile | null>(
     initial.kind === 'loaded' ? initial.profile : null,
@@ -104,6 +105,7 @@ export function ProfileEditor() {
       return;
     }
     setSaved(result.profile);
+    onSaved(result.profile);
     setDraft(toDraft(result.profile));
     setHasStoredData(true);
     setStorageError('');
@@ -119,11 +121,20 @@ export function ProfileEditor() {
     }
     setDraft(emptyDraft());
     setSaved(null);
+    onSaved(null);
     setTechnology('');
     setHasStoredData(false);
     setErrors({});
     setStorageError('');
     setMessage('Profile cleared from this browser.');
+    document.getElementById('profile-role')?.focus();
+  }
+
+  function discard() {
+    setDraft(saved ? toDraft(saved) : emptyDraft());
+    setTechnology('');
+    setErrors({});
+    setMessage('Unsaved changes discarded.');
     document.getElementById('profile-role')?.focus();
   }
 
@@ -155,6 +166,7 @@ export function ProfileEditor() {
       </p>
       <div className="profile-layout">
         <form className="profile-form" onSubmit={submit} noValidate aria-label="Professional profile" aria-describedby="profile-storage-note">
+          <div className="form-heading"><h2>Your preferences</h2><button type="button" className="text-button" disabled={!dirty} onClick={discard}>Discard changes</button></div>
           <p className="form-note">All profile fields are required, including at least one technology. Changes are saved only when you select Save profile.</p>
           {storageError && <p className="notice notice-error" role="alert">{storageError}</p>}
           {Object.values(errors).some(Boolean) && <p className="notice notice-error" role="alert">Check the highlighted fields before saving.</p>}
@@ -249,7 +261,7 @@ export function ProfileEditor() {
           </fieldset>
           <p className="draft-state">{dirty ? 'You have unsaved changes.' : saved ? 'Your saved profile is up to date.' : 'Create your first profile.'}</p>
           <div className="profile-actions">
-            <button type="submit">Save profile</button>
+            <button type="submit" className="primary">Save profile</button>
             <button className="secondary-button" type="button" disabled={!hasStoredData && !dirty} onClick={clear}>Clear saved profile</button>
           </div>
           <p className="profile-message" role="status" aria-label="Profile updates" aria-live="polite" aria-atomic="true">{message}</p>
@@ -270,7 +282,8 @@ export function ProfileEditor() {
               <p className="field-hint">This summary shows your last successful save.</p>
             </>
           ) : <p className="summary-empty">No saved profile yet. Complete the form to bring your preferences together.</p>}
-          <p className="summary-note">Your profile is the starting point. Job listings and match scores are coming in later steps.</p>
+          <p className="summary-note">Your preferences stay in this browser and are used only after saving.</p>
+          {saved && <a className="button primary" href={profileSearch(saved)}>Explore opportunities <span aria-hidden="true">↗</span></a>}
         </aside>
       </div>
     </section>

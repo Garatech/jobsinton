@@ -1,97 +1,110 @@
-import { useEffect, useState } from 'react';
-import { fetchSystemStatus } from './api/status';
+import { useEffect, useRef, useState } from 'react';
+import { findCompany, findOpportunity, opportunities } from './catalog/data';
+import { clearSaved, loadSaved, SAVED_STORAGE_KEY, writeSaved } from './catalog/saved';
+import { useRoute } from './navigation';
+import { Companies, CompanyDetail } from './pages/Companies';
+import { Home } from './pages/Home';
+import { OpportunityDetail } from './pages/Opportunity';
+import { Search } from './pages/Search';
+import { Status } from './pages/Status';
 import { ProfileEditor } from './profile/ProfileEditor';
+import { loadProfile } from './profile/storage';
+import { type ProfessionalProfile } from './profile/model';
+import { EmptyState, JobList, PageHeading } from './ui';
 
-type ConnectionState = 'checking' | 'connected' | 'unavailable';
+const nav = [['home', 'Overview'], ['opportunities', 'Opportunities'], ['companies', 'Companies'], ['saved', 'Saved'], ['profile', 'Profile']];
 
-const connectionCopy: Record<ConnectionState, string> = {
-  checking: 'Checking the connection…',
-  connected: 'Connected to the JobSinton API',
-  unavailable: 'The API is unavailable. Start the backend and try again.',
-};
-
-/** Product introduction, local profile editor, and independent API connectivity check. */
+/** Current is the shared application shell; routes retain ordinary browser history. */
 export function App() {
-  const [connection, setConnection] = useState<ConnectionState>('checking');
-  const [attempt, setAttempt] = useState(0);
-
+  const route = useRoute();
+  const [initial] = useState(loadSaved);
+  const [saved, setSaved] = useState(initial.ids);
+  const [storageError, setStorageError] = useState(initial.error);
+  const [message, setMessage] = useState('');
+  const [profile, setProfile] = useState<ProfessionalProfile | null>(() => {
+    const current = loadProfile();
+    return current.kind === 'loaded' ? current.profile : null;
+  });
+  const previousRoute = useRef(route.hash);
   useEffect(() => {
-    const controller = new AbortController();
-    let active = true;
-    // Bound the wait even when the development proxy or backend stops responding.
-    const timeout = window.setTimeout(() => controller.abort(), 5000);
-
-    void fetchSystemStatus(controller.signal)
-      .then(() => { if (active) setConnection('connected'); })
-      .catch(() => { if (active) setConnection('unavailable'); })
-      .finally(() => window.clearTimeout(timeout));
-
-    return () => {
-      // Prevent a previous request from overwriting a newer attempt or an unmounted view.
-      active = false;
-      window.clearTimeout(timeout);
-      controller.abort();
-    };
-  }, [attempt]);
-
-  function retry() {
-    setConnection('checking');
-    setAttempt((current) => current + 1);
+    if (!message) return;
+    const timer = window.setTimeout(() => setMessage(''), 4500);
+    return () => window.clearTimeout(timer);
+  }, [message]);
+  useEffect(() => {
+    function refresh(event: StorageEvent) {
+      if (event.key !== SAVED_STORAGE_KEY && event.key !== null) return;
+      const next = loadSaved(); setSaved(next.ids); setStorageError(next.error);
+    }
+    window.addEventListener('storage', refresh);
+    return () => window.removeEventListener('storage', refresh);
+  }, []);
+  const job = route.page === 'opportunities' && route.id ? findOpportunity(route.id) : undefined;
+  const company = route.page === 'companies' && route.id ? findCompany(route.id) : undefined;
+  const valid = (['home', 'saved', 'profile', 'status'].includes(route.page) && !route.id)
+    || (route.page === 'opportunities' && (!route.id || Boolean(job)))
+    || (route.page === 'companies' && (!route.id || Boolean(company)));
+  const title = !valid ? 'Page not found' : job?.title || company?.name || ({ home: 'Overview', opportunities: 'Opportunities', companies: 'Companies', saved: 'Saved opportunities', profile: 'Your profile', status: 'Service status' } as Record<string, string>)[route.page];
+  useEffect(() => {
+    document.title = title + ' · JobSinton';
+    if (previousRoute.current !== route.hash) {
+      document.getElementById('main')?.focus({ preventScroll: true });
+      window.scrollTo(0, 0);
+      previousRoute.current = route.hash;
+    }
+  }, [route.hash, title]);
+  function toggle(id: string) {
+    const exists = saved.includes(id);
+    const next = exists ? saved.filter(value => value !== id) : [...saved, id];
+    if (!writeSaved(next)) {
+      setMessage(''); setStorageError('The shortlist could not be saved. Allow browser storage and try again. Your previous saved list is unchanged.'); return;
+    }
+    setSaved(next); setStorageError('');
+    setMessage(exists ? 'Removed from your shortlist.' : 'Saved to your shortlist.');
+    if (route.page === 'saved' && exists) window.requestAnimationFrame(() => {
+      const nextControl = document.querySelector<HTMLElement>('.saved-jobs [data-save], .empty-state a');
+      nextControl?.focus();
+    });
   }
-
-  return (
-    <div className="page-shell">
-      <a className="skip-link" href="#main">Skip to content</a>
-      <header className="site-header">
-        <a className="brand" href="/" aria-label="JobSinton home">
-          <span className="brand-mark" aria-hidden="true">js</span>
-          <span>JobSinton<span className="brand-dot">.</span></span>
-        </a>
-        <span className="release-label">Profile preview</span>
-      </header>
-      <main id="main">
-        <section className="hero" aria-labelledby="hero-title">
-          <div className="hero-copy">
-            <p className="eyebrow">YOUR NEXT CHAPTER, IN TUNE</p>
-            <h1 id="hero-title">Good work starts<br />with a better <em>fit.</em></h1>
-            <p className="intro">
-              Your skills. Your priorities. Your next move.
-              JobSinton is taking shape to help you find opportunities
-              that make sense for you.
-            </p>
-            <a className="text-link" href="#profile">Set up your profile <span aria-hidden="true">↗</span></a>
-          </div>
-          <aside className="connection-card" aria-labelledby="connection-title">
-            <p className="eyebrow">FIRST CONNECTION</p>
-            <div className="signal-art" aria-hidden="true">
-              <span /><span /><span /><span /><span /><span /><span />
-            </div>
-            <h2 id="connection-title">A foundation that connects.</h2>
-            <p className="card-description">The interface checks the Java service in real time.</p>
-            <p className={'connection-status ' + connection} role="status" aria-label="API connection" aria-live="polite" aria-atomic="true">
-              <span className="status-dot" aria-hidden="true" />
-              {connectionCopy[connection]}
-            </p>
-            <button type="button" onClick={retry} disabled={connection === 'checking'}>
-              {connection === 'checking' ? 'Checking…' : 'Check connection again'}
-            </button>
-            <p className="card-note">This checks connectivity only. Job search is not available yet.</p>
-          </aside>
-        </section>
-        <ProfileEditor />
-        <section id="direction" className="direction" aria-labelledby="direction-title">
-          <div className="section-heading">
-            <h2 id="direction-title">Built around what matters to you.</h2>
-            <span className="planned-label">Planned capabilities</span>
-          </div>
-          <div className="feature-grid">
-            <article><span className="feature-number">01 / YOUR PRIORITIES</span><h3>A profile with purpose</h3><p>Use your saved preferences to shape future job searches.</p></article>
-            <article><span className="feature-number">02 / CLEAR REASONS</span><h3>Understand the fit</h3><p>See why an opportunity matches, where it differs, and which details are still unknown.</p></article>
-            <article><span className="feature-number">03 / ROOM TO EXPLORE</span><h3>A wider horizon</h3><p>Start with Spain, with future support for opportunities across Europe.</p></article>
-          </div>
-        </section>
-      </main>
-      <footer><span>A Gara’s Workshop project</span><span>Early development · Built step by step</span></footer>
-    </div>
-  );
+  function clearShortlist() {
+    if (!window.confirm('Clear all saved opportunities from this browser? Your profile will be kept.')) return;
+    if (!clearSaved()) { setMessage(''); setStorageError('The shortlist could not be cleared. Allow browser storage and try again.'); return; }
+    setSaved([]); setStorageError(''); setMessage('Your shortlist is clear.');
+    window.requestAnimationFrame(() => document.querySelector<HTMLElement>('.empty-state a')?.focus());
+  }
+  const actions = { saved, onToggle: toggle };
+  return <>
+    <a className="skip-link" href="#main" onClick={event => { event.preventDefault(); document.getElementById('main')?.focus(); }}>Skip to content</a>
+    <div className="page-shell"><header className="site-header">
+      <a className="brand" href="#home" aria-label="JobSinton home"><span className="brand-mark" aria-hidden="true">js</span><span>JobSinton<span className="brand-dot">.</span></span></a>
+      <nav className="site-nav" aria-label="Main navigation">{nav.map(([page, label]) => <a href={'#' + page} key={page} aria-current={route.page === page ? 'page' : undefined}>
+        {label}{page === 'saved' && <span className="saved-count">{saved.length}</span>}
+      </a>)}</nav>
+    </header>
+    <main id="main" tabIndex={-1}>
+      {storageError && <p className="notice notice-error storage-notice" role="alert">{storageError} <a href="#saved">Review shortlist</a></p>}
+      {!valid && <><PageHeading eyebrow="A DIFFERENT DIRECTION" title="Page not found." /><div className="app-empty"><a className="button primary" href="#opportunities">Explore opportunities</a></div></>}
+      {valid && route.page === 'home' && <Home profile={profile} {...actions} />}
+      {valid && route.page === 'opportunities' && !job && <Search key={route.hash + ':' + route.revision} query={route.query} {...actions} />}
+      {job && <OpportunityDetail key={job.id} job={job} profile={profile} {...actions} />}
+      {valid && route.page === 'companies' && !company && <Companies />}
+      {company && <CompanyDetail key={company.id} company={company} {...actions} />}
+      {valid && route.page === 'saved' && <>
+        <PageHeading eyebrow="YOUR SHORTLIST" title="Worth coming back to." description="A little space for your next move." />
+        <div className="section-heading saved-toolbar"><p role="status">{saved.length} saved {saved.length === 1 ? 'opportunity' : 'opportunities'}</p><div className="actions">
+          <a className="text-link" href="#opportunities">Keep exploring <span aria-hidden="true">↗</span></a>{(saved.length > 0 || storageError) && <button className="text-button" type="button" onClick={clearShortlist}>Clear shortlist</button>}
+        </div></div>
+        {saved.length ? <JobList jobs={opportunities.filter(j => saved.includes(j.id))} className="saved-jobs" {...actions} /> :
+          <EmptyState title="A clear space for your next move." description="Save an opportunity while you explore. It will be waiting here."><a className="button primary" href="#opportunities">Explore opportunities</a></EmptyState>}
+      </>}
+      {/* Keep the editor mounted so a local draft survives ordinary navigation. */}
+      <div hidden={route.page !== 'profile' || !valid}>
+        <PageHeading eyebrow="YOUR STARTING POINT" title="A profile with purpose." description="What you do. What matters. Where you want to go." />
+        <ProfileEditor onSaved={setProfile} />
+      </div>
+      <div hidden={route.page !== 'status' || !valid}><Status /></div>
+    </main>
+    <footer className="page-footer"><span>A Gara’s Workshop project</span><span>Sample catalog · Fictional opportunities and companies</span><a href="#status">Service status</a></footer>
+    </div><p className="toast" role="status" aria-live="polite">{message}</p>
+  </>;
 }

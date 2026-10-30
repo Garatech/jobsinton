@@ -61,3 +61,11 @@ jobs:
           name: profile-previews
           path: frontend/test-results/**/profile.png
           retention-days: 7
+
+      - name: Preserve Current interface previews
+        if: success()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
+        with:
+          name: current-interface-previews
+          path: frontend/test-results/**/current-*.png
+          retention-days: 14

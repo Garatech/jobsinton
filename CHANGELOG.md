@@ -4,6 +4,21 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Current application interface (2026-10-30)
+
+**Purpose:** apply the owner-selected design to the real application and use it as the baseline for subsequent frontend work.
+
+- Integrated Current's palette, typography, hero and page layouts, with Ledger-inspired list search and Atlas-inspired card search.
+- Added navigation, a six-offer fictional catalog, three company profiles, opportunity pages, filters, sorting and empty states.
+- Added persistent browser-local saved opportunities with validation, confirmed clearing and storage-failure recovery.
+- Preserved the existing profile storage format and validation; added data/platform roles, draft retention during navigation and discard controls.
+- Connected home direction, search links and descriptive opportunity facts to the last saved profile. No numerical matching score is implied.
+- Kept the real API check, timeout and retry on Service status. Application actions explain that fictional offers cannot receive applications.
+- Added build, browser, storage, navigation and responsive checks. Actual results are recorded in the implementation PR.
+- Added [DESIGN.md](docs/DESIGN.md) with the selected baseline, verification steps and manual acceptance checklist.
+
+The exploratory preversion branch remains separate. No database, live provider, account or production deployment is introduced.
+
 ### Added — Visual design studies (2026-10-29)
 
 **Purpose:** compare visual directions before extending the product frontend. Tracked in issue #11.

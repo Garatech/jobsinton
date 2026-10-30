@@ -125,7 +125,7 @@ test('completes the form using keyboard navigation only', async ({ page }) => {
 
 for (const savedData of ['{invalid', '{"version":2,"profile":{}}', '{"version":1,"profile":{"role":"backend"}}']) {
   test('recovers from unreadable saved data: ' + savedData, async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/#profile');
     await page.evaluate(({ key, raw }) => localStorage.setItem(key, raw), { key: PROFILE_STORAGE_KEY, raw: savedData });
     await page.reload();
     await expect(page.getByText(/Saved profile data could not be read/)).toBeVisible();
@@ -182,7 +182,10 @@ test('works during an API outage without transmitting profile fields', async ({ 
   await page.goto('/#profile');
   await fillProfile(page);
   await page.getByRole('button', { name: 'Save profile', exact: true }).click();
+  await expect(page.getByRole('status', { name: 'Profile updates' })).toHaveText('Profile saved in this browser.');
+  await page.getByRole('link', { name: 'Service status', exact: true }).click();
   await expect(page.getByRole('status', { name: 'API connection' })).toContainText('The API is unavailable');
+  await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Profile', exact: true }).click();
   await expect(page.getByRole('status', { name: 'Profile updates' })).toHaveText('Profile saved in this browser.');
   expect(apiRequests.length).toBeGreaterThan(0);
   expect(apiRequests.every((path) => path === '/api/status')).toBe(true);
