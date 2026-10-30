@@ -4,6 +4,15 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Matching rule contract (2026-10-30)
+
+- Opened `docs/matching-v1-contract` for the first matching definition, tracked in issue #17.
+- Added [comparison rules, 24 fictional reference cases and an owner review checklist](docs/MATCHING.md).
+- Separated advisory preferences from explicit constraints, unknown evidence and unevaluated conditions; documented limits in the current profile and fictional catalog.
+- Split implementation into domain engine, application integration and later ranking increments. Scores and weights remain deferred.
+- Checked source-model alignment, reference expectations and internal links. The reference cases are not executable tests yet; owner acceptance of the proposed rules is pending.
+- Updated the project plan and implementation handoff. Application code, stored profiles and the accepted design are unchanged.
+
 ### Changed — Page transitions (2026-10-30)
 
 - Added a 200 ms opacity fade when navigating to another page, with the shared header and navigation kept stable.
