@@ -4,6 +4,13 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Design preview — Current preversion (2026-10-30)
+
+- Added a [complete static preview](design-preversion/README.md) on `design/current-preversion`, an exploratory branch that will not be merged.
+- Current remains the foundation; Ledger and Atlas inform search layouts. Folio and Nocturne are excluded from the new proposal.
+- Fourteen connected pages include fictional offers, company profiles, search, saved opportunities and an editable example profile.
+- Review steps and verification scope are recorded alongside the preview. Production application code is unchanged.
+
 ### Added — Visual design studies (2026-10-29)
 
 **Purpose:** compare visual directions before extending the product frontend. Tracked in issue #11.
