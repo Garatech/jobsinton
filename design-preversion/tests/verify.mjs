@@ -105,6 +105,9 @@ try {
     await page.locator('#empty-state a').click();
     await page.locator('[data-save="backend-java"]').click();
     await page.locator('h3 a[href^="job-backend-java.html"]').focus();
+    await page.keyboard.press('Tab');
+    await page.keyboard.press('Shift+Tab');
+    await expect(page.locator('h3 a[href^="job-backend-java.html"]')).toBeFocused();
     assert.notEqual(await page.locator('h3 a[href^="job-backend-java.html"]').evaluate(el => getComputedStyle(el).outlineStyle), 'none');
     await page.keyboard.press('Enter');
     await expect(page.locator('.apply-card [data-save]')).toHaveAttribute('aria-pressed', 'true');
