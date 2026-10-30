@@ -6,7 +6,7 @@ The [README](../README.md) provides a concise product introduction. Implementati
 
 ## Current status
 
-The runnable foundation connects a React interface to a Spring Boot status endpoint. A professional profile editor adds explicit browser-local saving, validation, recovery, and a summary. Build and integration checks run in GitHub Actions. There is no production deployment, database, matching, or live provider integration yet. The owner reported successful Windows foundation startup and verification on 2026-10-20; the owner has also confirmed successful completion of the profile acceptance checklist. The owner selected the Current preversion on 2026-10-30. Its application integration adds the fictional catalog, company and opportunity pages, and browser-local saved opportunities. [DESIGN.md](DESIGN.md) records the baseline and post-merge acceptance steps. The owner has verified the integrated application and closed the visual-design stage with a brief page-entry fade. The next planned work is the matching v1 contract and reviewed reference cases. Matching scores and live providers remain separate milestones. Checkout synchronization has not been independently inspected; Codespaces startup remains optional and unverified.
+The runnable foundation connects a React interface to a Spring Boot status endpoint. A professional profile editor adds explicit browser-local saving, validation, recovery, and a summary. Build and integration checks run in GitHub Actions. There is no production deployment, database, matching, or live provider integration yet. The owner reported successful Windows foundation startup and verification on 2026-10-20; the owner has also confirmed successful completion of the profile acceptance checklist. The owner selected the Current preversion on 2026-10-30. Its application integration adds the fictional catalog, company and opportunity pages, and browser-local saved opportunities. [DESIGN.md](DESIGN.md) records the baseline and post-merge acceptance steps. The owner has verified the integrated application and closed the visual-design stage with a brief page-entry fade. The proposed [matching v1 contract](MATCHING.md) defines comparison rules and fictional reference cases for owner review. The next implementation increment is the Java domain engine after acceptance of that contract. Matching scores and live providers remain separate milestones. Checkout synchronization has not been independently inspected; Codespaces startup remains optional and unverified.
 
 The public repository is [Garatech/jobsinton](https://github.com/Garatech/jobsinton). Initial documentation was published on 2026-10-17.
 
@@ -75,13 +75,9 @@ Profile configuration will offer a short setup flow with optional advanced contr
 
 **A match score is not a probability of being hired.** Professional suitability must not be inferred from personal characteristics unrelated to the role.
 
-Pending design work:
+The proposed [matching v1 contract and review checklist](MATCHING.md) separate advisory preferences, explicit constraints, unknown information and unevaluated conditions. Its reference cases are authored expectations pending owner acceptance and executable tests.
 
-- Define the formula and treatment of unknown values.
-- Define skill equivalences, tie-breaking rules, and score explanations.
-- Build a small manually reviewed reference set, including incompatible requirements, missing salary information, and changed preference weights.
-- Keep the initial scoring engine independent of language models.
-- Consider model-based extraction later only if it can be evaluated against reviewed examples.
+Delivery proceeds through separate PRs: rule contract, Java domain engine, application integration, then ranking. The first engine returns explanations and constraint outcomes; weights, numerical scores and tie-breaking require a later reviewed extension. Current profile fields must not imply skill proficiency, scoped experience or unconfigured constraints.
 
 ## European scope
 
@@ -129,7 +125,7 @@ Milestones have exit criteria rather than fixed deadlines. Estimates follow once
 | 0. Definition | Name, scope, stack, and quality criteria | Main decisions recorded and open questions identified | In progress |
 | 1. Foundation | Remote repository, reproducible environment, and automated checks | A clean clone starts using verified instructions | Complete for local workflow: owner reported Windows startup and verification on 2026-10-20; Codespaces remains optional and unverified |
 | 2. First journey | Profile, fictional catalog, details, and saved opportunities | The journey works with loading, empty, and error states | Complete for the fictional catalog journey: browser-local profile and shortlist, with owner verification reported on 2026-10-30 |
-| 3. Matching v1 | Constraints, weights, and explanations | Reviewed cases cover mismatches, missing data, and changed weights | Next: agree the rule contract and reference cases before implementing scores |
+| 3. Matching v1 | Rules, domain engine, integration, then ranking | Accepted reference cases pass; later ranking cases cover changed weights | Rule contract proposed in [MATCHING.md](MATCHING.md); engine starts after owner acceptance |
 | 4. Live provider | One connector and normalized listings | Authorized access; limits, duplicates, and failures handled | Pending |
 | 5. Personal use | Persistence, application tracking, and accounts | User isolation and data deletion verified | Pending |
 | 6. Demonstration | Refined interface and a viable zero-cost deployment | Main journey works accessibly on mobile and desktop with fictional data | Pending |
@@ -247,3 +243,13 @@ Credentials, real CVs, personal demonstration profiles, and job listings without
 - Added focused browser coverage for animation completion, keyboard navigation, history, rapid changes, reduced motion and fallback behavior. The PR records the actual results for its tested commit.
 - The current visual-design stage is closed. Further work uses Current as the baseline; no additional redesign is planned.
 - Next step: define deterministic matching constraints, missing-data treatment and a reviewed set of examples before implementing matching v1.
+
+### 2026-10-30 — Matching rule contract
+
+- Confirmed PR #16 is merged into main at `a89f9c8`; no open PRs were present when this increment started.
+- Opened issue #17 and branch `docs/matching-v1-contract` for a documentation-only proposal.
+- Added MATCHING.md with advisory preferences, explicit constraints, missing-data semantics, normalization limits, 24 fictional reference cases and an owner review checklist.
+- Decision: implement explanations before ranking, preserving the existing profile schema. Total experience, descriptive tags and company location do not establish scoped experience, mandatory skills or residence eligibility.
+- Alternative deferred: delivering rules, scores, new profile controls and backend integration together would make the initial domain review unnecessarily broad.
+- Verification: checked the current profile/catalog models, case consistency and relative document links. These examples are proposed expectations, not executed engine tests. The PR records automated workflow results separately.
+- Handoff: review and merge the contract, then start the Java domain engine and executable reference tests in a fresh branch from updated main. No runtime code, stored data or design changes are part of this increment.
