@@ -6,7 +6,7 @@ The [README](../README.md) provides a concise product introduction. Implementati
 
 ## Current status
 
-The runnable foundation connects a React interface to a Spring Boot status endpoint. A professional profile editor adds explicit browser-local saving, validation, recovery, and a summary. Build and integration checks run in GitHub Actions. There is no production deployment, database, matching, or live provider integration yet. The owner reported successful Windows foundation startup and verification on 2026-10-20; the owner has also confirmed successful completion of the profile acceptance checklist. The next checkpoint is visual design selection using the standalone [design studies](../design-exploration/README.md). Checkout synchronization has not been independently inspected; Codespaces startup remains optional and unverified.
+The runnable foundation connects a React interface to a Spring Boot status endpoint. A professional profile editor adds explicit browser-local saving, validation, recovery, and a summary. Build and integration checks run in GitHub Actions. There is no production deployment, database, matching, or live provider integration yet. The owner reported successful Windows foundation startup and verification on 2026-10-20; the owner has also confirmed successful completion of the profile acceptance checklist. The owner selected the Current preversion on 2026-10-30. Its application integration adds the fictional catalog, company and opportunity pages, and browser-local saved opportunities. [DESIGN.md](DESIGN.md) records the baseline and post-merge acceptance steps. Matching scores and live providers remain separate milestones. Checkout synchronization has not been independently inspected; Codespaces startup remains optional and unverified.
 
 The public repository is [Garatech/jobsinton](https://github.com/Garatech/jobsinton). Initial documentation was published on 2026-10-17.
 
@@ -22,7 +22,8 @@ JobSinton helps software professionals prioritize job opportunities that match t
 | Portfolio | Gara's Workshop | Agreed |
 | Professional focus | Java backend / full stack development | Agreed |
 | Backend | Java 21 and Spring Boot 4.0.8 | Foundation implemented |
-| Frontend | React and strict TypeScript | Foundation implemented; versions pinned in package.json |
+| Frontend | React and strict TypeScript | Current interface integrated; versions pinned in package.json |
+| Visual design | Current; Ledger list structure and Atlas card search | Owner-selected baseline on 2026-10-30 |
 | Database | PostgreSQL | Technical proposal; not yet finalized |
 | Editor | Visual Studio Code | Agreed |
 | Weekly commitment | 6–10 hours | Agreed |
@@ -127,7 +128,7 @@ Milestones have exit criteria rather than fixed deadlines. Estimates follow once
 | --- | --- | --- | --- |
 | 0. Definition | Name, scope, stack, and quality criteria | Main decisions recorded and open questions identified | In progress |
 | 1. Foundation | Remote repository, reproducible environment, and automated checks | A clean clone starts using verified instructions | Complete for local workflow: owner reported Windows startup and verification on 2026-10-20; Codespaces remains optional and unverified |
-| 2. First journey | Profile, fictional catalog, details, and saved opportunities | The journey works with loading, empty, and error states | In progress: browser-local profile accepted by the owner; visual direction selection precedes catalog and saved opportunities |
+| 2. First journey | Profile, fictional catalog, details, and saved opportunities | The journey works with loading, empty, and error states | Implemented for a fictional catalog with browser-local profile and shortlist; owner application acceptance pending |
 | 3. Matching v1 | Constraints, weights, and explanations | Reviewed cases cover mismatches, missing data, and changed weights | Pending |
 | 4. Live provider | One connector and normalized listings | Authorized access; limits, duplicates, and failures handled | Pending |
 | 5. Personal use | Persistence, application tracking, and accounts | User isolation and data deletion verified | Pending |
@@ -225,3 +226,14 @@ Credentials, real CVs, personal demonstration profiles, and job listings without
 - Verification evidence is supplied by the design workflow and the implementation PR. Package creation requires successful browser checks.
 - Owner confirmation of the existing profile's manual checklist is recorded above; it is separate from visual acceptance of these new studies.
 - Next step: review the alternatives, record the chosen combination in `docs/DESIGN.md`, then implement the selected system before the fictional catalog.
+
+### 2026-10-30 — Current application integration
+
+- The owner selected the Current preversion as the primary design, with no further visual exploration requested.
+- Kept `design/current-preversion` separate and implemented its approved design in the existing React application on `feat/current-interface`.
+- Added routed overview, search, company, detail, saved and profile pages; retained the real service check on a dedicated status page.
+- Preserved existing profile records and draft/save separation. Added independently stored saved opportunities with explicit error recovery.
+- Decision: retain the project's typed build and shared components while adopting the approved HTML structure and CSS. A separate static application would duplicate state and lose the tested profile behavior.
+- The fictional catalog supports the first complete journey; descriptive profile facts do not implement matching v1 or live applications.
+- Verification: the PR records build, integration, storage-recovery and responsive results. Local terminal access remains unavailable; owner acceptance follows the checklist in DESIGN.md after merge.
+- Next step: verify the integrated journey, then define deterministic matching rules and a reviewed set of reference cases using this visual baseline.

@@ -6,7 +6,7 @@ The first profile increment provides an editable professional profile and a summ
 
 | Field | Rule |
 | --- | --- |
-| Target role | One of backend, frontend, full stack, or SAP developer |
+| Target role | Backend, frontend, full stack, SAP, data or platform |
 | Technologies | 1–20 unique entries, each 1–40 characters after whitespace normalization |
 | Relevant experience | Whole years from 0 to 60; zero is valid |
 | Country of residence | Required text, 1–80 characters after normalization |
@@ -23,7 +23,7 @@ Switching work mode clears the previous day limit. Returning from remote to hybr
 - **Add technology** or Enter adds an entry; each entry has a named removal button.
 - **Save profile** validates every field and saves explicitly. If a technology is still typed in the input, it is validated and included rather than silently discarded.
 - Field errors are associated with their controls, and submission focuses the first invalid field.
-- The summary shows the last successful save. Unsaved edits are marked and are lost on reload.
+- The summary shows the last successful save. Unsaved edits are marked, remain available when navigating within the app, and are lost on reload. **Discard changes** restores the last saved values.
 - **Clear saved profile** asks for confirmation and clears both the stored profile and the current draft. Cancelling keeps both.
 - Storage errors preserve the draft and never display a successful-save message. The previous saved summary remains visible.
 - Malformed or unsupported saved data produces a recovery notice. It is not changed automatically: a successful save replaces it, or Clear removes it.
@@ -94,7 +94,7 @@ From the repository root, terminal 2:
 npm --prefix frontend run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173), then select **Set up your profile**.
+Open [http://localhost:5173](http://localhost:5173), then select **Profile** in the navigation.
 
 ### 4. Manual acceptance checklist
 
@@ -113,7 +113,7 @@ Use fictional details such as Backend developer, Java, React, 0 years, Spain, Ma
 - [ ] Switch back to Hybrid: choose the limit again. Check On-site with 5 days as well.
 - [ ] Navigate with Tab, Shift+Tab, Enter, and the select controls' arrow keys: focus is visible and all actions are reachable.
 - [ ] Check a narrow mobile-sized window: controls and summary remain readable without horizontal scrolling.
-- [ ] Stop the Java service and check its connection: the API shows unavailable, but the profile can still be saved.
+- [ ] Open **Service status** in the footer, stop the Java service and check its connection: the API shows unavailable, but the profile can still be saved.
 - [ ] Select Clear saved profile and cancel: data remains. Repeat and confirm, then reload: the profile is empty.
 
 Storage denial, failed writes/removals, malformed records, unknown versions, and long-value layout checks are covered by automated tests. To manually inspect recovery, use a separate browser profile with fictional data and change this application's storage key to malformed JSON in browser developer tools, then reload. A notice should appear and a new valid save should recover the profile.
@@ -132,6 +132,6 @@ The run also retains desktop/mobile screenshots in the `profile-previews` artifa
 - `frontend/tests/profile-model.spec.ts`: validation boundaries and saved-data contracts.
 - `frontend/tests/profile.spec.ts`: user journeys, recovery, keyboard operation, and viewport checks.
 
-No backend profile endpoint, account, database persistence, job catalog, or matching is included. Backend validation and user isolation will be required when profiles are stored on the server.
+No backend profile endpoint, account, database persistence or matching score is included. The current interface uses the saved profile alongside the fictional catalog described in [DESIGN.md](DESIGN.md). Backend validation and user isolation will be required when profiles are stored on the server.
 
 See [development](DEVELOPMENT.md), [architecture](ARCHITECTURE.md), and [changelog](../CHANGELOG.md).

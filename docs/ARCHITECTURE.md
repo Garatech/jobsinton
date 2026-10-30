@@ -15,7 +15,10 @@ The browser calls `/api/status` on its own origin. Vite forwards `/api` to `http
 | `backend/.../JobSintonApplication.java` | Start Spring Boot |
 | `backend/.../system/SystemStatusController.java` | Own the public service-status contract |
 | `frontend/src/api/status.ts` | HTTP request and runtime validation of external JSON |
-| `frontend/src/App.tsx` | Product introduction, profile composition, and connection state |
+| `frontend/src/App.tsx` | Shared Current shell, route composition, profile and shortlist state |
+| `frontend/src/navigation.ts` | Hash navigation and direct-link handling |
+| `frontend/src/pages/` | Home, search, companies, details and service status |
+| `frontend/src/catalog/` | Typed fictional catalog and validated shortlist storage |
 | `frontend/src/profile/model.ts` | Profile contract, normalization, validation, and saved-data parsing |
 | `frontend/src/profile/storage.ts` | Guarded reads, writes, and removal of the browser-local profile |
 | `frontend/src/profile/ProfileEditor.tsx` | Editable draft, validation feedback, and last-saved summary |
@@ -24,7 +27,7 @@ The browser calls `/api/status` on its own origin. Vite forwards `/api` to `http
 | `.github/workflows/ci.yml` | Reproduce builds and integration checks in GitHub |
 | `.devcontainer/` | Optional shared cloud development environment |
 
-The profile module currently lives in the frontend because its data stays in the browser. Opportunity, connector, and matching modules will follow when their behavior is implemented.
+The profile module currently lives in the frontend because its data stays in the browser. The catalog module supplies fictional data and browser-local saved IDs. Connectors and a scoring engine remain future modules.
 
 ## API contract
 
@@ -66,4 +69,14 @@ API contracts, design reasons, boundary validation, and non-obvious behavior are
 
 ## Current limitations
 
-Persistence is limited to browser-local profile storage. There are no user accounts, server-side profile storage, matching, provider access, production deployment, or published release. The visual layout is a foundation subject to design review. Desktop/mobile browser automation covers the first journey but does not replace a complete accessibility audit or human visual review.
+Persistence is limited to browser-local profile and shortlist storage. There are no user accounts, server-side profile storage, matching, provider access, production deployment, or published release. Current is the owner-selected visual baseline; see [DESIGN.md](DESIGN.md) for the selected system and acceptance checklist. Desktop/mobile browser automation covers the first journey but does not replace a complete accessibility audit or human visual review.
+
+## Current application composition
+
+The approved design is implemented in shared React components and CSS within the existing Vite build. The preversion branch is retained as a visual reference, not merged as a second application. Hash routes avoid adding deployment rewrite requirements and support direct links, reloads and history. Unknown routes render a recovery view.
+
+The profile editor stays mounted while hidden on other routes, preserving an unsaved draft during navigation. Successful saves notify the shell; the home direction and detail facts use only that saved profile. The profile storage key and v1 envelope remain unchanged. No profile is seeded or reset during startup.
+
+The shortlist uses its own versioned localStorage record. Reads are bounded and validated; unknown catalog IDs are ignored without rewriting storage. A failed write or clear leaves the displayed saved state unchanged and reports the error. Storage events refresh open tabs. There is no cross-device synchronization or user account.
+
+The catalog is bundled fictional content, not an API response. Opportunity facts compare explicit values without scoring or eligibility inference. Application actions explain that no submission occurs. Backend contracts, provider credentials and database setup remain unchanged.

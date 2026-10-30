@@ -4,7 +4,7 @@ GitHub is the source of truth for shared code and history. A commit on your comp
 
 ## What works today
 
-The React interface checks a real Java service through `GET /api/status`. It displays loading, connected, and unavailable states, allows retries, and stops waiting after five seconds. The professional profile editor saves preferences in this browser and restores them after reload. There is no matching engine, job catalog, database, or live provider yet. See [the profile verification guide](PROFILE.md) for its rules and acceptance checklist.
+The React interface checks a real Java service through `GET /api/status`. It displays loading, connected, and unavailable states, allows retries, and stops waiting after five seconds. The professional profile editor saves preferences in this browser and restores them after reload. The approved Current interface includes a searchable fictional catalog, company and opportunity pages, and a browser-local shortlist. There is no scoring engine, database or live provider yet. See [the profile verification guide](PROFILE.md) for its rules and acceptance checklist.
 
 The services are development processes. This guide does not deploy a public application.
 
@@ -67,7 +67,7 @@ From the repository root, in terminal 2:
 npm --prefix frontend run dev
 ```
 
-Locally, open [http://localhost:5173](http://localhost:5173). In Codespaces, open the forwarded **5173** URL instead. The interface should report **Connected to the JobSinton API**.
+Locally, open [http://localhost:5173](http://localhost:5173). In Codespaces, open the forwarded **5173** URL instead. Select **Service status** in the footer; it should report **Connected to the JobSinton API**.
 
 The API itself is available locally at [http://localhost:8080/api/status](http://localhost:8080/api/status) and responds:
 
@@ -75,7 +75,7 @@ The API itself is available locally at [http://localhost:8080/api/status](http:/
 {"name":"JobSinton","status":"UP"}
 ```
 
-Stop either process with `Ctrl+C`. To exercise recovery, stop the backend, click **Check connection again**, restart the backend, and retry.
+Stop either process with `Ctrl+C`. To exercise recovery, open **Service status**, stop the backend, click **Check connection again**, restart the backend, and retry.
 
 No environment variables, API keys, real CVs, or database are needed.
 
@@ -139,7 +139,7 @@ GitHub Actions runs the backend HTTP tests, TypeScript checking, frontend build,
 
 Inspect the workflow linked from the PR before merging. Branch protection has not yet been enabled, so passing checks are currently a review rule rather than a GitHub-enforced merge gate.
 
-For this increment, follow the [profile verification checklist](PROFILE.md#verify-after-merging-the-pull-request) after pulling the merged changes.
+For this increment, follow the [Current design acceptance checklist](DESIGN.md#manual-acceptance-checklist) after pulling the merged changes. The [profile checklist](PROFILE.md#verify-after-merging-the-pull-request) remains valid.
 
 ## Troubleshooting
 

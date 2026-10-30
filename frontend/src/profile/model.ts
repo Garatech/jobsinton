@@ -4,6 +4,8 @@ export const ROLES = {
   frontend: 'Frontend developer',
   'full-stack': 'Full stack developer',
   sap: 'SAP developer',
+  data: 'Data engineer',
+  platform: 'Platform engineer',
 } as const;
 
 export const WORK_MODES = {
