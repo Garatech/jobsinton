@@ -182,6 +182,8 @@ for (const width of [320, 390, 768, 1440]) {
     const routes = ['home', 'opportunities', 'companies', 'saved', 'profile', 'status', ...opportunities.map(j => 'opportunities/' + j.id), ...companies.map(c => 'companies/' + c.id)];
     await page.goto('/');
     await page.evaluate(({ key, profile }) => localStorage.setItem(key, JSON.stringify({ version: 1, profile })), { key: PROFILE_STORAGE_KEY, profile });
+    // Reload after seeding storage so the shared saved-profile snapshot is initialized.
+    await page.reload();
     for (const route of routes) {
       await page.goto('/#' + route);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
