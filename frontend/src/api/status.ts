@@ -1,4 +1,4 @@
-/** The only API contract implemented in the foundation increment. */
+/** The service-status contract introduced in the foundation increment. */
 export interface SystemStatus {
   name: 'JobSinton';
   status: 'UP';
