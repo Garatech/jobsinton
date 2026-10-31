@@ -311,3 +311,9 @@ dialog .actions { flex-direction:column; align-items:stretch; }
  .profile-form .technology-entry input { flex-basis:100%; width:100%; }
  .profile-form .technology-entry button { width:100%; }
 }
+
+/* Matching uses the existing Current detail panel. */
+.fit-section .comparison-summary { margin-bottom:16px; font-weight:600; }
+.fit-section .comparison-retry { margin-top:16px; }
+.fit-section li { overflow-wrap:anywhere; }
+.fit-section details .fit-list { margin-top:12px; }

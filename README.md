@@ -16,12 +16,12 @@ Match scores will express compatibility with a profile, not the likelihood of re
 
 ## Project status
 
-The approved Current design now supports a complete browsing journey: professional profile, searchable fictional opportunities, company pages, details and a browser-local shortlist. Profiles and saved opportunities persist in this browser. The interface also connects to a Java status API, with automated build and integration checks. Matching scores, live providers, accounts and server-side persistence remain planned.
+The approved Current design now supports a complete browsing journey: professional profile, searchable fictional opportunities, company pages, details and a browser-local shortlist. Profiles and saved opportunities persist in this browser. Opportunity details use the Java matching API to explain saved-profile comparisons, including differences and missing information. Profiles are sent for comparison without server-side storage. Automated build and integration checks cover the application. Matching scores, live providers, accounts and server-side persistence remain planned.
 
 Stack: **Java · Spring Boot · React · TypeScript**.
 
 ## Project documentation
 
-[Run the project](docs/DEVELOPMENT.md) · [Design and acceptance checklist](docs/DESIGN.md) · [Architecture](docs/ARCHITECTURE.md) · [Changelog](CHANGELOG.md) · [Development plan](docs/PROJECT_PLAN.md) · [Contributing](CONTRIBUTING.md)
+[Run the project](docs/DEVELOPMENT.md) · [Design and acceptance checklist](docs/DESIGN.md) · [Matching verification](docs/MATCHING_API.md) · [Architecture](docs/ARCHITECTURE.md) · [Changelog](CHANGELOG.md) · [Development plan](docs/PROJECT_PLAN.md) · [Contributing](CONTRIBUTING.md)
 
 A **Gara's Workshop** project.

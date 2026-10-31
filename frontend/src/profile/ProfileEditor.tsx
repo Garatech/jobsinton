@@ -161,13 +161,13 @@ export function ProfileEditor({ onSaved }: { onSaved: (profile: ProfessionalProf
         <span className="planned-label">Saved on this device</span>
       </div>
       <p className="profile-intro" id="profile-storage-note">
-        Set your direction and working preferences. Your profile stays in this browser;
-        it is not sent to the server or synced between devices. Clearing browser data removes it.
+        Set your direction and working preferences. Your profile is saved in this browser;
+        it is sent to the server for opportunity comparisons but is not stored there or synced between devices. Clearing browser data removes it.
       </p>
       <div className="profile-layout">
         <form className="profile-form" onSubmit={submit} noValidate aria-label="Professional profile" aria-describedby="profile-storage-note">
           <div className="form-heading"><h2>Your preferences</h2><button type="button" className="text-button" disabled={!dirty} onClick={discard}>Discard changes</button></div>
-          <p className="form-note">All profile fields are required, including at least one technology. Changes are saved only when you select Save profile.</p>
+          <p className="form-note">All profile fields are required, including at least one technology. Changes are saved only when you select Save profile. Opportunity comparisons send the saved profile to the server without storing it there.</p>
           {storageError && <p className="notice notice-error" role="alert">{storageError}</p>}
           {Object.values(errors).some(Boolean) && <p className="notice notice-error" role="alert">Check the highlighted fields before saving.</p>}
           <fieldset>
@@ -282,7 +282,7 @@ export function ProfileEditor({ onSaved }: { onSaved: (profile: ProfessionalProf
               <p className="field-hint">This summary shows your last successful save.</p>
             </>
           ) : <p className="summary-empty">No saved profile yet. Complete the form to bring your preferences together.</p>}
-          <p className="summary-note">Your preferences stay in this browser and are used only after saving.</p>
+          <p className="summary-note">Your saved preferences are used for opportunity comparisons.</p>
           {saved && <a className="button primary" href={profileSearch(saved)}>Explore opportunities <span aria-hidden="true">↗</span></a>}
         </aside>
       </div>
