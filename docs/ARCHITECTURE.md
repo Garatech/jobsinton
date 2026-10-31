@@ -15,6 +15,9 @@ The browser calls `/api/status` on its own origin. Vite forwards `/api` to `http
 | `backend/.../JobSintonApplication.java` | Start Spring Boot |
 | `backend/.../system/SystemStatusController.java` | Own the public service-status contract |
 | `backend/.../matching/` | Pure Java matching domain, immutable facts, validation and versioned explanations |
+| `backend/.../matching/api/` | Bounded matching endpoint, saved-profile validation and fictional catalog adapter |
+| `frontend/src/api/matching.ts` | Matching requests and complete response validation |
+| `frontend/src/matching/Comparison.tsx` | Saved-profile comparison lifecycle and Current panel |
 | `frontend/src/api/status.ts` | HTTP request and runtime validation of external JSON |
 | `frontend/src/App.tsx` | Shared Current shell, route composition, profile and shortlist state |
 | `frontend/src/navigation.ts` | Hash navigation and direct-link handling |
@@ -70,7 +73,7 @@ API contracts, design reasons, boundary validation, and non-obvious behavior are
 
 ## Current limitations
 
-Persistence is limited to browser-local profile and shortlist storage. There are no user accounts, server-side profile storage, matching API/interface integration, provider access, production deployment, or published release. Current is the owner-selected visual baseline; see [DESIGN.md](DESIGN.md) for the selected system and acceptance checklist. Desktop/mobile browser automation covers the first journey but does not replace a complete accessibility audit or human visual review.
+Persistence is limited to browser-local profile and shortlist storage. There are no user accounts, server-side profile storage, provider access, production deployment, or published release. Current is the owner-selected visual baseline; see [DESIGN.md](DESIGN.md) for the selected system and acceptance checklist. Desktop/mobile browser automation covers the first journey but does not replace a complete accessibility audit or human visual review.
 
 ## Current application composition
 
@@ -80,7 +83,7 @@ The profile editor stays mounted while hidden on other routes, preserving an uns
 
 The shortlist uses its own versioned localStorage record. Reads are bounded and validated; unknown catalog IDs are ignored without rewriting storage. A failed write or clear leaves the displayed saved state unchanged and reports the error. Storage events refresh open tabs. There is no cross-device synchronization or user account.
 
-The catalog is bundled fictional content, not an API response. Opportunity facts compare explicit values without scoring or eligibility inference. Application actions explain that no submission occurs. Backend contracts, provider credentials and database setup remain unchanged.
+The catalog is bundled fictional content, not an API response. Opportunity facts compare explicit values without scoring or eligibility inference. Application actions explain that no submission occurs. The matching endpoint compares server-owned fictional facts; provider credentials and database setup remain unnecessary.
 
 ## Matching domain
 
@@ -88,4 +91,12 @@ The `matching` package implements the accepted [rule contract](MATCHING.md) usin
 
 Input snapshots preserve unknown facts and explicit limits. Assessments retain compared evidence, stable reasons and scope limitations. Only constraint outcomes influence the constraint summary; advisory differences never remove offers. Technology terms and country evidence are ordered deterministically, and result collections are immutable.
 
-No matching controller or frontend caller is introduced in this increment. The existing status endpoint and browser-local profile remain unchanged. The [engine guide](MATCHING_ENGINE.md) records Java types, the future fictional-catalog mapping and verification commands. The API adapter and interface integration follow after domain review; ranking follows separately.
+The separate matching API adapter exposes POST /api/matching/evaluate. It bounds request bodies, validates the saved-profile schema, normalizes explicit place mappings and looks up server-owned fictional listing facts. The status endpoint and browser profile storage format remain unchanged. The [engine guide](MATCHING_ENGINE.md) records domain types; the [API guide](MATCHING_API.md) documents data transmission, response validation, cancellation and acceptance checks. Ranking follows separately.
+
+## Comparison lifecycle
+
+Opening an opportunity with a valid saved profile posts its snapshot and the offer ID to the matching endpoint. Draft edits and failed saves do not change that snapshot. Responses carry the offer ID and API/rules versions, use no-store, and are validated before rendering.
+
+The detail panel is keyed by offer and profile content. Each request owns cancellation, an eight-second deadline and an active flag, so superseded responses cannot update the current panel. Results are not stored in browser storage. Errors retain browsing/shortlist access and provide explicit retry.
+
+Profiles are transmitted for transient comparison but are neither persisted nor logged by the application backend. The domain engine remains free of HTTP, Spring and provider dependencies. See MATCHING_API.md for the deliberately limited country/city normalization and the duplicated fictional-facts boundary checked by integration tests.

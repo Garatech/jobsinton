@@ -4,6 +4,15 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Matching API and opportunity details (2026-10-31)
+
+- Connected the accepted matching engine to the existing opportunity detail panel through a validated, bounded POST endpoint, tracked in issue #21.
+- Added saved-profile normalization and server-owned fictional comparison facts; retained unknown residence policies and scoped-experience limitations.
+- Added loading, timeout/error recovery, explicit retry, response validation and cancellation/stale-response protection.
+- Preserved draft/save separation, shortlist behavior, browser profile format and the Current design. Updated profile wording to explain transient server transmission.
+- Added HTTP, browser and catalog-consistency checks; actual results and the checked commit are recorded in the implementation PR.
+- Added [API documentation and a manual acceptance checklist](docs/MATCHING_API.md). No ranking, provider, account, dependency or database migration is introduced.
+
 ### Added — Matching domain engine (2026-10-30)
 
 - Implemented the owner-accepted matching rules in a standalone Java module, tracked in issue #19.

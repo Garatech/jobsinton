@@ -185,6 +185,7 @@ for (const width of [320, 390, 768, 1440]) {
     for (const route of routes) {
       await page.goto('/#' + route);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+      if (route.startsWith('opportunities/')) await expect(page.locator('[data-comparison-for]')).toBeVisible();
       await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(245, 245, 239)');
       await expect(page.getByRole('heading', { level: 1 })).toHaveCSS('font-family', /Segoe UI/);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), route).toBe(true);
