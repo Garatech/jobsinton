@@ -32,7 +32,7 @@ Storage key: `jobsinton.professional-profile`. Format: `{ "version": 1, "profile
 
 The profile is stored in `localStorage`, scoped to the browser profile and origin (scheme, host, and port). Use the same URL consistently: `localhost:5173` and `127.0.0.1:5173` have separate storage. Git, switching devices, and opening a different browser do not transfer this profile. Clearing site data removes it; private browsing may restrict storage or discard it when closed.
 
-The profile is not encrypted, is not a user account, and is not sent to the backend. Use fictional data for demonstrations on shared devices. Multiple tabs do not synchronize live; the last successful save wins.
+The profile is not encrypted and is not a user account. Opening an opportunity sends the last saved snapshot to the backend for comparison; it is not stored there. Editing or saving the profile alone sends no comparison request. See [matching data handling](MATCHING_API.md#data-handling-and-interaction). Use fictional data for demonstrations on shared devices. Multiple tabs do not synchronize live; the last successful save wins.
 
 ## Verify after merging the pull request
 
@@ -132,6 +132,6 @@ The run also retains desktop/mobile screenshots in the `profile-previews` artifa
 - `frontend/tests/profile-model.spec.ts`: validation boundaries and saved-data contracts.
 - `frontend/tests/profile.spec.ts`: user journeys, recovery, keyboard operation, and viewport checks.
 
-No backend profile endpoint, account, database persistence or matching score is included. The current interface uses the saved profile alongside the fictional catalog described in [DESIGN.md](DESIGN.md). Backend validation and user isolation will be required when profiles are stored on the server.
+No profile-storage endpoint, account, database persistence or matching score is included. Opportunity comparisons use a transient matching endpoint with server-side input validation. The current interface uses the saved profile alongside the fictional catalog described in [DESIGN.md](DESIGN.md). Backend validation and user isolation will be required when profiles are stored on the server.
 
 See [development](DEVELOPMENT.md), [architecture](ARCHITECTURE.md), and [changelog](../CHANGELOG.md).

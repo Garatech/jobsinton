@@ -1,6 +1,6 @@
 # Matching v1 — Rule contract
 
-Status: accepted by the owner on 2026-10-30 and merged in PR #18. The Java domain implementation follows this baseline; matching is not connected to the application interface yet. See [the engine guide](MATCHING_ENGINE.md) for types, verification and the next integration boundary.
+Status: accepted by the owner on 2026-10-30 and merged in PR #18. The Java domain implementation follows this baseline; opportunity details now use it through the [matching API](MATCHING_API.md). See [the engine guide](MATCHING_ENGINE.md) for domain types and verification.
 
 JobSinton will explain how a saved profile relates to an opportunity using reproducible comparisons. Each conclusion must identify the supplied facts behind it. A compatibility result is not a hiring probability or a judgment of professional ability.
 
@@ -27,7 +27,7 @@ The contract was introduced as a documentation-only increment. The domain engine
 
 ## Input boundary and existing data
 
-The implemented [profile contract](PROFILE.md) remains unchanged. The later engine consumes a normalized snapshot of the last successfully saved profile, not unsaved form edits.
+The implemented [profile contract](PROFILE.md) remains unchanged. The engine consumes a normalized snapshot of the last successfully saved profile, not unsaved form edits.
 
 | Existing input | Use in the first engine | Limit or required normalization |
 | --- | --- | --- |
