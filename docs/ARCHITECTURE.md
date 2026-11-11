@@ -31,7 +31,7 @@ The browser calls `/api/status` on its own origin. Vite forwards `/api` to `http
 | `.github/workflows/ci.yml` | Reproduce builds and integration checks in GitHub |
 | `.devcontainer/` | Optional shared cloud development environment |
 
-The profile module currently lives in the frontend because its data stays in the browser. The catalog module supplies fictional data and browser-local saved IDs. The matching domain module is independent of the HTTP and frontend boundaries. Connectors and numerical ranking remain future work.
+The profile editor persists the saved snapshot in the browser; comparison requests send it transiently to the backend. The catalog module supplies fictional data and browser-local saved IDs. The matching domain module is independent of the HTTP and frontend boundaries. The pure Java [ranker](RANKING.md#java-implementation) reuses the matching engine across one profile and a filtered offer set. Its result preserves each comparison, its exact sorting evidence and any unavailable offers. Provider connectors and a public ranking endpoint remain future work.
 
 ## API contract
 
@@ -91,7 +91,7 @@ The `matching` package implements the accepted [rule contract](MATCHING.md) usin
 
 Input snapshots preserve unknown facts and explicit limits. Assessments retain compared evidence, stable reasons and scope limitations. Only constraint outcomes influence the constraint summary; advisory differences never remove offers. Technology terms and country evidence are ordered deterministically, and result collections are immutable.
 
-The separate matching API adapter exposes POST /api/matching/evaluate. It bounds request bodies, validates the saved-profile schema, normalizes explicit place mappings and looks up server-owned fictional listing facts. The status endpoint and browser profile storage format remain unchanged. The [engine guide](MATCHING_ENGINE.md) records domain types; the [API guide](MATCHING_API.md) documents data transmission, response validation, cancellation and acceptance checks. Ranking follows separately.
+The separate matching API adapter exposes POST /api/matching/evaluate. It bounds request bodies, validates the saved-profile schema, normalizes explicit place mappings and looks up server-owned fictional listing facts. The status endpoint and browser profile storage format remain unchanged. The [engine guide](MATCHING_ENGINE.md) records domain types; the [API guide](MATCHING_API.md) documents data transmission, response validation, cancellation and acceptance checks. The ranking domain is separate from the detail endpoint.
 
 ## Comparison lifecycle
 

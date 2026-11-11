@@ -11,7 +11,7 @@ JobSinton will explain how a saved profile relates to an opportunity using repro
 | 1. Rules — this change | This contract and fictional reference cases | Owner reviews the decisions below and merges the documentation PR |
 | 2. Domain engine | Validated inputs, deterministic comparisons and automated reference tests in Java | Accepted cases pass; no database or provider dependency |
 | 3. Application integration | Backend request/response contract and explanations in the existing interface | Browser checks cover saved profiles, loading, errors and incomplete results |
-| 4. Ranking | [Proposed weights, coverage, formula and tie-breaking](RANKING.md) | Reference cases justify ordering and show the effect of changing weights |
+| 4. Ranking | [Implemented domain weights, coverage, formula and tie-breaking](RANKING.md) | Reference cases justify ordering and show the effect of changing weights |
 
 The contract was introduced as a documentation-only increment. The domain engine is a separate implementation. Accounts, persistence, providers and additional profile controls remain separate work. There is no percentage, overall suitability label or automatic exclusion of listings in the first engine delivery.
 

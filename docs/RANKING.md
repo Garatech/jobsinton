@@ -1,6 +1,6 @@
-# Compatibility ranking — proposal for review
+# Compatibility ranking
 
-Today, opportunity details explain an individual comparison. Search still offers **Newest** and **Salary**. This proposal defines how a third, optional sort would answer “Which of these opportunities should I read first?” Merging this document accepts a specification; it does not change the application.
+Today, opportunity details explain an individual comparison. Search still offers **Newest** and **Salary**. The policy accepted in PR #24 is implemented in Java. It answers “Which of these opportunities should I read first?” for a single saved profile and a filtered set of offers. An HTTP batch endpoint and search control are the next integration step.
 
 ## Order of decisions
 
@@ -13,7 +13,7 @@ An invalid or unavailable evaluation is **not** a zero-evidence evaluation. Retu
 
 ## Advisory weights
 
-These are **proposed product defaults**, not empirical hiring probabilities. Role leads because the profile names one target; technical overlap follows closely. Work mode can change the order without becoming a hard requirement. The lower weights reflect that the profile records only total experience and residence, not technology-specific tenure or commuting range.
+These are **fixed product defaults**, not empirical hiring probabilities. Role leads because the profile names one target; technical overlap follows closely. Work mode can change the order without becoming a hard requirement. The lower weights reflect that the profile records only total experience and residence, not technology-specific tenure or commuting range.
 
 | Dimension | Weight out of 100 | Evidence |
 | --- | ---: | --- |
@@ -23,7 +23,7 @@ These are **proposed product defaults**, not empirical hiring probabilities. Rol
 | Total experience | 10 | Only comparisons with the same experience scope |
 | Office location | 5 | City and country where the office comparison applies |
 
-Attendance and residence restrictions affect the constraint group only. Salary and other unevaluated conditions have no weight. An extra profile skill cannot lower an offer's position. The first implementation would use fixed defaults. The alternative weights in the reference cases test sensitivity; they do not introduce profile controls or storage changes.
+Attendance and residence restrictions affect the constraint group only. Salary and other unevaluated conditions have no weight. An extra profile skill cannot lower an offer's position. The public ranker uses the fixed defaults. The alternative weights in the reference cases test sensitivity; they do not introduce profile controls or storage changes.
 
 ## Calculation
 
@@ -43,7 +43,7 @@ If K is zero, agreement and the sorting key are unavailable; coverage is zero if
 
 Unknown evidence adds neither support nor disagreement. It keeps the item from receiving full credit for information it does not supply. For example, one confirmed role and four unknown dimensions can yield 100% agreement **on the known facts**, but only 35% coverage. Never present that as “100% compatible”. The optional sort can explain its order with the relevant facts and coverage; it does not require a headline percentage or a visual redesign.
 
-Compare unrounded fractions (e.g. by cross multiplication); round only for display. Weights for reference variants must be nonnegative whole numbers totalling 100. Zero disables that dimension; invalid configurations are rejected rather than silently normalized. Version this policy separately from matching: proposed first pair `ranking-v1.0` / `matching-v1.0`. Changing weights or precedence requires a new ranking version and revised expectations.
+Compare unrounded fractions (e.g. by cross multiplication); round only for display. Weights for reference variants must be nonnegative whole numbers totalling 100. Zero disables that dimension; invalid configurations are rejected rather than silently normalized. Version this policy separately from matching: implemented pair `ranking-v1.0` / `matching-v1.0`. Changing weights or precedence requires a new ranking version and revised expectations.
 
 ## Worked examples
 
@@ -72,8 +72,25 @@ Compare unrounded fractions (e.g. by cross multiplication); round only for displ
 | R13 | One valid evaluation with a conflict, one validation error and one request with no saved profile. | The valid offer stays ahead of the unavailable item. The no-profile search uses ordinary sorting and makes no personalized claim. |
 | R14 | One of seven tags confirmed versus fourteen of ninety-nine; all other advisory facts unknown, P=100. | Both supports round to 4% at whole-percent precision. The first ranks higher because 1/7 exceeds 14/99. No display rounding decides the order. |
 
-## Owner review and handoff
+## Java implementation
 
-Start with R03 (can preferences outweigh a limit?), R04 (little evidence), and R05–R07 (weights and ties). Accept or adjust those outcomes before coding. The main trade-off is whether role 35 and mode 20 reflect what the first search should prioritize.
+Call `new CompatibilityRanker().rank(profile, offersById)` with one normalized profile and the already-filtered opportunities. The ranker calls the existing matching engine once per offer; callers cannot mix precomputed results from different snapshots. No controller, network call, persistence or dependency is involved.
 
-Once accepted, implement a pure Java ranker and turn these reference cases into executable tests in a fresh PR. A later integration can evaluate the filtered list as a batch and expose the optional sort without a request per card. Keep Newest as the default, Salary available, and the detail comparison independent. No installation or application restart is needed to review this proposal.
+A `RankedBatch` carries the matching and ranking versions. Its `ranked` list retains each valid evaluation (including constraint explanations) and its exact A/D/U allocations, agreement, coverage and net support. Empty optional ratios mean undefined; zero is a real value. The immutable `unavailable` list follows the valid entries and retains the engine's validation errors. A known ID with a missing offer is retained there too. IDs must be nonblank and unique (map keys). An empty filtered set is valid.
+
+With no profile, the domain returns `NoProfile.INSTANCE` and does not evaluate or personalize anything. The later search integration owns the ordinary Newest fallback. The accepted matching version is pinned so upgrading the matching rules requires a ranking policy review.
+
+For exact allocation, one point is split into as many units as there are applicable technology assessments (at least one). Integer totals therefore share a denominator even for a seven-way tag split. Reduced fractions and cross multiplication preserve differences that display rounding would erase. The current engine caps a listing at 100 terms and the total weight is 100.
+
+## Verification after merge
+
+From the updated repository root, using Java 21 and Maven:
+
+```powershell
+mvn -B -ntp -f backend/pom.xml "-Dtest=CatalogRankingTest,CompatibilityRankerTest" test
+mvn -B -ntp -f backend/pom.xml verify
+```
+
+The first command exercises R01–R14, including the real catalog facts for R01–R04, a weight reversal, unknown and inapplicable inputs, exact ties, unavailable items and input permutations. It does not start Spring or need a running server. The second command also verifies the existing domain and HTTP contracts. The implementation PR records actual execution results.
+
+There is no visible search change in this delivery. Next: connect the filtered list to a batch endpoint and add the optional Compatibility sort alongside Newest and Salary, retaining ordinary search when ranking is unavailable. No profile migration is required.
