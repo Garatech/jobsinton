@@ -4,6 +4,11 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Proposed — Compatibility ranking (2026-11-11)
+
+- Added [ranking rules and worked examples](docs/RANKING.md) for review: constraint precedence, advisory weights, evidence coverage and stable tie-breaks.
+- Recorded verification of the comparison journey by the owner. Search still offers Newest and Salary; the proposal changes no runtime behavior.
+
 ### Added — Matching API and opportunity details (2026-10-31)
 
 - Connected the accepted matching engine to the existing opportunity detail panel through a validated, bounded POST endpoint, tracked in issue #21.

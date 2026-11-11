@@ -128,6 +128,6 @@ Start the backend and frontend using DEVELOPMENT.md. Use fictional profile data.
 
 The catalog is fictional, place normalization is deliberately limited, and profile transmission is transient. The existing rules and data gaps are unchanged. There is no claim of hiring probability or employer eligibility.
 
-After owner acceptance of this integration, the next proposed increment is a reviewed ranking specification: weights, information coverage and tie-breaking, with reference examples before implementation. Providers, expanded preferences, accounts and persistence remain separate milestones.
+The owner reported successful verification of the integration. The [ranking specification](RANKING.md) proposes weights, coverage and tie-breaks, with reference cases to review before implementing the optional sort. Providers, expanded preferences, accounts and persistence remain separate milestones.
 
 Reverting the integration restores local descriptive details. It requires no profile-storage migration; the pure domain engine remains independently usable.
