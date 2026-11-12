@@ -78,7 +78,7 @@ City resolution is limited to Madrid, Valencia/València and Barcelona when the 
 
 ## Data handling and interaction
 
-The profile remains stored only in browser localStorage. Opening an opportunity with a saved profile sends that snapshot to the configured backend for a transient comparison. Saving or editing a profile alone sends no matching request. The application adds no profile database or request-body logging; comparisons are not synchronized between devices.
+The profile remains stored only in browser localStorage. Opening an opportunity with a saved profile sends that snapshot to the configured backend for a transient comparison. Selecting Compatibility in search also sends the saved snapshot with filtered IDs. Saving or editing a profile alone sends no matching request. The application adds no profile database or request-body logging; comparisons are not synchronized between devices.
 
 Only successful saves update the shared snapshot. Drafts and failed saves keep the prior comparison input. Clearing the saved profile removes the comparison and restores the setup link. Existing profile tabs still use last-save-wins behavior and need a reload to see another tab's saved profile; live cross-tab profile synchronization is not introduced.
 
@@ -128,6 +128,6 @@ Start the backend and frontend using DEVELOPMENT.md. Use fictional profile data.
 
 The catalog is fictional, place normalization is deliberately limited, and profile transmission is transient. The existing rules and data gaps are unchanged. There is no claim of hiring probability or employer eligibility.
 
-The owner reported successful verification of the integration. The [Java ranking domain](RANKING.md) implements weights, coverage and tie-breaks independently of this single-offer endpoint. Batch HTTP delivery and the optional search sort remain the next increment. Providers, expanded preferences, accounts and persistence remain separate milestones.
+The owner reported successful verification of the integration. The [Java ranking domain](RANKING.md) implements weights, coverage and tie-breaks independently of this single-offer endpoint. The [batch ranking endpoint](RANKING.md#batch-api-and-search-behavior) powers the optional Compatibility sort; the detail endpoint remains independent. Providers, expanded preferences, accounts and persistence remain separate milestones.
 
 Reverting the integration restores local descriptive details. It requires no profile-storage migration; the pure domain engine remains independently usable.

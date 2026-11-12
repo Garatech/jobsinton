@@ -4,6 +4,12 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Compatibility sort in opportunity search (2026-11-12)
+
+- Connected the Java ranker to search with one validated batch of filtered IDs and the saved profile. Newest remains the default and Salary remains available.
+- Preserved unavailable offers and added loading, explicit Newest fallback, retry and stale-response protection. Layout and shortlist actions retain the same result set.
+- Added HTTP and browser verification plus a [manual search checklist](docs/RANKING.md#manual-acceptance-checklist). The implementation PR records the tested commit and results.
+
 ### Added — Compatibility ranking domain (2026-11-12)
 
 - Implemented the accepted ordering of filtered opportunities for one profile: confirmed constraints first, then exact net support, coverage and ID. Invalid offers remain individually identifiable.

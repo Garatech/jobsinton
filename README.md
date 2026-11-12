@@ -16,7 +16,7 @@ Match scores will express compatibility with a profile, not the likelihood of re
 
 ## Project status
 
-The approved Current design now supports a complete browsing journey: professional profile, searchable fictional opportunities, company pages, details and a browser-local shortlist. Profiles and saved opportunities persist in this browser. Opportunity details use the Java matching API to explain saved-profile comparisons, including differences and missing information. Profiles are sent for comparison without server-side storage. Automated build and integration checks cover the application. Matching scores, live providers, accounts and server-side persistence remain planned.
+The approved Current design now supports a complete browsing journey: professional profile, searchable fictional opportunities, company pages, details and a browser-local shortlist. Profiles and saved opportunities persist in this browser. Opportunity details use the Java matching API to explain saved-profile comparisons, including differences and missing information. In search, Compatibility orders filtered opportunities against the saved profile; Newest remains the default. Profiles are sent for comparison without server-side storage. Automated build and integration checks cover the application. Live providers, accounts and server-side persistence remain planned.
 
 Stack: **Java · Spring Boot · React · TypeScript**.
 

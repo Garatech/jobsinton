@@ -31,7 +31,7 @@ The browser calls `/api/status` on its own origin. Vite forwards `/api` to `http
 | `.github/workflows/ci.yml` | Reproduce builds and integration checks in GitHub |
 | `.devcontainer/` | Optional shared cloud development environment |
 
-The profile editor persists the saved snapshot in the browser; comparison requests send it transiently to the backend. The catalog module supplies fictional data and browser-local saved IDs. The matching domain module is independent of the HTTP and frontend boundaries. The pure Java [ranker](RANKING.md#java-implementation) reuses the matching engine across one profile and a filtered offer set. Its result preserves each comparison, its exact sorting evidence and any unavailable offers. Provider connectors and a public ranking endpoint remain future work.
+The profile editor persists the saved snapshot in the browser; comparison requests send it transiently to the backend. The catalog module supplies fictional data and browser-local saved IDs. The matching domain module is independent of the HTTP and frontend boundaries. The pure Java [ranker](RANKING.md#java-implementation) reuses the matching engine across one profile and a filtered offer set. Its result preserves each comparison, its exact sorting evidence and any unavailable offers. The [batch endpoint](RANKING.md#batch-api-and-search-behavior) returns ordered IDs and unavailable IDs for the filtered set. The client validates membership, versions and request ownership before updating search. Provider connectors remain future work.
 
 ## API contract
 

@@ -167,7 +167,7 @@ export function ProfileEditor({ onSaved }: { onSaved: (profile: ProfessionalProf
       <div className="profile-layout">
         <form className="profile-form" onSubmit={submit} noValidate aria-label="Professional profile" aria-describedby="profile-storage-note">
           <div className="form-heading"><h2>Your preferences</h2><button type="button" className="text-button" disabled={!dirty} onClick={discard}>Discard changes</button></div>
-          <p className="form-note">All profile fields are required, including at least one technology. Changes are saved only when you select Save profile. Opportunity comparisons send the saved profile to the server without storing it there.</p>
+          <p className="form-note">All profile fields are required, including at least one technology. Changes are saved only when you select Save profile. Opportunity details and Compatibility sorting send the saved profile to the server without storing it there.</p>
           {storageError && <p className="notice notice-error" role="alert">{storageError}</p>}
           {Object.values(errors).some(Boolean) && <p className="notice notice-error" role="alert">Check the highlighted fields before saving.</p>}
           <fieldset>

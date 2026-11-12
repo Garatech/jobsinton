@@ -1,6 +1,6 @@
 # Compatibility ranking
 
-Today, opportunity details explain an individual comparison. Search still offers **Newest** and **Salary**. The policy accepted in PR #24 is implemented in Java. It answers “Which of these opportunities should I read first?” for a single saved profile and a filtered set of offers. An HTTP batch endpoint and search control are the next integration step.
+Today, opportunity details explain an individual comparison. Search offers **Newest** (default), **Salary** and an optional **Compatibility** order. The policy accepted in PR #24 is implemented in Java. It answers “Which of these opportunities should I read first?” for a single saved profile and a filtered set of offers. The search page requests a single batch when Compatibility is selected with a saved profile.
 
 ## Order of decisions
 
@@ -78,7 +78,7 @@ Call `new CompatibilityRanker().rank(profile, offersById)` with one normalized p
 
 A `RankedBatch` carries the matching and ranking versions. Its `ranked` list retains each valid evaluation (including constraint explanations) and its exact A/D/U allocations, agreement, coverage and net support. Empty optional ratios mean undefined; zero is a real value. The immutable `unavailable` list follows the valid entries and retains the engine's validation errors. A known ID with a missing offer is retained there too. IDs must be nonblank and unique (map keys). An empty filtered set is valid.
 
-With no profile, the domain returns `NoProfile.INSTANCE` and does not evaluate or personalize anything. The later search integration owns the ordinary Newest fallback. The accepted matching version is pinned so upgrading the matching rules requires a ranking policy review.
+With no profile, the domain returns `NoProfile.INSTANCE` and does not evaluate or personalize anything. The search page handles the ordinary Newest fallback without sending a request when the profile is absent. The accepted matching version is pinned so upgrading the matching rules requires a ranking policy review.
 
 For exact allocation, one point is split into as many units as there are applicable technology assessments (at least one). Integer totals therefore share a denominator even for a seven-way tag split. Reduced fractions and cross multiplication preserve differences that display rounding would erase. The current engine caps a listing at 100 terms and the total weight is 100.
 
@@ -93,4 +93,45 @@ mvn -B -ntp -f backend/pom.xml verify
 
 The first command exercises R01–R14, including the real catalog facts for R01–R04, a weight reversal, unknown and inapplicable inputs, exact ties, unavailable items and input permutations. It does not start Spring or need a running server. The second command also verifies the existing domain and HTTP contracts. The implementation PR records actual execution results.
 
-There is no visible search change in this delivery. Next: connect the filtered list to a batch endpoint and add the optional Compatibility sort alongside Newest and Salary, retaining ordinary search when ranking is unavailable. No profile migration is required.
+## Batch API and search behavior
+
+`POST /api/matching/rank` takes exactly two JSON fields: the last saved `profile` (the [existing seven-field contract](MATCHING_API.md#request-and-response)) and `opportunityIds` (0–100 unique nonblank strings of at most 80 characters). The server resolves its own listing facts and uses the fixed policy. Client weights and listing facts are not accepted. Parsing shares the 16 KiB limit and duplicate-key/trailing-JSON checks with the detail endpoint.
+
+For example, use a backend profile with Java and Spring Boot, three total years, Madrid/Spain, remote and a null office maximum. Given IDs `["frontend-react","not-in-catalog","backend-java"]`, the response is:
+
+```json
+{
+  "apiVersion": "ranking-api-v1",
+  "rankingVersion": "ranking-v1.0",
+  "matchingVersion": "matching-v1.0",
+  "ranked": ["backend-java","frontend-react"],
+  "unavailable": ["not-in-catalog"]
+}
+```
+
+The two arrays partition the input exactly. An unknown ID is an unavailable item, not a failed batch. An empty batch returns two empty arrays. Malformed JSON returns 400, oversized input 413, and invalid envelopes/IDs or profiles 422; application errors carry `code`, `message` and `errors` rather than an order. Responses use `Cache-Control: no-store`. The backend does not store or log the profile body. Only IDs and version metadata are needed in the success response; explanations remain available on individual opportunity pages.
+
+The browser applies filters first. Newest and Salary stay local. Compatibility submits one batch per changed set of candidate IDs or saved snapshot, coalescing rapid edits for 150 ms. No batch is sent without a profile or candidates. Layout and shortlist changes alone do not request another ranking. The query string retains the active filters, view and sort on reload or Back.
+
+During loading, the list remains usable in Newest order and reports the pending comparison. A response with incompatible versions, omitted/extra/repeated IDs or malformed content cannot replace the list. An eight-second deadline or request failure switches the selector and URL to Newest and offers **Retry ranking**, which uses the current filters. Navigating, changing sort or superseding the batch cancels it and invalidates late success or failure. Unavailable offers are appended and labelled **Comparison unavailable**; they can still be opened or saved.
+
+## Verify compatibility search
+
+From the repository root with Java 21 and Node 24, stop any development servers first. With frontend dependencies and Chromium installed as in [DEVELOPMENT.md](DEVELOPMENT.md), the focused commands are:
+
+```powershell
+mvn -B -ntp -f backend/pom.xml "-Dtest=RankingApiIntegrationTest" test
+npm --prefix frontend run test:e2e -- ranking-search.spec.ts
+```
+
+For the full run use `mvn -B -ntp -f backend/pom.xml verify`, then `npm --prefix frontend ci`, `npm --prefix frontend run build` and `npm --prefix frontend run test:e2e`. No database, credentials or profile migration is required.
+
+### Manual acceptance checklist
+
+1. Open Opportunities without a saved profile. Selecting Compatibility should leave Newest active and offer profile setup.
+2. Save the backend profile in the example above. In Opportunities, Newest starts with Data Engineer; Compatibility puts Backend Developer first. Open it to see the matching facts.
+3. Select Remote. Only the three remote roles remain. Change between cards and list, save an offer, open a detail and use Back. The filtered ranking and layout should remain available.
+4. Save a Data profile with Python, SQL, three years, Valencia/Spain, Hybrid and a maximum of two office days. With no filters, Compatibility should put Data Engineer first. Reduce the maximum to one and save: Backend Developer should now precede Data Engineer because of its office-day conflict. An unsaved edit must not change the order.
+5. Stop the backend, reselect Compatibility, and confirm that the selector shows Newest, filters remain usable and offers can be saved. Restart the backend and retry. Rapidly changing filters must never restore an earlier result set.
+
+This delivery uses the fictional catalog only. After acceptance, the next roadmap milestone is reviewing access and constraints for a first live provider.
