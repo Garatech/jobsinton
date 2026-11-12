@@ -1,16 +1,28 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { findCompany, opportunities } from '../catalog/data';
 import { EmptyState, JobList, PageHeading, type SavedActions } from '../ui';
+import { useRankedOrder } from '../matching/useRankedOrder';
+import type { ProfessionalProfile } from '../profile/model';
 
+type Sort = 'newest' | 'salary' | 'compatibility';
 const roles = ['Backend', 'Frontend', 'Full stack', 'Data', 'Platform', 'SAP'];
 const modes = ['Remote', 'Hybrid', 'On-site'];
-export function Search({ query, ...actions }: SavedActions & { query: string }) {
+export function Search({ query, profile, ...actions }: SavedActions & { query: string; profile: ProfessionalProfile | null }) {
   const initial = new URLSearchParams(query);
   const [text, setText] = useState((initial.get('q') || '').slice(0, 160));
   const [role, setRole] = useState(roles.includes(initial.get('role') || '') ? initial.get('role')! : '');
   const [workModes, setWorkModes] = useState((initial.get('mode') || '').split(',').filter(m => modes.includes(m)));
   const [salary, setSalary] = useState(['40000', '45000', '55000'].includes(initial.get('salary') || '') ? initial.get('salary')! : '0');
-  const [sort, setSort] = useState(initial.get('sort') === 'salary' ? 'salary' : 'newest');
+  const requestedSort = initial.get('sort');
+  const [sort, setSort] = useState<Sort>(requestedSort === 'compatibility' && profile ? 'compatibility'
+    : requestedSort === 'salary' ? 'salary' : 'newest');
+  const [notice, setNotice] = useState<'profile' | 'failure' | null>(
+    requestedSort === 'compatibility' && !profile ? 'profile' : null);
+  const onFailure = useCallback(() => { setNotice('failure'); setSort('newest'); }, []);
+  function chooseSort(value: Sort) {
+    if (value === 'compatibility' && !profile) { setNotice('profile'); setSort('newest'); return; }
+    setNotice(null); setSort(value);
+  }
   const [layout, setLayout] = useState(initial.get('view') === 'cards' ? 'cards' : 'list');
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
@@ -25,6 +37,11 @@ export function Search({ query, ...actions }: SavedActions & { query: string }) 
     return terms.every(t => searchable.includes(t)) && (!role || role === job.role)
       && (!workModes.length || workModes.includes(job.mode)) && job.salary >= Number(salary);
   }).sort((a, b) => sort === 'salary' ? b.salary - a.salary : b.published.localeCompare(a.published));
+  const idsKey = sort === 'compatibility' && profile && filtered.length
+    ? JSON.stringify(filtered.map(job => job.id)) : null;
+  const order = useRankedOrder(profile, idsKey, onFailure);
+  const byId = new Map(filtered.map(job => [job.id, job]));
+  const shown = order ? [...order.ranked, ...order.unavailable].map(id => byId.get(id)!) : filtered;
   function reset() { setText(''); setRole(''); setSalary('0'); setWorkModes([]); input.current?.focus(); }
   function chip(label: string, remove: () => void) {
     return <button className="filter-chip" key={label} type="button" aria-label={'Remove filter: ' + label}
@@ -49,7 +66,7 @@ export function Search({ query, ...actions }: SavedActions & { query: string }) 
     </aside>
     <section className="results" aria-label="Search results"><div className="results-toolbar">
       <p role="status">{filtered.length} {filtered.length === 1 ? 'opportunity' : 'opportunities'}</p>
-      <div className="result-controls"><label className="sort-label" htmlFor="sort">Sort by</label><select id="sort" value={sort} onChange={e => setSort(e.target.value)}><option value="newest">Newest</option><option value="salary">Salary</option></select>
+      <div className="result-controls"><label className="sort-label" htmlFor="sort">Sort by</label><select id="sort" value={sort} onChange={e => chooseSort(e.target.value as Sort)}><option value="newest">Newest</option><option value="salary">Salary</option><option value="compatibility">Compatibility</option></select>
         <div className="view-toggle" role="group" aria-label="Result layout">{['list', 'cards'].map(view => <button key={view} type="button" aria-label={view === 'list' ? 'List view' : 'Card view'} aria-pressed={layout === view} onClick={() => setLayout(view)}>{view === 'list' ? '☰' : '▦'}</button>)}</div>
       </div></div>
       <div className="active-filters" aria-label="Active filters">
@@ -58,7 +75,12 @@ export function Search({ query, ...actions }: SavedActions & { query: string }) 
         {workModes.map(mode => chip(mode, () => setWorkModes(current => current.filter(m => m !== mode))))}
         {salary !== '0' && chip('From €' + Number(salary).toLocaleString('en-GB'), () => setSalary('0'))}
       </div>
-      {filtered.length ? <JobList jobs={filtered} className={layout === 'cards' ? 'cards' : ''} {...actions} /> :
+      {notice === 'profile' && <p className="field-hint" role="status">Showing Newest. <a href="#profile">Save a profile</a> to sort by compatibility.</p>}
+      {notice === 'failure' && <p className="field-hint" role="status">Compatibility unavailable. Showing Newest.{' '}
+        <button type="button" className="text-button" onClick={() => chooseSort('compatibility')}>Retry ranking</button></p>}
+      {idsKey && !order && <p className="field-hint" role="status">Ranking opportunities… Showing Newest for now.</p>}
+      {order && <p className="sr-only" role="status">Ordered by compatibility.</p>}
+      {filtered.length ? <JobList jobs={shown} unavailableIds={order?.unavailable} className={layout === 'cards' ? 'cards' : ''} {...actions} /> :
         <EmptyState title="No opportunities found." description="Try a broader search or remove a filter."><button className="primary" type="button" onClick={reset}>Clear filters</button></EmptyState>}
       {filtered.length > 0 && <p className="end-note">You’re up to date.</p>}
     </section></div>

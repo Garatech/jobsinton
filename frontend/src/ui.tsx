@@ -17,13 +17,14 @@ export function SaveButton({ job, saved, onToggle }: SavedActions & { job: Oppor
     aria-label={(isSaved ? 'Remove ' : 'Save ') + job.title + (isSaved ? ' from saved' : '')}
     onClick={() => onToggle(job.id)}>{isSaved ? 'Saved ✓' : 'Save ＋'}</button>;
 }
-export function JobCard({ job, ...actions }: SavedActions & { job: Opportunity }) {
+export function JobCard({ job, comparisonUnavailable, ...actions }: SavedActions & { job: Opportunity; comparisonUnavailable?: boolean }) {
   const company = findCompany(job.company)!;
   return <article className="job" data-job={job.id}>
     <div className="job-main"><CompanyMark company={company} /><div>
       <p className="company-name"><a href={'#companies/' + company.id}>{company.name}</a></p>
       <h3><a href={'#opportunities/' + job.id}>{job.title}</a></h3>
       <p className="job-meta">{job.location}<span aria-hidden="true"> · </span>{job.mode}</p>
+      {comparisonUnavailable && <p className="job-meta">Comparison unavailable</p>}
       <p className="job-line">{job.line}</p><Tags items={job.tags} />
     </div></div>
     <div className="job-end"><p className="salary">{salaryLabel(job)}<span>gross / year</span></p>
@@ -32,8 +33,8 @@ export function JobCard({ job, ...actions }: SavedActions & { job: Opportunity }
     </div>
   </article>;
 }
-export function JobList({ jobs, className = '', ...actions }: SavedActions & { jobs: Opportunity[]; className?: string }) {
-  return <div className={'jobs ' + className}>{jobs.map(job => <JobCard key={job.id} job={job} {...actions} />)}</div>;
+export function JobList({ jobs, className = '', unavailableIds, ...actions }: SavedActions & { jobs: Opportunity[]; className?: string; unavailableIds?: string[] }) {
+  return <div className={'jobs ' + className}>{jobs.map(job => <JobCard key={job.id} job={job} comparisonUnavailable={unavailableIds?.includes(job.id)} {...actions} />)}</div>;
 }
 export function EmptyState({ title, description, children }: { title: string; description: string; children: ReactNode }) {
   return <div className="empty-state"><span className="empty-symbol" aria-hidden="true">↗</span><h2>{title}</h2><p>{description}</p>{children}</div>;

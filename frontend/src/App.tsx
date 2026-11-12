@@ -88,7 +88,7 @@ export function App() {
       {storageError && <p className="notice notice-error storage-notice" role="alert">{storageError} <a href="#saved">Review shortlist</a></p>}
       {!valid && <><PageHeading eyebrow="A DIFFERENT DIRECTION" title="Page not found." /><div className="app-empty"><a className="button primary" href="#opportunities">Explore opportunities</a></div></>}
       {valid && route.page === 'home' && <Home profile={profile} {...actions} />}
-      {valid && route.page === 'opportunities' && !job && <Search key={route.hash + ':' + route.revision} query={route.query} {...actions} />}
+      {valid && route.page === 'opportunities' && !job && <Search key={route.hash + ':' + route.revision} query={route.query} profile={profile} {...actions} />}
       {job && <OpportunityDetail key={job.id} job={job} profile={profile} {...actions} />}
       {valid && route.page === 'companies' && !company && <Companies />}
       {company && <CompanyDetail key={company.id} company={company} {...actions} />}
