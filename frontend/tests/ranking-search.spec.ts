@@ -132,29 +132,29 @@ test('a missing comparison stays visible at the end and can be saved', async ({ 
 for (const lateStatus of [200, 503]) {
   test('ignores superseded filter response, HTTP ' + lateStatus, async ({ page }) => {
     await seed(page);
-    // Exercise request ownership even on a transport that ignores abort.
-    await page.addInitScript(() => {
+    // Hold delivery in the browser: a superseded transport can resolve even after abort.
+    // Synchronize on delivery to fetch, not on streaming the body of an HTTP error.
+    await page.addInitScript(status => {
+      const release = new Promise<void>(resolve => window.addEventListener('release-old-ranking', () => resolve(), { once: true }));
       const original = window.fetch.bind(window);
-      window.fetch = (input, init) => original(input, String(input).endsWith('/api/matching/rank')
-        ? { ...init, signal: undefined } : init);
-    });
-    let captured!: () => void, release!: () => void;
-    const started = new Promise<void>(resolve => { captured = resolve; });
-    const pending = new Promise<void>(resolve => { release = resolve; });
-    await page.route('**' + endpoint, async route => {
-      if (route.request().postDataJSON().opportunityIds.length !== 6) return route.continue();
-      const old = await route.fetch();
-      captured(); await pending;
-      if (lateStatus === 200) await route.fulfill({ response: old });
-      else await route.fulfill({ status: lateStatus, body: '' });
-    });
+      window.fetch = async (input, init) => {
+        if (!String(input).endsWith('/api/matching/rank') || typeof init?.body !== 'string'
+          || JSON.parse(init.body).opportunityIds.length !== 6) return original(input, init);
+        const response = await original(input, { ...init, signal: undefined });
+        const body = await response.text();
+        document.documentElement.dataset.rankingCaptured = 'true';
+        await release;
+        document.documentElement.dataset.rankingDelivered = String(status);
+        return new Response(status === 200 ? body : '', { status, headers: { 'Content-Type': 'application/json' } });
+      };
+    }, lateStatus);
     await page.goto('/#opportunities?sort=compatibility');
-    await started;
+    await page.waitForFunction(() => document.documentElement.dataset.rankingCaptured === 'true');
     await expect(page.getByText(/Ranking opportunities/)).toBeVisible();
     await page.getByLabel('Remote', { exact: true }).check();
     await expect(ready(page)).toHaveCount(1);
-    const late = page.waitForResponse(r => r.url().endsWith(endpoint) && r.request().postDataJSON().opportunityIds.length === 6);
-    release(); await (await late).finished();
+    await page.evaluate(() => window.dispatchEvent(new Event('release-old-ranking')));
+    await page.waitForFunction(status => document.documentElement.dataset.rankingDelivered === String(status), lateStatus);
     await page.evaluate(() => new Promise<void>(done => requestAnimationFrame(() => requestAnimationFrame(() => done()))));
     await expect(sort(page)).toHaveValue('compatibility');
     expect(await ids(page)).toEqual(['backend-java', 'frontend-react', 'platform-engineer']);
