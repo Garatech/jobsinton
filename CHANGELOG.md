@@ -4,6 +4,12 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Compatibility ranking domain (2026-11-12)
+
+- Implemented the accepted ordering of filtered opportunities for one profile: confirmed constraints first, then exact net support, coverage and ID. Invalid offers remain individually identifiable.
+- Added executable R01–R14 examples, including fractional tag weights, changed priorities and stable order across input permutations.
+- Added [local verification commands](docs/RANKING.md#verification-after-merge). The website and HTTP contracts are unchanged; search integration follows separately.
+
 ### Proposed — Compatibility ranking (2026-11-11)
 
 - Added [ranking rules and worked examples](docs/RANKING.md) for review: constraint precedence, advisory weights, evidence coverage and stable tie-breaks.
