@@ -4,6 +4,11 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Offline Adzuna listing conversion (2026-11-13)
+
+- Added a Java mapper for individual search results. It preserves listing metadata and salary provenance, rejects unusable referrals and keeps unstated matching facts unknown.
+- Added [offline verification steps](docs/ADZUNA_MAPPING.md). The website and its catalog have not changed.
+
 ### Added — Local Adzuna evaluation (2026-11-13)
 
 - Added a [one-request evaluation tool and review guide](docs/ADZUNA_PROBE.md) for Java vacancies in Madrid. The tool reports aggregate evidence and leaves unknown fields explicit.

@@ -29,4 +29,4 @@ node tools/adzuna/probe.mjs
 - `usableRelevantDistinct` counts distinct IDs for which the **same row** was judged relevant and supplied both a title and an accepted referral. At least one makes the source a candidate for connector design. Review the missing fields before making that decision; the flag alone is not approval for public display.
 - A successful empty response records zero results. An error records an outcome and the HTTP status if one arrived, without the URL or response body. A 401/403, 429 or failed search is a reason to record the blocker, not to repeat the request automatically.
 
-**Observation status:** pending an authenticated local run. The offline fixtures verify behavior only. The [source decision](PROVIDERS.md) lists the conditions that remain open before public use.
+**Observation status:** completed; the [aggregate observation](https://github.com/Garatech/jobsinton/issues/31) supported [offline connector development](ADZUNA_MAPPING.md). The offline fixtures verify behavior only. The [source decision](PROVIDERS.md) lists the conditions that remain open before public use.
