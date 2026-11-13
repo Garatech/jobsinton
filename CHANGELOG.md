@@ -4,6 +4,11 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Optional local Adzuna search (2026-11-13)
+
+- Added a loopback-only Spring profile for one bounded page of Spanish vacancies. The backend reuses the listing mapper, preserves provider order and distinguishes duplicate, rejected and absent results from provider errors.
+- Added offline verification and [PowerShell instructions for the optional live check](docs/ADZUNA_SEARCH.md). Regular startup and the fictional frontend require no credentials.
+
 ### Added — Offline Adzuna listing conversion (2026-11-13)
 
 - Added a Java mapper for individual search results. It preserves listing metadata and salary provenance, rejects unusable referrals and keeps unstated matching facts unknown.
