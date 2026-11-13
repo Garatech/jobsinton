@@ -4,6 +4,11 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Documented — First live source review (2026-11-13)
+
+- Compared four job sources for Spain and selected Adzuna for a bounded, zero-cost evaluation, subject to account access. [Provider decision and next probe](docs/PROVIDERS.md).
+- Documented display, retention and matching limitations. The application still uses fictional listings; there is no live connector or new setup requirement.
+
 ### Added — Compatibility sort in opportunity search (2026-11-12)
 
 - Connected the Java ranker to search with one validated batch of filtered IDs and the saved profile. Newest remains the default and Salary remains available.

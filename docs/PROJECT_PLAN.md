@@ -87,7 +87,7 @@ Salary data retains its currency, pay period, and gross/net classification; inco
 
 ## Job providers
 
-Preliminary review dated 2026-10-17. Documentation has been consulted, but no authenticated integration has been validated.
+The [first live source review](PROVIDERS.md) recommends an Adzuna evaluation for Spain at EUR 0. No authenticated search or permission for an ongoing public demo is claimed. The table below is the preliminary inventory from 2026-10-17; the new review supersedes its next steps for InfoJobs and Adzuna.
 
 | Provider | Evidence | Next step |
 | --- | --- | --- |
@@ -126,7 +126,7 @@ Milestones have exit criteria rather than fixed deadlines. Estimates follow once
 | 1. Foundation | Remote repository, reproducible environment, and automated checks | A clean clone starts using verified instructions | Complete for local workflow: owner reported Windows startup and verification on 2026-10-20; Codespaces remains optional and unverified |
 | 2. First journey | Profile, fictional catalog, details, and saved opportunities | The journey works with loading, empty, and error states | Complete for the fictional catalog journey: browser-local profile and shortlist, with owner verification reported on 2026-10-30 |
 | 3. Matching v1 | Rules, domain engine, integration, then ranking | Accepted reference cases pass; later ranking cases cover changed weights | Compatibility ordering connected to search; [owner acceptance checklist](RANKING.md#manual-acceptance-checklist) ready |
-| 4. Live provider | One connector and normalized listings | Authorized access; limits, duplicates, and failures handled | Pending |
+| 4. Live provider | One connector and normalized listings | Authorized access; limits, duplicates, and failures handled | [Source evaluation](PROVIDERS.md) proposed; next gate is one local Spain search, then connector design if viable |
 | 5. Personal use | Persistence, application tracking, and accounts | User isolation and data deletion verified | Pending |
 | 6. Demonstration | Refined interface and a viable zero-cost deployment | Main journey works accessibly on mobile and desktop with fictional data | Pending |
 | 7. Portfolio presentation | Screenshots, documentation, and technical explanation | Reproducible demonstration and defensible decisions | Pending |
@@ -287,3 +287,7 @@ PR #24 established the ranking policy. Issue #25 implements the domain calculati
 ### 2026-11-12 — Compatibility in search
 
 The ranking policy and Java implementation are integrated through one bounded batch request for the saved profile and filtered offer IDs (issue #27). Search receives the domain order without copying weights into the browser or issuing a detail request for every card. Unavailable entries remain visible. Missing profiles and failed batches explicitly use Newest; stale results cannot replace new filters. The [guide](RANKING.md#verify-compatibility-search) includes commands and a manual checklist. The PR records CI results. After owner verification, review authorized zero-cost access for a first live provider before connector work.
+
+### 2026-11-13 — First live source review
+
+Reviewed official access conditions and search contracts for Adzuna, InfoJobs, Tecnoempleo and Remotive in issue #29. Adzuna is the proposed first local probe; InfoJobs' published aggregator restriction rules it out under standard terms. [PROVIDERS.md](PROVIDERS.md) records the trade-offs, matching gaps and acceptance criteria. No live query, account or application change was part of this review.
