@@ -32,7 +32,7 @@ The recommendation concerns the public Job Search product, not Adzuna Intelligen
 
 The present display catalog expects complete facts such as salary and office days; a live adapter must support missing values rather than substituting zero. Preserve the existing [matching semantics](MATCHING.md) and [ranking policy](RANKING.md): an offer with little information can be shown without claiming a high-confidence fit.
 
-## Next step: one local probe, not a connector
+## Local evaluation protocol
 
 1. Obtain the free credentials through the provider and confirm the assigned limits. Keep both values on the backend machine. Adzuna uses query-string credentials: do not log the complete URL or paste it into an issue, screenshot or browser.
 2. Make **one** HTTPS GET to `api.adzuna.com/v1/api/jobs/es/search/1`, with `what=Java`, `where=Madrid`, `results_per_page=10`, the required application credentials and an `Accept: application/json` header. Use a fixed search, not a saved personal profile. No scheduled polling, detail fan-out or live CI call.
@@ -40,4 +40,4 @@ The present display catalog expects complete facts such as salary and office day
 4. **Proceed to connector design only if** access is granted at EUR 0, the response contains at least one relevant vacancy with usable ID, title and referral link, and the observed fields can be represented honestly. If credentials fail, a quota is exhausted, payment is required or results are irrelevant, record the blocker instead of adding a connector. A useful private trial still does not authorize a public rollout.
 5. Before public use, resolve the intended duration, attribution, ranking/display conditions and cache/shortlist retention for this use. Until then keep the existing fictional journey available. A later connector PR would cover pagination, bounded requests, deduplication, expired listings and offline tests using authored fixtures.
 
-**Run the experiment:** [Local commands and review guide](ADZUNA_PROBE.md). The authenticated observation is pending.
+**Run the experiment:** [Local commands and review guide](ADZUNA_PROBE.md). The [completed observation](https://github.com/Garatech/jobsinton/issues/31) supports the [offline listing mapper](ADZUNA_MAPPING.md).
