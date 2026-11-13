@@ -4,6 +4,11 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Local Adzuna evaluation (2026-11-13)
+
+- Added a [one-request evaluation tool and review guide](docs/ADZUNA_PROBE.md) for Java vacancies in Madrid. The tool reports aggregate evidence and leaves unknown fields explicit.
+- Added offline checks for the request limit, failure handling and evaluation counts. The authenticated result is pending; the application catalog remains fictional.
+
 ### Documented — First live source review (2026-11-13)
 
 - Compared four job sources for Spain and selected Adzuna for a bounded, zero-cost evaluation, subject to account access. [Provider decision and next probe](docs/PROVIDERS.md).

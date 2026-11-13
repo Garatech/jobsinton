@@ -1,6 +1,6 @@
 # First live source: Spain
 
-Decision for review · 13 November 2026 · Personal portfolio, EUR 0 budget.
+Source selected for local evaluation · 13 November 2026 · Personal portfolio, EUR 0 budget.
 
 **Select Adzuna's Job Search API for one local evaluation.** It documents Spain, keyword/location search and a free evaluation key. This answers which source to test first. It does not establish Spanish vacancy volume, approve a permanent public demo, or activate a provider. The running application and CI still use fictional opportunities. No account was created, terms accepted, credentials inspected, provider contacted or live search performed in this review.
 
@@ -34,10 +34,10 @@ The present display catalog expects complete facts such as salary and office day
 
 ## Next step: one local probe, not a connector
 
-1. Once the owner accepts the source, obtain the free credentials through the provider and confirm the assigned limits. Keep both values on the backend machine. Adzuna uses query-string credentials: do not log the complete URL or paste it into an issue, screenshot or browser.
+1. Obtain the free credentials through the provider and confirm the assigned limits. Keep both values on the backend machine. Adzuna uses query-string credentials: do not log the complete URL or paste it into an issue, screenshot or browser.
 2. Make **one** HTTPS GET to `api.adzuna.com/v1/api/jobs/es/search/1`, with `what=Java`, `where=Madrid`, `results_per_page=10`, the required application credentials and an `Accept: application/json` header. Use a fixed search, not a saved personal profile. No scheduled polling, detail fan-out or live CI call.
 3. Record a redacted observation: date, market, HTTP status, number returned, number relevant to software work in Madrid, distinct IDs, safe referral links, missing fields and advertised versus predicted salary counts. Check examples of remote/hybrid/office evidence separately. Zero hits is a valid observation; it does not establish that Spain has no vacancies.
 4. **Proceed to connector design only if** access is granted at EUR 0, the response contains at least one relevant vacancy with usable ID, title and referral link, and the observed fields can be represented honestly. If credentials fail, a quota is exhausted, payment is required or results are irrelevant, record the blocker instead of adding a connector. A useful private trial still does not authorize a public rollout.
 5. Before public use, resolve the intended duration, attribution, ranking/display conditions and cache/shortlist retention for this use. Until then keep the existing fictional journey available. A later connector PR would cover pagination, bounded requests, deduplication, expired listings and offline tests using authored fixtures.
 
-**Review:** approving this document selects the first experiment. There is nothing to install or run for this PR.
+**Run the experiment:** [Local commands and review guide](ADZUNA_PROBE.md). The authenticated observation is pending.

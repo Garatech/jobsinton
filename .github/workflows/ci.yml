@@ -32,6 +32,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
+      - name: Verify offline provider probe
+        run: node --test tools/adzuna/probe.test.mjs
       - name: Verify backend HTTP contract
         run: mvn -B -ntp -f backend/pom.xml verify
       - name: Install locked frontend dependencies
