@@ -109,7 +109,7 @@ Use fictional details such as Backend developer, Java, React, 0 years, Spain, Ma
 - [ ] Edit the city without saving: the summary retains the saved city and an unsaved-changes notice appears.
 - [ ] Reload without saving: the previously saved city returns. Edit again and save: the summary updates.
 - [ ] Type a new technology and select Save directly: it is included in the saved profile.
-- [ ] Change Hybrid to Remote and save: no day selector remains and the summary says remote only.
+- [ ] Change Hybrid to Remote and save: no day selector remains and the summary shows Remote as the preferred mode and Not specified for the weekly office limit.
 - [ ] Switch back to Hybrid: choose the limit again. Check On-site with 5 days as well.
 - [ ] Navigate with Tab, Shift+Tab, Enter, and the select controls' arrow keys: focus is visible and all actions are reachable.
 - [ ] Check a narrow mobile-sized window: controls and summary remain readable without horizontal scrolling.

@@ -64,7 +64,9 @@ test('validates required fields, whole years and conditional days with focused e
   await page.getByLabel('Preferred work mode').selectOption('remote');
   await expect(page.getByLabel('Maximum on-site days per week')).toHaveCount(0);
   await page.getByRole('button', { name: 'Save profile', exact: true }).click();
-  await expect(page.getByRole('complementary', { name: 'Saved profile' })).toContainText('None — remote only');
+  const summary = page.getByRole('complementary', { name: 'Saved profile' });
+  await expect(summary.getByText('Remote', { exact: true })).toBeVisible();
+  await expect(summary.getByText('Not specified', { exact: true })).toBeVisible();
   await page.reload();
   await expect(page.getByLabel('Preferred work mode')).toHaveValue('remote');
   await page.getByLabel('Preferred work mode').selectOption('onsite');

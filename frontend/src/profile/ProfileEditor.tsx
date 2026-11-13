@@ -277,7 +277,7 @@ export function ProfileEditor({ onSaved }: { onSaved: (profile: ProfessionalProf
                 <dt>Relevant experience</dt><dd>{saved.experienceYears} {saved.experienceYears === 1 ? 'year' : 'years'}</dd>
                 <dt>Residence</dt><dd>{saved.city}, {saved.country}</dd>
                 <dt>Work mode</dt><dd>{WORK_MODES[saved.workMode]}</dd>
-                <dt>Maximum on-site days</dt><dd>{saved.maxOnsiteDays === null ? 'None — remote only' : saved.maxOnsiteDays + ' per week'}</dd>
+                <dt>Maximum on-site days</dt><dd>{saved.maxOnsiteDays === null ? 'Not specified' : saved.maxOnsiteDays + ' per week'}</dd>
               </dl>
               <p className="field-hint">This summary shows your last successful save.</p>
             </>
