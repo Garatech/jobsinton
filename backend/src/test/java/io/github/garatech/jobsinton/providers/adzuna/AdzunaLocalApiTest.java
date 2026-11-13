@@ -86,9 +86,10 @@ class AdzunaLocalApiTest {
         // ASCII command and output: console encoding cannot mask an incorrect string in memory.
         String script = """
                 $ErrorActionPreference = 'Stop'
-                $r = Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:%d/api/providers/adzuna/search' -ContentType 'application/json' -Body '%s'
+                $query = @{ what = 'Java'; where = 'Madrid' } | ConvertTo-Json -Compress
+                $r = Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:%d/api/providers/adzuna/search' -ContentType 'application/json' -Body $query
                 [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($r.listings[0].excerpt))
-                """.formatted(port, QUERY);
+                """.formatted(port);
         var ps = new ProcessBuilder("powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", script)
                 .redirectErrorStream(true).start();
         try {
