@@ -4,6 +4,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
+import java.nio.charset.StandardCharsets;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -13,6 +15,7 @@ import java.util.Set;
 @Profile("adzuna-local")
 @RequestMapping("/api/providers/adzuna")
 class AdzunaSearchController {
+    private static final MediaType JSON_UTF8 = new MediaType(MediaType.APPLICATION_JSON, StandardCharsets.UTF_8);
     private static final Set<String> LOCAL = Set.of("localhost", "127.0.0.1", "::1", "[::1]", "0:0:0:0:0:0:0:1");
     private final AdzunaSearch search;
     AdzunaSearchController(AdzunaSearch search) { this.search = search; }
@@ -33,6 +36,6 @@ class AdzunaSearchController {
     }
 
     private static ResponseEntity<?> reply(int status, Object body) {
-        return ResponseEntity.status(status).cacheControl(CacheControl.noStore()).body(body);
+        return ResponseEntity.status(status).contentType(JSON_UTF8).cacheControl(CacheControl.noStore()).body(body);
     }
 }

@@ -1,0 +1,30 @@
+name: Adzuna Windows client
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'backend/src/**/providers/adzuna/**'
+      - 'backend/pom.xml'
+      - '.github/workflows/adzuna-windows.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  powershell:
+    runs-on: windows-2022
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - name: Verify local search with Windows PowerShell
+        shell: powershell
+        run: mvn -B -ntp -f backend/pom.xml "-Dtest=AdzunaLocalApiTest" test
