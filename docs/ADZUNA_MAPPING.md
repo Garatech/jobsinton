@@ -20,4 +20,4 @@ mvn -B -ntp -f backend/pom.xml "-Dtest=AdzunaListingMapperTest" test
 mvn -B -ntp -f backend/pom.xml verify
 ```
 
-The focused tests use invented JSON and exercise the real matching engine. No Adzuna keys, running servers or frontend build are needed. Step 3B will add optional backend transport and handle page-level responses; this increment adds no route for live searches.
+The focused tests use invented JSON and exercise the real matching engine. No Adzuna keys, running servers or frontend build are needed. The separate [local search profile](ADZUNA_SEARCH.md) handles transport and page-level responses.

@@ -168,3 +168,7 @@ The profile increment is checked separately in its PR and requires the manual ch
 - [Codespaces default environment variables](https://docs.github.com/en/codespaces/developing-in-a-codespace/default-environment-variables-for-your-codespace)
 - [Codespaces port forwarding](https://docs.github.com/en/codespaces/developing-in-a-codespace/forwarding-ports-in-your-codespace)
 - [Vite host allowlists](https://vite.dev/config/server-options#server-allowedhosts)
+
+## Optional local provider search
+
+See [Adzuna search](ADZUNA_SEARCH.md) for offline tests, local credentials and one manual request. The normal development setup above does not need a provider account.
