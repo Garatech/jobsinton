@@ -2,8 +2,14 @@ package io.github.garatech.jobsinton.providers.adzuna;
 
 import java.net.URI;
 import java.net.http.*;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
+import org.springframework.http.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -26,6 +32,12 @@ class AdzunaLocalApiTest {
     final HttpClient client = HttpClient.newHttpClient();
     static final String QUERY = "{\"what\":\"Java\",\"where\":\"Madrid\"}";
 
+    static final String EXCERPT = "¡España! Certificación en A Coruña…";
+    static final String PAGE = """
+            {"results":[{"id":"one","title":"Java developer","redirect_url":"https://adzuna.es/details/1",
+            "description":"%s"}]}
+            """.formatted(EXCERPT);
+
     @TestConfiguration(proxyBeanMethods = false)
     static class Offline { @Bean @Primary Stub fakeAdzuna() { return new Stub(); } }
     static class Stub implements AdzunaTransport {
@@ -34,7 +46,7 @@ class AdzunaLocalApiTest {
         public Reply get(URI uri) {
             calls.incrementAndGet();
             return AdzunaSearchTest.reply(status, status == 200
-                    ? "{\"results\":[" + AdzunaSearchTest.ROW + "]}" : "internal upstream detail fixture-key");
+                    ? PAGE : "internal upstream detail fixture-key");
         }
     }
 
@@ -55,6 +67,38 @@ class AdzunaLocalApiTest {
         assertThat(body.path("listings").get(0).path("id").asString()).isEqualTo("adzuna:one");
         assertThat(res.body()).doesNotContain("fixture-key","app_id");
     }
+    @Test void declaresUtf8AndPreservesTheCompleteUnicodeExcerptOnTheWire() throws Exception {
+        stub.status = 200;
+        var req = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + "/api/providers/adzuna/search"))
+                .header("Content-Type", "application/json").POST(HttpRequest.BodyPublishers.ofString(QUERY)).build();
+        var response = client.send(req, HttpResponse.BodyHandlers.ofByteArray());
+        assertThat(response.statusCode()).isEqualTo(200);
+        var type = MediaType.parseMediaType(response.headers().firstValue("Content-Type").orElseThrow());
+        assertThat(type.isCompatibleWith(MediaType.APPLICATION_JSON)).isTrue();
+        assertThat(type.getCharset()).isEqualTo(StandardCharsets.UTF_8);
+        var decoded = type.getCharset().newDecoder().decode(ByteBuffer.wrap(response.body())).toString();
+        assertThat(json.readTree(decoded).path("listings").get(0).path("excerpt").asString()).isEqualTo(EXCERPT);
+    }
+
+    @Test @EnabledOnOs(OS.WINDOWS)
+    void windowsPowerShellReadsTheSameExcerptWithoutReencoding() throws Exception {
+        stub.status = 200;
+        // ASCII command and output: console encoding cannot mask an incorrect string in memory.
+        String script = """
+                $ErrorActionPreference = 'Stop'
+                $r = Invoke-RestMethod -Method Post -Uri 'http://127.0.0.1:%d/api/providers/adzuna/search' -ContentType 'application/json' -Body '%s'
+                [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($r.listings[0].excerpt))
+                """.formatted(port, QUERY);
+        var ps = new ProcessBuilder("powershell.exe", "-NoLogo", "-NoProfile", "-NonInteractive", "-Command", script)
+                .redirectErrorStream(true).start();
+        try {
+            assertThat(ps.waitFor(30, TimeUnit.SECONDS)).isTrue();
+            String output = new String(ps.getInputStream().readAllBytes(), StandardCharsets.US_ASCII).strip();
+            assertThat(ps.exitValue()).as(output).isZero();
+            assertThat(output).isEqualTo(java.util.Base64.getEncoder().encodeToString(EXCERPT.getBytes(StandardCharsets.UTF_8)));
+        } finally { ps.destroyForcibly(); }
+    }
+
     @Test void rateLimitAuthenticationAndUnavailableAreNotEmptyPages() throws Exception {
         for (int status : new int[]{401,403,429,503}) {
             stub.status = status;

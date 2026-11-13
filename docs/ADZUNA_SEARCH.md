@@ -13,6 +13,14 @@ mvn -B -ntp -f backend/pom.xml verify
 
 The tests use invented responses and a loopback HTTP server. They cover the normal application, local endpoint, original row mapper, provider failures, oversized bodies and read deadlines.
 
+To check accented text without keys or quota, run the focused HTTP tests from the repository root:
+
+```powershell
+mvn -B -ntp -f backend/pom.xml "-Dtest=AdzunaLocalApiTest" test
+```
+
+A fictional provider returns `¡España! Certificación en A Coruña…`. The test checks the response charset and decodes the bytes. On Windows, a second check reads the same excerpt with Windows PowerShell's `Invoke-RestMethod` and compares the string in memory. Neither check uses Adzuna. The endpoint now declares UTF-8 in the **response**; setting `-ContentType` on a request does not set the response encoding. Previously fetched PowerShell variables are not changed.
+
 ## Optional: run one live search on Windows
 
 Use a private PowerShell terminal with Java 21, Maven, a free evaluation account and available quota. Stop any backend already using port 8080 with Ctrl+C in its own terminal. No frontend is required. Keep this developer session on the local machine; do not forward its port, run it behind a proxy or enable network/debug tracing.

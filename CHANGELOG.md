@@ -4,6 +4,10 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Fixed — Encoding in local Adzuna search responses (2026-11-13)
+
+- Declared UTF-8 on local search JSON responses so clients can decode Spanish accents. Added an [offline PowerShell check](docs/ADZUNA_SEARCH.md#verify-without-keys) using a fictional excerpt.
+
 ### Added — Optional local Adzuna search (2026-11-13)
 
 - Added a loopback-only Spring profile for one bounded page of Spanish vacancies. The backend reuses the listing mapper, preserves provider order and distinguishes duplicate, rejected and absent results from provider errors.
