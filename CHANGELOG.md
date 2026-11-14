@@ -4,6 +4,10 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Fixed — Office-day limit in the saved profile (2026-11-14)
+
+- A remote preference now shows “Not specified” for the weekly office limit, consistent with matching. Saved profiles and ranking rules are unchanged.
+
 ### Fixed — Encoding in local Adzuna search responses (2026-11-13)
 
 - Declared UTF-8 on local search JSON responses so clients can decode Spanish accents. Added an [offline PowerShell check](docs/ADZUNA_SEARCH.md#verify-without-keys) using a fictional excerpt.
