@@ -4,6 +4,10 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Explicit facts from Adzuna listings
+
+- Recognise exact role titles and explicit work mode and weekly attendance statements in the supplied advert. Missing or conflicting schedules stay unknown. See [examples and offline verification](docs/ADZUNA_MAPPING.md#explicit-matching-facts-5a).
+
 ### Added — Spanish and English interface (2026-11-14)
 
 - Added a persistent language choice across the demo and local provider search. Switching updates owned text, matching explanations and accessible labels in place. Adverts and user-entered fields keep their original text. See [language verification](docs/LANGUAGES.md).
