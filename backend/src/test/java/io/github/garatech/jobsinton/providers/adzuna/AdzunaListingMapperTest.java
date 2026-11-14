@@ -66,6 +66,21 @@ class AdzunaListingMapperTest {
     }
 
     @Test
+    void anOnsiteLabelDiffersFromHybridButDoesNotExceedAWeeklyLimit() {
+        String excerpt = "Madrid (Paseo del Ejemplo) Presencial Horario: lunes a viernes, 09:00 18…";
+        var ad = listing(ROW.replace("An introduction to a fictional company.", excerpt));
+        assertThat(ad.excerpt()).isEqualTo(excerpt);
+        assertThat(ad.matchingFacts()).isEqualTo(new MatchingInput.Opportunity(null, null, null,
+                MatchingInput.WorkMode.ONSITE, null, null, null));
+        var profile = new MatchingInput.Profile(MatchingInput.Role.BACKEND, List.of("Java"), 2,
+                new MatchingInput.Place("ES", "Madrid"), MatchingInput.WorkMode.HYBRID, 1);
+        var evaluation = (MatchingResult.Evaluation) new MatchingEngine().evaluate(new MatchingInput(profile, ad.matchingFacts()));
+        assertThat(evaluation.assessments()).extracting(MatchingResult.Assessment::reason)
+                .contains(MatchingResult.Reason.MODE_DIFFERENT, MatchingResult.Reason.ATTENDANCE_UNKNOWN)
+                .doesNotContain(MatchingResult.Reason.ATTENDANCE_EXCEEDS_LIMIT);
+    }
+
+    @Test
     void retainsTheWholeSuppliedExcerptAndUsesAreaOnlyAsADisplayLabel() {
         var excerpt = "Introduction. ".repeat(80) + "End of supplied fragment.";
         var ad = listing(ROW.replace("An introduction to a fictional company.", excerpt)
