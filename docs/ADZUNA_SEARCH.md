@@ -67,7 +67,7 @@ Read excerpts locally with `$result.listings | Select-Object -ExpandProperty exc
 
 POST JSON with nonblank `what` and `where` (at most 100 characters each); optional `page` defaults to 1 and accepts 1–5. The market is fixed to Spain, with at most ten rows per page. The profile binds to IPv4 loopback. Local CLI requests and browser requests from the same local Spring origin are accepted. Other origins are rejected. Vite only proxies the status and matching routes. GET /api/providers/adzuna/availability reports the local feature without contacting the provider or exposing credential state. No search terms come from a saved profile. Each call requests only the selected page, with no application retries, redirect following, scheduled polling or follow-up requests.
 
-On success, `received` counts all upstream rows. `rejected` counts rows the mapper could not use, and `duplicates` counts repeated accepted IDs within this page. The first accepted occurrence wins. The remaining `listings` retain provider order; an empty result is a successful response. No cross-page deduplication or expiry is inferred. A creation time alone does not prove an offer is still open.
+On success, `received` counts all upstream rows. `rejected` counts rows the mapper could not use, and `duplicates` counts repeated accepted IDs within this page. The first accepted occurrence wins. The `comparisonRefs` map supplies short-lived references for [local profile comparison](ADZUNA_COMPARISON.md). The remaining `listings` retain provider order; an empty result is a successful response. No cross-page deduplication or expiry is inferred. A creation time alone does not prove an offer is still open.
 
 | HTTP | Meaning |
 | --- | --- |

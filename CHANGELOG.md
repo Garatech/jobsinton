@@ -4,6 +4,10 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Compare an Adzuna result locally
+
+- Compare the selected search result with a saved profile without fetching or storing the advert. The response uses the existing matching rules and preserves unknown conditions. See [the contract and offline checks](docs/ADZUNA_COMPARISON.md).
+
 ### Added — Explicit facts from Adzuna listings
 
 - Recognise exact role titles and explicit work mode and weekly attendance statements in the supplied advert. Missing or conflicting schedules stay unknown. See [examples and offline verification](docs/ADZUNA_MAPPING.md#explicit-matching-facts-5a).

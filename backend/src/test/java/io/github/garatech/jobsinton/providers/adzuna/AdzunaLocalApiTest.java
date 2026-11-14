@@ -35,7 +35,8 @@ class AdzunaLocalApiTest {
     static final String EXCERPT = "¡España! Certificación en A Coruña…";
     static final String PAGE = """
             {"results":[{"id":"one","title":"Java developer","redirect_url":"https://adzuna.es/details/1",
-            "description":"%s"}]}
+            "description":"%s"},{"id":"two","title":"Backend developer","redirect_url":"https://adzuna.es/details/2",
+            "description":"Modalidad: híbrida. Dos días presenciales por semana."}]}
             """.formatted(EXCERPT);
 
     @TestConfiguration(proxyBeanMethods = false)

@@ -20,5 +20,8 @@ class AdzunaDisabledApiTest {
         var post = HttpRequest.newBuilder(URI.create(base + "/api/providers/adzuna/search"))
                 .header("Content-Type","application/json").POST(HttpRequest.BodyPublishers.ofString("{}")).build();
         assertThat(client.send(post, HttpResponse.BodyHandlers.ofString()).statusCode()).isEqualTo(404);
+        var compare = HttpRequest.newBuilder(post, (key, value) -> true)
+                .uri(URI.create(base + "/api/providers/adzuna/compare")).build();
+        assertThat(client.send(compare, HttpResponse.BodyHandlers.ofString()).statusCode()).isEqualTo(404);
     }
 }

@@ -9,6 +9,8 @@ import java.time.Duration;
 @Configuration(proxyBeanMethods = false)
 @Profile("adzuna-local")
 class AdzunaLocalConfiguration {
+    @Bean AdzunaComparisonRefs comparisonRefs() { return new AdzunaComparisonRefs(java.time.Clock.systemUTC()); }
+
     @Bean AdzunaTransport adzunaTransport() { return new JdkAdzunaTransport(Duration.ofSeconds(10)); }
 
     @Bean AdzunaSearch adzunaSearch(Environment environment, AdzunaTransport transport) {
