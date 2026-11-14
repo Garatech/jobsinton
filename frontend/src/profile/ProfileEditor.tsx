@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/Language';
 import { useRef, useState, type FormEvent } from 'react';
 import {
   cleanText, emptyDraft, ROLES, WORK_MODES, technologyError, toDraft, validateProfile,
@@ -12,6 +13,7 @@ const fieldOrder: (keyof ProfileDraft)[] = [
 
 /** Draft edits and the last successful save stay separate, including when storage fails. */
 export function ProfileEditor({ onSaved }: { onSaved: (profile: ProfessionalProfile | null) => void }) {
+  const { t } = useLanguage();
   const [initial] = useState(loadProfile);
   const [saved, setSaved] = useState<ProfessionalProfile | null>(
     initial.kind === 'loaded' ? initial.profile : null,
@@ -23,6 +25,7 @@ export function ProfileEditor({ onSaved }: { onSaved: (profile: ProfessionalProf
   const [technology, setTechnology] = useState('');
   const [errors, setErrors] = useState<ProfileErrors>({});
   const [message, setMessage] = useState('');
+  const [messageName, setMessageName] = useState('');
   const [storageError, setStorageError] = useState(
     initial.kind === 'invalid'
       ? 'Saved profile data could not be read. Save a new profile to replace it, or clear the saved profile.'
@@ -58,7 +61,7 @@ export function ProfileEditor({ onSaved }: { onSaved: (profile: ProfessionalProf
     const name = cleanText(technology);
     setDraft((current) => ({ ...current, technologies: [...current.technologies, name] }));
     setTechnology('');
-    setMessage(name + ' added.');
+    setMessageName(name); setMessage('{name} added.');
     technologyInput.current?.focus();
   }
 
@@ -66,7 +69,7 @@ export function ProfileEditor({ onSaved }: { onSaved: (profile: ProfessionalProf
     const name = draft.technologies[index];
     setDraft((current) => ({ ...current, technologies: current.technologies.filter((_, i) => i !== index) }));
     setErrors((current) => ({ ...current, technologies: undefined }));
-    setMessage(name + ' removed.');
+    setMessageName(name); setMessage('{name} removed.');
     technologyInput.current?.focus();
   }
 
@@ -113,7 +116,7 @@ export function ProfileEditor({ onSaved }: { onSaved: (profile: ProfessionalProf
   }
 
   function clear() {
-    if (!window.confirm('Clear the saved profile and current edits from this browser?')) return;
+    if (!window.confirm(t('Clear the saved profile and current edits from this browser?'))) return;
     if (!removeProfile()) {
       setMessage('');
       setStorageError('The saved profile could not be cleared. Allow browser storage and try again.');
@@ -147,7 +150,7 @@ export function ProfileEditor({ onSaved }: { onSaved: (profile: ProfessionalProf
 
   function fieldError(field: keyof ProfileDraft) {
     return errors[field]
-      ? <p className="field-error" id={'profile-' + field + '-error'}>{errors[field]}</p>
+      ? <p className="field-error" id={'profile-' + field + '-error'}>{t(errors[field]!)}</p>
       : null;
   }
 
@@ -155,47 +158,44 @@ export function ProfileEditor({ onSaved }: { onSaved: (profile: ProfessionalProf
     <section id="profile" className="profile-section" aria-labelledby="profile-title">
       <div className="section-heading">
         <div>
-          <p className="eyebrow">01 / YOUR STARTING POINT</p>
-          <h2 id="profile-title">Professional profile</h2>
+          <p className="eyebrow">{t("01 / YOUR STARTING POINT")}</p>
+          <h2 id="profile-title">{t("Professional profile")}</h2>
         </div>
-        <span className="planned-label">Saved on this device</span>
+        <span className="planned-label">{t("Saved on this device")}</span>
       </div>
-      <p className="profile-intro" id="profile-storage-note">
-        Set your direction and working preferences. Your profile is saved in this browser;
-        it is sent to the server for opportunity comparisons but is not stored there or synced between devices. Clearing browser data removes it.
-      </p>
+      <p className="profile-intro" id="profile-storage-note">{t("Set your direction and working preferences. Your profile is saved in this browser; it is sent to the server for opportunity comparisons but is not stored there or synced between devices. Clearing browser data removes it.")} </p>
       <div className="profile-layout">
-        <form className="profile-form" onSubmit={submit} noValidate aria-label="Professional profile" aria-describedby="profile-storage-note">
-          <div className="form-heading"><h2>Your preferences</h2><button type="button" className="text-button" disabled={!dirty} onClick={discard}>Discard changes</button></div>
-          <p className="form-note">All profile fields are required, including at least one technology. Changes are saved only when you select Save profile. Opportunity details and Compatibility sorting send the saved profile to the server without storing it there.</p>
-          {storageError && <p className="notice notice-error" role="alert">{storageError}</p>}
-          {Object.values(errors).some(Boolean) && <p className="notice notice-error" role="alert">Check the highlighted fields before saving.</p>}
+        <form className="profile-form" onSubmit={submit} noValidate aria-label={t("Professional profile")} aria-describedby="profile-storage-note">
+          <div className="form-heading"><h2>{t("Your preferences")}</h2><button type="button" className="text-button" disabled={!dirty} onClick={discard}>{t("Discard changes")}</button></div>
+          <p className="form-note">{t("All profile fields are required, including at least one technology. Changes are saved only when you select Save profile. Opportunity details and Compatibility sorting send the saved profile to the server without storing it there.")}</p>
+          {storageError && <p className="notice notice-error" role="alert">{t(storageError)}</p>}
+          {Object.values(errors).some(Boolean) && <p className="notice notice-error" role="alert">{t("Check the highlighted fields before saving.")}</p>}
           <fieldset>
-            <legend>Your direction</legend>
+            <legend>{t("Your direction")}</legend>
             <div className="field-grid">
               <div className="field">
-                <label htmlFor="profile-role">Target role</label>
+                <label htmlFor="profile-role">{t("Target role")}</label>
                 <select id="profile-role" value={draft.role} onChange={(event) => update('role', event.target.value)} required {...accessibility('role')}>
-                  <option value="">Choose a role</option>
-                  {Object.entries(ROLES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                  <option value="">{t("Choose a role")}</option>
+                  {Object.entries(ROLES).map(([value, label]) => <option key={value} value={value}>{t(label)}</option>)}
                 </select>
                 {fieldError('role')}
               </div>
               <div className="field">
-                <label htmlFor="profile-experienceYears">Years of relevant experience</label>
+                <label htmlFor="profile-experienceYears">{t("Years of relevant experience")}</label>
                 <input id="profile-experienceYears" type="number" min="0" max="60" step="1" inputMode="numeric" value={draft.experienceYears}
                   onChange={(event) => update('experienceYears', event.target.value)} required {...accessibility('experienceYears', 'experience-hint')} />
-                <p id="experience-hint" className="field-hint">Whole years from 0 to 60. Starting out? Zero is valid.</p>
+                <p id="experience-hint" className="field-hint">{t("Whole years from 0 to 60. Starting out? Zero is valid.")}</p>
                 {fieldError('experienceYears')}
               </div>
             </div>
           </fieldset>
           <fieldset>
-            <legend>Technologies</legend>
-            <label htmlFor="profile-technologies">Technology</label>
+            <legend>{t("Technologies")}</legend>
+            <label htmlFor="profile-technologies">{t("Technology")}</label>
             <div className="technology-entry">
               <input ref={technologyInput} id="profile-technologies" type="text" maxLength={40} value={technology}
-                placeholder="e.g. Java, React, SAP"
+                placeholder={t("e.g. Java, React, SAP")}
                 onChange={(event) => {
                   setTechnology(event.target.value);
                   setErrors((current) => ({ ...current, technologies: undefined }));
@@ -208,82 +208,82 @@ export function ProfileEditor({ onSaved }: { onSaved: (profile: ProfessionalProf
                   }
                 }}
                 {...accessibility('technologies', 'technology-hint')} />
-              <button className="secondary-button" type="button" onClick={addTechnology}>Add technology</button>
+              <button className="secondary-button" type="button" onClick={addTechnology}>{t("Add technology")}</button>
             </div>
-            <p className="field-hint" id="technology-hint">Add 1–20 technologies, up to 40 characters each. Press Enter or select Add technology.</p>
+            <p className="field-hint" id="technology-hint">{t("Add 1–20 technologies, up to 40 characters each. Press Enter or select Add technology.")}</p>
             {fieldError('technologies')}
             {draft.technologies.length > 0 && (
-              <ul className="technology-list" aria-label="Selected technologies">
+              <ul className="technology-list" aria-label={t("Selected technologies")}>
                 {draft.technologies.map((name, index) => (
                   <li key={name.toLowerCase()}>
                     <span>{name}</span>
-                    <button type="button" aria-label={'Remove ' + name} onClick={() => deleteTechnology(index)}>×</button>
+                    <button type="button" aria-label={t('Remove') + ' ' + name} onClick={() => deleteTechnology(index)}>×</button>
                   </li>
                 ))}
               </ul>
             )}
           </fieldset>
           <fieldset>
-            <legend>Location and working preferences</legend>
-            <p className="field-hint">Use your place of residence. This does not establish eligibility to work in another country.</p>
+            <legend>{t("Location and working preferences")}</legend>
+            <p className="field-hint">{t("Use your place of residence. This does not establish eligibility to work in another country.")}</p>
             <div className="field-grid">
               <div className="field">
-                <label htmlFor="profile-country">Country of residence</label>
+                <label htmlFor="profile-country">{t("Country of residence")}</label>
                 <input id="profile-country" autoComplete="country-name" maxLength={80} value={draft.country}
                   onChange={(event) => update('country', event.target.value)} required {...accessibility('country')} />
                 {fieldError('country')}
               </div>
               <div className="field">
-                <label htmlFor="profile-city">City of residence</label>
+                <label htmlFor="profile-city">{t("City of residence")}</label>
                 <input id="profile-city" autoComplete="address-level2" maxLength={80} value={draft.city}
                   onChange={(event) => update('city', event.target.value)} required {...accessibility('city')} />
                 {fieldError('city')}
               </div>
               <div className="field">
-                <label htmlFor="profile-workMode">Preferred work mode</label>
+                <label htmlFor="profile-workMode">{t("Preferred work mode")}</label>
                 <select id="profile-workMode" value={draft.workMode} onChange={(event) => update('workMode', event.target.value)} required {...accessibility('workMode')}>
-                  <option value="">Choose a work mode</option>
-                  {Object.entries(WORK_MODES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                  <option value="">{t("Choose a work mode")}</option>
+                  {Object.entries(WORK_MODES).map(([value, label]) => <option key={value} value={value}>{t(label)}</option>)}
                 </select>
                 {fieldError('workMode')}
               </div>
               {(draft.workMode === 'hybrid' || draft.workMode === 'onsite') && (
                 <div className="field">
-                  <label htmlFor="profile-maxOnsiteDays">Maximum on-site days per week</label>
+                  <label htmlFor="profile-maxOnsiteDays">{t("Maximum on-site days per week")}</label>
                   <select id="profile-maxOnsiteDays" value={draft.maxOnsiteDays} onChange={(event) => update('maxOnsiteDays', event.target.value)} required {...accessibility('maxOnsiteDays')}>
-                    <option value="">Choose a limit</option>
-                    {[1, 2, 3, 4, 5].map((days) => <option key={days} value={days}>{days} {days === 1 ? 'day' : 'days'}</option>)}
+                    <option value="">{t("Choose a limit")}</option>
+                    {[1, 2, 3, 4, 5].map((days) => <option key={days} value={days}>{days} {t(days === 1 ? 'day' : 'days')}</option>)}
                   </select>
                   {fieldError('maxOnsiteDays')}
                 </div>
               )}
             </div>
           </fieldset>
-          <p className="draft-state">{dirty ? 'You have unsaved changes.' : saved ? 'Your saved profile is up to date.' : 'Create your first profile.'}</p>
+          <p className="draft-state">{t(dirty ? 'You have unsaved changes.' : saved ? 'Your saved profile is up to date.' : 'Create your first profile.')}</p>
           <div className="profile-actions">
-            <button type="submit" className="primary">Save profile</button>
-            <button className="secondary-button" type="button" disabled={!hasStoredData && !dirty} onClick={clear}>Clear saved profile</button>
+            <button type="submit" className="primary">{t("Save profile")}</button>
+            <button className="secondary-button" type="button" disabled={!hasStoredData && !dirty} onClick={clear}>{t("Clear saved profile")}</button>
           </div>
-          <p className="profile-message" role="status" aria-label="Profile updates" aria-live="polite" aria-atomic="true">{message}</p>
+          <p className="profile-message" role="status" aria-label={t("Profile updates")} aria-live="polite" aria-atomic="true">{t(message).replace('{name}', () => messageName)}</p>
         </form>
         <aside className="profile-summary" aria-labelledby="profile-summary-title">
-          <p className="eyebrow">YOUR PREFERENCES, AT A GLANCE</p>
-          <h3 id="profile-summary-title">Saved profile</h3>
+          <p className="eyebrow">{t("YOUR PREFERENCES, AT A GLANCE")}</p>
+          <h3 id="profile-summary-title">{t("Saved profile")}</h3>
           {saved ? (
             <>
               <dl>
-                <dt>Target role</dt><dd>{ROLES[saved.role]}</dd>
-                <dt>Technologies</dt><dd><ul className="summary-technologies">{saved.technologies.map((name) => <li key={name.toLowerCase()}>{name}</li>)}</ul></dd>
-                <dt>Relevant experience</dt><dd>{saved.experienceYears} {saved.experienceYears === 1 ? 'year' : 'years'}</dd>
-                <dt>Residence</dt><dd>{saved.city}, {saved.country}</dd>
-                <dt>Work mode</dt><dd>{WORK_MODES[saved.workMode]}</dd>
-                <dt>Maximum on-site days</dt><dd>{saved.maxOnsiteDays === null ? 'Not specified' : saved.maxOnsiteDays + ' per week'}</dd>
+                <dt>{t("Target role")}</dt><dd>{t(ROLES[saved.role])}</dd>
+                <dt>{t("Technologies")}</dt><dd><ul className="summary-technologies">{saved.technologies.map((name) => <li key={name.toLowerCase()}>{name}</li>)}</ul></dd>
+                <dt>{t("Relevant experience")}</dt><dd>{saved.experienceYears} {t(saved.experienceYears === 1 ? 'year' : 'years')}</dd>
+                <dt>{t("Residence")}</dt><dd>{saved.city}, {saved.country}</dd>
+                <dt>{t("Work mode")}</dt><dd>{t(WORK_MODES[saved.workMode])}</dd>
+                <dt>{t("Maximum on-site days")}</dt><dd>{saved.maxOnsiteDays === null ? t('Not specified') : saved.maxOnsiteDays + ' ' + t('per week')}</dd>
               </dl>
-              <p className="field-hint">This summary shows your last successful save.</p>
+              <p className="field-hint">{t("This summary shows your last successful save.")}</p>
             </>
-          ) : <p className="summary-empty">No saved profile yet. Complete the form to bring your preferences together.</p>}
-          <p className="summary-note">Your saved preferences are used for opportunity comparisons.</p>
-          {saved && <a className="button primary" href={profileSearch(saved)}>Explore opportunities <span aria-hidden="true">↗</span></a>}
+          ) : <p className="summary-empty">{t("No saved profile yet. Complete the form to bring your preferences together.")}</p>}
+          <p className="summary-note">{t("Your saved preferences are used for opportunity comparisons.")}</p>
+          {saved && <a className="button primary" href={profileSearch(saved)}>{t("Explore opportunities")} <span aria-hidden="true">↗</span></a>}
         </aside>
       </div>
     </section>

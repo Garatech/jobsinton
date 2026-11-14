@@ -65,3 +65,24 @@ test('pagination is explicit and an error is distinct from zero results', async 
   await expect(page.getByRole('alert')).toContainText('request limit');
   expect(requested).toEqual([1,2,1]);
 });
+
+test('switching language on page two preserves the advert, excerpt and request count', async ({ page }) => {
+  const requested: number[] = [];
+  await page.route(endpoint, route => {
+    const n = route.request().postDataJSON().page;
+    requested.push(n);
+    const rows = n === 1 ? Array.from({length:10}, (_,i)=>({...row,id:'adzuna:'+i})) : [{...row,title:'Next page',excerpt:'Work mode'}];
+    return route.fulfill({json:{...pageOf(rows),page:n}});
+  });
+  await page.goto('/#opportunities');
+  await page.getByRole('button',{name:'Adzuna · Spain'}).click();
+  await page.getByRole('button',{name:'Search Adzuna'}).click();
+  await page.getByRole('button',{name:'Next page',exact:true}).click();
+  await page.getByText('Read excerpt',{exact:true}).click();
+  await page.getByRole('button',{name:'Español',exact:true}).click();
+  await expect(page.getByText(/1 oferta.*Página 2/)).toBeVisible();
+  await expect(page.getByRole('button',{name:'Página anterior'})).toBeVisible();
+  await expect(page.getByRole('link',{name:'Next page',exact:true})).toBeVisible();
+  await expect(page.locator('.live-job details[open] p')).toHaveText('Work mode');
+  expect(requested).toEqual([1,2]);
+});
