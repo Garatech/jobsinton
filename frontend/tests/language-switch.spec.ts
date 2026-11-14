@@ -34,7 +34,7 @@ test('fictional detail and matching reasons switch without another evaluation', 
   let calls = 0;
   page.on('request', r => { if(r.url().endsWith('/api/matching/evaluate')) calls++; });
   await page.goto('/#opportunities/backend-java');
-  await expect(page.getByRole('heading',{name:'Desarrollo backend',exact:true})).toBeVisible();
+  await expect(page.getByRole('heading',{ level: 1, name: 'Desarrollo backend.', exact: true })).toBeVisible();
   await expect(page.getByText(/El puesto coincide con el objetivo del perfil/)).toBeVisible();
   const before = calls;
   await page.getByRole('button',{name:'English',exact:true}).click();
