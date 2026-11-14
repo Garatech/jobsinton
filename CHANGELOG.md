@@ -4,6 +4,10 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Local Adzuna page study
+
+- Measure comparable facts, confirmed conflicts and evidence ties on a returned page without another provider request. [Offline checks and report guide](docs/ADZUNA_PAGE_STUDY.md).
+
 ### Added — Compare Adzuna results in search
 
 - Open a bilingual profile comparison on a returned listing without losing the page or repeating the search. Weekly attendance shows the stated requirement and saved limit when known. [Verification](docs/ADZUNA_COMPARISON.md#verify-the-search-card).

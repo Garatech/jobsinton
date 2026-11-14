@@ -39,3 +39,5 @@ A real excerpt often lacks an exact schedule. In that case an unknown result is 
 From the repository root, run `npm --prefix frontend run test:adzuna`. It builds the client and checks desktop and mobile against the local backend with fictional search results. No provider credentials are needed.
 
 For a manual check, use the [local Adzuna setup](ADZUNA_SEARCH.md) and save a profile on the same origin as the search. On page two, expand an excerpt and choose **Compare with my profile**. The explanation opens inside that card. Switch languages or hide and reopen the result: the page, excerpt and comparison stay in place without another request. A fixed weekly requirement is shown alongside the saved limit; missing attendance stays unknown. Without a saved profile the card links to setup. An expired reference requires an explicit new search. Results are kept only while the current page is displayed.
+
+For evidence coverage across a returned page rather than a single profile comparison, see the [offline page study](ADZUNA_PAGE_STUDY.md).
