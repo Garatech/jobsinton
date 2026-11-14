@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { AdzunaSearch } from './AdzunaSearch';
+import { localSearchAvailable } from '../api/adzuna';
 import { findCompany, opportunities } from '../catalog/data';
 import { EmptyState, JobList, PageHeading, type SavedActions } from '../ui';
 import { useRankedOrder } from '../matching/useRankedOrder';
@@ -7,7 +9,28 @@ import type { ProfessionalProfile } from '../profile/model';
 type Sort = 'newest' | 'salary' | 'compatibility';
 const roles = ['Backend', 'Frontend', 'Full stack', 'Data', 'Platform', 'SAP'];
 const modes = ['Remote', 'Hybrid', 'On-site'];
-export function Search({ query, profile, ...actions }: SavedActions & { query: string; profile: ProfessionalProfile | null }) {
+type SearchProps = SavedActions & { query: string; profile: ProfessionalProfile | null };
+
+export function Search(props: SearchProps) {
+  const [available, setAvailable] = useState(false);
+  const [live, setLive] = useState(false);
+  useEffect(() => {
+    const controller = new AbortController();
+    localSearchAvailable(controller.signal).then(value => { if (!controller.signal.aborted) setAvailable(value); });
+    return () => controller.abort();
+  }, []);
+  return <>
+    <PageHeading eyebrow="FIND YOUR NEXT CHAPTER" title="Opportunities." description="Good work, on your terms." />
+    {available && <div className="source-selector" role="group" aria-label="Opportunity source">
+      <button type="button" aria-pressed={!live} onClick={() => setLive(false)}>Sample catalog</button>
+      <button type="button" aria-pressed={live} onClick={() => setLive(true)}>Adzuna · Spain</button>
+    </div>}
+    <div hidden={live}><CatalogSearch {...props} /></div>
+    {live && <AdzunaSearch />}
+  </>;
+}
+
+function CatalogSearch({ query, profile, ...actions }: SearchProps) {
   const initial = new URLSearchParams(query);
   const [text, setText] = useState((initial.get('q') || '').slice(0, 160));
   const [role, setRole] = useState(roles.includes(initial.get('role') || '') ? initial.get('role')! : '');
@@ -48,7 +71,6 @@ export function Search({ query, profile, ...actions }: SavedActions & { query: s
       onClick={() => { remove(); input.current?.focus(); }}>{label} ×</button>;
   }
   return <>
-    <PageHeading eyebrow="FIND YOUR NEXT CHAPTER" title="Opportunities." description="Good work, on your terms." />
     <form className="search-bar" role="search" onSubmit={event => event.preventDefault()}>
       <label className="sr-only" htmlFor="query">Search opportunities</label><span className="search-icon" aria-hidden="true">⌕</span>
       <input ref={input} id="query" type="search" maxLength={160} placeholder="Role, technology or company" value={text} onChange={e => setText(e.target.value)} />

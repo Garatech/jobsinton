@@ -22,10 +22,23 @@ class AdzunaSearchController {
 
     record Query(String what, String where, Integer page) {}
 
+    // Only the same local Spring server that serves the UI may spend provider quota.
+    // CLI requests still have no Origin. Do not trust forwarded host or origin headers.
+    private static boolean localClient(HttpServletRequest request) {
+        return LOCAL.contains(request.getRemoteAddr()) && LOCAL.contains(request.getServerName());
+    }
+
+    @GetMapping("/availability")
+    ResponseEntity<?> availability(HttpServletRequest request) {
+        return localClient(request) ? reply(200, Map.of("source", "Adzuna"))
+                : reply(403, Map.of("code", "LOCAL_ONLY"));
+    }
+
     @PostMapping(path = "/search", consumes = "application/json", produces = "application/json")
     ResponseEntity<?> search(@RequestBody Query query, HttpServletRequest request) {
-        if (!LOCAL.contains(request.getRemoteAddr()) || !LOCAL.contains(request.getServerName())
-                || request.getHeader("Origin") != null) {
+        String origin = request.getHeader("Origin");
+        String localOrigin = "http://" + request.getServerName() + ":" + request.getLocalPort();
+        if (!localClient(request) || (origin != null && !localOrigin.equals(origin))) {
             return reply(403, Map.of("code", "LOCAL_ONLY"));
         }
         try {

@@ -23,6 +23,8 @@
   "include": [
     "src",
     "tests",
+    "provider-tests",
+    "playwright.adzuna.config.ts",
     "vite.config.ts",
     "playwright.config.ts"
   ]

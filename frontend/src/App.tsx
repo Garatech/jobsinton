@@ -107,7 +107,7 @@ export function App() {
       </div>
       <div hidden={route.page !== 'status' || !valid}><Status /></div>
     </main>
-    <footer className="page-footer"><span>A Gara’s Workshop project</span><span>Sample catalog · Fictional opportunities and companies</span><a href="#status">Service status</a></footer>
+    <footer className="page-footer"><span>A Gara’s Workshop project</span><span>Demo catalog: fictional opportunities and companies</span><a href="#status">Service status</a></footer>
     </div><p className="toast" role="status" aria-live="polite">{message}</p>
   </>;
 }

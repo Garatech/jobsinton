@@ -112,7 +112,25 @@ class AdzunaLocalApiTest {
             assertThat(stub.calls.get()).isEqualTo(before + 1);
         }
     }
-    @Test void browserOrInvalidInputDoesNotConsumeQuota() throws Exception {
+    @Test void localBrowserCanDiscoverTheSourceWithoutCallingAdzunaAndSubmitOnce() throws Exception {
+        stub.status = 200;
+        String origin = "http://127.0.0.1:" + port;
+        var availability = HttpRequest.newBuilder(URI.create(origin + "/api/providers/adzuna/availability")).build();
+        int before = stub.calls.get();
+        assertThat(client.send(availability, HttpResponse.BodyHandlers.ofString()).statusCode()).isEqualTo(200);
+        assertThat(stub.calls.get()).isEqualTo(before);
+        var local = HttpRequest.newBuilder(URI.create(origin + "/api/providers/adzuna/search"))
+                .header("Origin", origin).header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(QUERY)).build();
+        assertThat(client.send(local, HttpResponse.BodyHandlers.ofString()).statusCode()).isEqualTo(200);
+        assertThat(stub.calls.get()).isEqualTo(before + 1);
+        var otherPort = HttpRequest.newBuilder(local, (name, value) -> !name.equalsIgnoreCase("Origin"))
+                .header("Origin", "http://127.0.0.1:5173").build();
+        assertThat(client.send(otherPort, HttpResponse.BodyHandlers.ofString()).statusCode()).isEqualTo(403);
+        assertThat(stub.calls.get()).isEqualTo(before + 1);
+    }
+
+    @Test void foreignBrowserOrInvalidInputDoesNotConsumeQuota() throws Exception {
         int before = stub.calls.get();
         assertThat(post(QUERY,true).statusCode()).isEqualTo(403);
         assertThat(post("{\"what\":\"Java\",\"where\":\"Madrid\",\"page\":99}",false).statusCode()).isEqualTo(400);

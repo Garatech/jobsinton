@@ -317,3 +317,18 @@ dialog .actions { flex-direction:column; align-items:stretch; }
 .fit-section .comparison-retry { margin-top:16px; }
 .fit-section li { overflow-wrap:anywhere; }
 .fit-section details .fit-list { margin-top:12px; }
+
+.source-selector { display:flex; gap:4px; width:fit-content; margin:0 0 22px; padding:3px; border:1px solid var(--line); border-radius:10px; }
+.source-selector button { min-height:40px; padding:7px 13px; background:transparent; color:var(--muted); border:0; border-radius:7px; }
+.source-selector button[aria-pressed=true] { background:var(--sage); color:var(--green); }
+.live-search { padding-bottom:48px; }
+.live-form { display:flex; align-items:end; gap:12px; flex-wrap:wrap; margin-bottom:24px; }
+.live-form label { display:grid; gap:6px; flex:1 1 200px; font-size:13px; }
+.live-form button { min-height:44px; }
+.live-job { overflow-wrap:anywhere; }
+.live-job details { margin-top:12px; font-size:14px; }
+.live-job summary { cursor:pointer; color:var(--green); }
+.live-job-aside { display:grid; justify-items:end; gap:8px; }
+.provider-credit { display:inline-block; min-width:116px; min-height:23px; font-size:20px; line-height:24px; text-align:right; color:var(--green); }
+.live-pages { margin-top:16px; }
+@media (max-width:640px) { .live-job { flex-direction:column; } .live-job-aside { justify-items:start; } .provider-credit { text-align:left; } }
