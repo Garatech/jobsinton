@@ -1,0 +1,32 @@
+import type { Assessment } from '../api/matching';
+
+export const reasonSpanish: Record<Assessment['reason'], string> = {
+  "ROLE_ALIGNED": "El puesto coincide con el objetivo del perfil.",
+  "ROLE_DIFFERENT": "El puesto difiere del objetivo del perfil.",
+  "ROLE_UNKNOWN": "Falta información sobre el puesto.",
+  "TECHNOLOGY_CONFIRMED": "La tecnología aparece en la oferta y en el perfil.",
+  "TECHNOLOGY_UNCONFIRMED": "El perfil no confirma esta tecnología de la oferta.",
+  "TECHNOLOGIES_UNKNOWN": "La oferta no indica tecnologías.",
+  "EXPERIENCE_SUFFICIENT": "La experiencia total alcanza el mínimo indicado.",
+  "EXPERIENCE_BELOW_MINIMUM": "La experiencia total queda por debajo del mínimo indicado.",
+  "EXPERIENCE_UNKNOWN": "Faltan datos de experiencia comparables.",
+  "EXPERIENCE_SCOPE_UNCONFIRMED": "Los años totales de experiencia no confirman la experiencia exigida en este puesto o tecnología.",
+  "MODE_ALIGNED": "La modalidad coincide con tu preferencia.",
+  "MODE_DIFFERENT": "La modalidad difiere de tu preferencia.",
+  "MODE_UNKNOWN": "Falta información sobre la modalidad.",
+  "ATTENDANCE_WITHIN_LIMIT": "Los días presenciales están dentro del máximo configurado.",
+  "ATTENDANCE_EXCEEDS_LIMIT": "La asistencia exigida supera el máximo configurado.",
+  "ATTENDANCE_UNKNOWN": "La oferta no especifica los días presenciales habituales.",
+  "ATTENDANCE_NOT_CONFIGURED": "No has configurado un máximo semanal de días presenciales.",
+  "OFFICE_ALIGNED": "La oficina coincide con la ciudad y el país de tu perfil.",
+  "OFFICE_DIFFERENT": "La oficina está en otra ciudad o país.",
+  "OFFICE_UNKNOWN": "Faltan datos sobre la modalidad o la ubicación de la oficina.",
+  "OFFICE_NOT_APPLICABLE": "No se compara la ubicación de la oficina en puestos remotos.",
+  "RESIDENCE_ALLOWED": "La oferta no especifica los países de residencia admitidos.",
+  "RESIDENCE_OUTSIDE_POLICY": "La oferta indica expresamente que no hay restricciones por país de residencia.",
+  "RESIDENCE_UNRESTRICTED": "No se ha podido identificar el país de residencia del perfil.",
+  "RESIDENCE_POLICY_UNKNOWN": "El país de residencia está entre los admitidos por la oferta.",
+  "RESIDENCE_COUNTRY_UNKNOWN": "El país de residencia está fuera de los admitidos por la oferta.",
+  "SALARY_NOT_CONFIGURED": "No hay una preferencia salarial configurada.",
+  "CONDITIONS_NOT_SUPPORTED": "Las demás condiciones laborales no se evalúan en esta versión."
+};
