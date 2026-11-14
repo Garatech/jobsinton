@@ -4,6 +4,10 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Client language resources (2026-11-14)
+
+- Prepared Spanish and English copy, sample catalog translations, matching reason labels and locale-aware dates and amounts. This increment does not change the active interface.
+
 ### Added — Local Adzuna search in Opportunities (2026-11-14)
 
 - Added an optional Spain source beside the sample catalog. Explicit searches and page controls use the backend; opening an excerpt reuses the current result. Unknown facts stay visible and provider results remain in memory.
