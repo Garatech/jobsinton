@@ -60,6 +60,30 @@ class AdzunaMatchingFactsTest {
         assertThat(AdzunaMatchingFacts.from("Java developer", excerpt)).isEqualTo(UNKNOWN);
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "Ubicación: Madrid. Presencial. Horario: lunes a viernes, de 09:00 a 18:00.",
+        "Nuestro equipo busca refuerzos en Madrid (Paseo del Ejemplo) Presencial Horario: Lunes a Viernes, 09:00 18…"
+    })
+    void readsTheOnsiteFieldWithoutTurningWorkingHoursIntoAttendance(String excerpt) {
+        assertThat(AdzunaMatchingFacts.from("Java developer", excerpt))
+                .isEqualTo(new Opportunity(null, null, null, WorkMode.ONSITE, null, null, null));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "Ubicación: Madrid. Entrevista presencial. Horario: lunes a viernes.",
+        "Ubicación: Madrid. Formación presencial inicial. Horario: lunes a viernes.",
+        "Ubicación: Madrid. Presencial opcional. Horario: lunes a viernes.",
+        "Ubicación: Madrid. Presencial. Horario: lunes a viernes. Modalidad por confirmar.",
+        "Trabajo 100% remoto. Madrid (Calle Ejemplo) Presencial Horario: lunes a viernes.",
+        "Ubicación: Madrid. Presencial… Horario: lunes a viernes.",
+        "Presencial. Horario: lunes a viernes.", "Madrid (Calle Ejemplo) Presencial"
+    })
+    void incompleteQualifiedOrConflictingOnsiteFieldsStayUnknown(String excerpt) {
+        assertThat(AdzunaMatchingFacts.from("Java developer", excerpt)).isEqualTo(UNKNOWN);
+    }
+
     @Test
     void aScheduleQualifierInTheTitleCannotBeOverriddenByTheExcerpt() {
         assertThat(AdzunaMatchingFacts.from("Backend developer (fully remote)", "Two office days per week."))
