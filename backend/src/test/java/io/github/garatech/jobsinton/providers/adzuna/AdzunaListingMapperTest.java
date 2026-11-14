@@ -56,6 +56,16 @@ class AdzunaListingMapperTest {
     }
 
     @Test
+    void acceptedRowCarriesOnlyTheFactsDeclaredByTheAdvert() {
+        var ad = listing(ROW.replace("Java developer", "Ingeniera de datos")
+                .replace("An introduction to a fictional company.",
+                        "Modalidad: híbrida. Dos días presenciales por semana."));
+        assertThat(ad.matchingFacts()).isEqualTo(new MatchingInput.Opportunity(MatchingInput.Role.DATA,
+                null, null, MatchingInput.WorkMode.HYBRID, 2, null, null));
+        assertThat(ad.excerpt()).isEqualTo("Modalidad: híbrida. Dos días presenciales por semana.");
+    }
+
+    @Test
     void retainsTheWholeSuppliedExcerptAndUsesAreaOnlyAsADisplayLabel() {
         var excerpt = "Introduction. ".repeat(80) + "End of supplied fragment.";
         var ad = listing(ROW.replace("An introduction to a fictional company.", excerpt)

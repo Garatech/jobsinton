@@ -1,6 +1,5 @@
 package io.github.garatech.jobsinton.providers.adzuna;
 
-import io.github.garatech.jobsinton.matching.MatchingInput.Opportunity;
 import io.github.garatech.jobsinton.opportunities.OpportunityListing;
 import io.github.garatech.jobsinton.opportunities.OpportunityListing.Salary;
 import io.github.garatech.jobsinton.opportunities.OpportunityListing.SalaryOrigin;
@@ -16,7 +15,7 @@ import java.util.ArrayList;
 import java.util.Locale;
 import java.util.Set;
 
-/** Maps one element of an Adzuna search results array. No transport, persistence or text inference. */
+/** Maps one element of an Adzuna search results array. No transport or persistence. */
 public final class AdzunaListingMapper {
     private static final Set<String> HOSTS = Set.of("adzuna.es", "adzuna.com.es", "adzuna.co.uk", "adzuna.com");
 
@@ -36,13 +35,12 @@ public final class AdzunaListingMapper {
         URI referral = referral(text(row.path("redirect_url")));
         if (referral == null) return new Rejected(Reason.INVALID_REFERRAL);
 
-        // A keyword hit, contract schedule and display location establish none of these matching facts.
-        Opportunity facts = new Opportunity(null, null, null, null, null, null, null);
+        String excerpt = text(row.path("description"));
         return new Accepted(new OpportunityListing("adzuna:" + id, title, referral,
                 text(row.path("company").path("display_name")), location(row.path("location")),
-                created(text(row.path("created"))), text(row.path("description")),
+                created(text(row.path("created"))), excerpt,
                 text(row.path("category").path("label")), text(row.path("contract_type")),
-                text(row.path("contract_time")), salary(row), facts));
+                text(row.path("contract_time")), salary(row), AdzunaMatchingFacts.from(title, excerpt)));
     }
 
     private static String text(JsonNode node) {
