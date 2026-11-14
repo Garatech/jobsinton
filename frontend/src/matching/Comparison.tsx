@@ -1,3 +1,5 @@
+import { reasonSpanish } from '../i18n/reasons';
+import { useLanguage } from '../i18n/Language';
 import { useEffect, useState } from 'react';
 import { ComparisonError, fetchComparison, type Assessment, type Comparison as Result } from '../api/matching';
 import type { Opportunity } from '../catalog/data';
@@ -17,15 +19,17 @@ const summary = {
 };
 
 function Explanation({ assessment }: { assessment: Assessment }) {
+  const { t, language } = useLanguage();
   const name = assessment.dimension === 'TECHNOLOGY'
-    ? assessment.evidence.opportunityValues.join(', ') || 'Technologies' : labels[assessment.dimension];
+    ? assessment.evidence.opportunityValues.join(', ') || t('Technologies') : t(labels[assessment.dimension]);
   return <li data-criterion={assessment.criterion} data-outcome={assessment.outcome}>
-    <strong>{name}</strong> — {assessment.explanation}
+    <strong>{name}</strong> — {language === 'es' ? reasonSpanish[assessment.reason] : assessment.explanation}
   </li>;
 }
 
 /** Mounted with an identity key so a different profile cannot render old results for a frame. */
 function SavedComparison({ job, profile }: { job: Opportunity; profile: ProfessionalProfile }) {
+  const { t } = useLanguage();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
   useEffect(() => {
@@ -46,36 +50,37 @@ function SavedComparison({ job, profile }: { job: Opportunity; profile: Professi
     return () => { active = false; controller.abort(); window.clearTimeout(timer); };
   }, [job.id, profile, attempt]);
 
-  if (state.kind === 'loading') return <p role="status">Comparing your saved profile…</p>;
+  if (state.kind === 'loading') return <p role="status">{t("Comparing your saved profile…")}</p>;
   if (state.kind === 'error') return <div>
-    <p role="alert">{state.message}</p>
+    <p role="alert">{t(state.message)}</p>
     <button className="secondary-button comparison-retry" type="button" onClick={() => {
       setState({ kind: 'loading' }); setAttempt(value => value + 1);
-    }}>Retry comparison</button>
-    <p className="field-hint">You can still browse and save this opportunity.</p>
+    }}>{t("Retry comparison")}</button>
+    <p className="field-hint">{t("You can still browse and save this opportunity.")}</p>
   </div>;
   const assessments = state.result.evaluation.assessments;
   const known = assessments.filter(a => a.dimension !== 'TECHNOLOGY' && (a.outcome === 'ALIGNED' || a.outcome === 'DIFFERENT'));
   const shared = assessments.filter(a => a.reason === 'TECHNOLOGY_CONFIRMED').flatMap(a => a.evidence.opportunityValues);
   const unknown = assessments.filter(a => a.outcome === 'UNKNOWN' || a.outcome === 'NOT_ASSESSED');
   return <div data-comparison-for={state.result.opportunityId}>
-    <p className="comparison-summary" role="status">{summary[state.result.evaluation.constraintSummary]}</p>
+    <p className="comparison-summary" role="status">{t(summary[state.result.evaluation.constraintSummary])}</p>
     <ul className="fit-list">
-      {shared.length > 0 && <li>Technologies in common: {shared.join(', ')}.</li>}
+      {shared.length > 0 && <li>{t("Technologies in common:")} {shared.join(', ')}.</li>}
       {known.map(a => <Explanation key={a.criterion} assessment={a} />)}
     </ul>
-    <details><summary>What’s still unknown or not assessed</summary>
+    <details><summary>{t("What’s still unknown or not assessed")}</summary>
       <ul className="fit-list">{unknown.map(a => <Explanation key={a.criterion} assessment={a} />)}</ul>
-      <p>{job.unknown}</p>
+      <p>{t(job.unknown)}</p>
     </details>
-    <p className="field-hint">Based on your saved profile. These checks do not establish suitability or work authorization.</p>
+    <p className="field-hint">{t("Based on your saved profile. These checks do not establish suitability or work authorization.")}</p>
   </div>;
 }
 
 export function ProfileComparison({ job, profile }: { job: Opportunity; profile: ProfessionalProfile | null }) {
+  const { t } = useLanguage();
   return <section className="fit-section" aria-labelledby="comparison-title">
-    <p className="eyebrow">A CLOSER LOOK</p><h2 id="comparison-title">How it lines up</h2>
+    <p className="eyebrow">{t("A CLOSER LOOK")}</p><h2 id="comparison-title">{t("How it lines up")}</h2>
     {profile ? <SavedComparison key={job.id + ':' + JSON.stringify(profile)} job={job} profile={profile} />
-      : <p><a href="#profile">Set up your profile</a> to compare your preferences with the listed requirements.</p>}
+      : <p><a href="#profile">{t("Set up your profile")}</a> {t("to compare your preferences with the listed requirements.")}</p>}
   </section>;
 }

@@ -4,6 +4,10 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Spanish and English interface (2026-11-14)
+
+- Added a persistent language choice across the demo and local provider search. Switching updates owned text, matching explanations and accessible labels in place. Adverts and user-entered fields keep their original text. See [language verification](docs/LANGUAGES.md).
+
 ### Added — Client language resources (2026-11-14)
 
 - Prepared Spanish and English copy, sample catalog translations, matching reason labels and locale-aware dates and amounts. This increment does not change the active interface.

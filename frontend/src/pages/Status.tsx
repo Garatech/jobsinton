@@ -1,3 +1,4 @@
+import { useLanguage } from '../i18n/Language';
 import { useEffect, useState } from 'react';
 import { fetchSystemStatus } from '../api/status';
 import { PageHeading } from '../ui';
@@ -10,6 +11,7 @@ const connectionCopy: Record<ConnectionState, string> = {
 };
 /** Connectivity remains independent of the catalog and browser-local preferences. */
 export function Status() {
+  const { t } = useLanguage();
   const [connection, setConnection] = useState<ConnectionState>('checking');
   const [attempt, setAttempt] = useState(0);
 
@@ -39,12 +41,12 @@ export function Status() {
 
   return <>
     <PageHeading eyebrow="SERVICE STATUS" title="A foundation that connects." />
-    <div className="status-page"><aside className="connection-card" aria-label="Service connection">
-      <p className="eyebrow">THE JOBSINTON API</p><div className="signal-art" aria-hidden="true"><span /><span /><span /><span /><span /><span /><span /></div>
-      <h2>A live connection.</h2><p className="card-description">The interface checks the Java service in real time.</p>
-      <p className={'connection-status ' + connection} role="status" aria-label="API connection" aria-live="polite" aria-atomic="true"><span className="status-dot" aria-hidden="true" />{connectionCopy[connection]}</p>
-      <button type="button" onClick={retry} disabled={connection === 'checking'}>{connection === 'checking' ? 'Checking…' : 'Check connection again'}</button>
-      <p className="card-note">The sample catalog and your browser-local preferences remain available during an outage.</p>
+    <div className="status-page"><aside className="connection-card" aria-label={t("Service connection")}>
+      <p className="eyebrow">{t("THE JOBSINTON API")}</p><div className="signal-art" aria-hidden="true"><span /><span /><span /><span /><span /><span /><span /></div>
+      <h2>{t("A live connection.")}</h2><p className="card-description">{t("The interface checks the Java service in real time.")}</p>
+      <p className={'connection-status ' + connection} role="status" aria-label={t("API connection")} aria-live="polite" aria-atomic="true"><span className="status-dot" aria-hidden="true" />{t(connectionCopy[connection])}</p>
+      <button type="button" onClick={retry} disabled={connection === 'checking'}>{t(connection === 'checking' ? 'Checking…' : 'Check connection again')}</button>
+      <p className="card-note">{t("The sample catalog and your browser-local preferences remain available during an outage.")}</p>
     </aside></div>
   </>;
 }
