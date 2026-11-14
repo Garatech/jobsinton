@@ -94,6 +94,12 @@ public final class CompatibilityRanker {
     }
 
     private static int compare(RankedOffer left, RankedOffer right) {
+        int evidence = compareEvidence(left, right);
+        return evidence != 0 ? evidence : left.id().compareTo(right.id());
+    }
+
+    /** Zero means the policy cannot distinguish the offers without using their IDs. */
+    public static int compareEvidence(RankedOffer left, RankedOffer right) {
         int group = Boolean.compare(left.evaluation().constraintSummary() == Summary.CONFLICT,
                                     right.evaluation().constraintSummary() == Summary.CONFLICT);
         if (group != 0) return group;
@@ -106,6 +112,6 @@ public final class CompatibilityRanker {
             int coverage = right.scores().coverage().orElseThrow().compareTo(left.scores().coverage().orElseThrow());
             if (coverage != 0) return coverage;
         }
-        return left.id().compareTo(right.id());
+        return 0;
     }
 }

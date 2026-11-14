@@ -5,6 +5,9 @@ on:
     branches: [main]
     paths:
       - 'backend/src/**/providers/adzuna/**'
+      - 'tools/adzuna/*Page*.ps1'
+      - 'tools/adzuna/PageStudy.java'
+      - 'backend/src/main/java/**/ranking/**'
       - 'backend/pom.xml'
       - '.github/workflows/adzuna-windows.yml'
 
@@ -28,3 +31,6 @@ jobs:
       - name: Verify local search with Windows PowerShell
         shell: powershell
         run: mvn -B -ntp -f backend/pom.xml "-Dtest=AdzunaLocalApiTest" test
+      - name: Verify the offline page study
+        shell: powershell
+        run: ./tools/adzuna/Test-PageStudy.ps1
