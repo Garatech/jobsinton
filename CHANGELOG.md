@@ -4,6 +4,10 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Decision — Adzuna result order
+
+- Retain provider order and per-listing profile comparisons. The first measured live page produced no evidence-based ordering across ten listings. [Observation and review criteria](docs/ADZUNA_PAGE_STUDY.md#ordering-decision-5d2).
+
 ### Added — Local Adzuna page study
 
 - Measure comparable facts, confirmed conflicts and evidence ties on a returned page without another provider request. [Offline checks and report guide](docs/ADZUNA_PAGE_STUDY.md).

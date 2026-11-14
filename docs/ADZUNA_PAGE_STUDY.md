@@ -40,4 +40,23 @@ Ties use the [existing ranking policy](RANKING.md): conflict grouping, availabil
 
 For example, the offline fixture has six listings. Three have no comparable facts; one exceeds the weekly limit. Five listings are tied with at least one other listing, producing four tied pairs out of fifteen. Those numbers are a test result, not observations about real adverts.
 
-For step 5D.2, review the real page size, coverage, explicit conflicts and tied pairs together. Many ties or mostly unknown facts favour keeping provider order. Few ties alone do not justify sorting if they rest on sparse evidence. Different pages can contain overlapping vacancies; do not add their counts as though they were unique across a market.
+## Ordering decision (5D.2)
+
+Keep Adzuna’s order and the existing **Compare with my profile** action. Leave compatibility sorting available in the fictional catalog only.
+
+On 14 November 2026, the page study was run on a real first page with the reference profile above (`adzuna-page-v1`, `matching-v1.0`, `ranking-v1.0`). Repeating the measurement locally verified the same page; it did not add a second sample.
+
+| Observation | Result |
+| --- | ---: |
+| Distinct listings measured | 10 |
+| Comparable role / work mode / weekly attendance | 0 / 0 / 0 |
+| Attendance within limit / exceeds limit / unknown | 0 / 0 / 10 |
+| Confirmed constraint conflicts | 0 |
+| Listings without comparable facts | 10 |
+| Listings tied / tied pairs out of possible pairs | 10 / 45 of 45 |
+
+For every pair the ranking policy reached the identifier fallback. Sorting would change, at most, the sequence of IDs; it would give the reader no profile-based reason to open one listing before another. Zero conflicts means none could be confirmed, not that ten listings met the limit.
+
+These counts describe the facts the mapper recognised, not everything a reader could learn from the adverts. A manual check found an on-site indication in an excerpt that the current mapper left unknown. The accompanying working hours do not establish a fixed weekly office-day requirement. A Java title alone does not establish a backend role either. Improving recognition of explicit wording is a separate change from deciding how to order listings.
+
+**When to revisit:** measure an already-returned page from a different search with the same reference profile. Keep each page’s denominator and ties separate; pages may overlap. For any pairs the policy distinguishes, check that the original wording supports an understandable difference, rather than one listing merely providing more text. If that pattern recurs across searches, reconsider an optional sort within the current page. Until then the provider order remains the default and only live order.
