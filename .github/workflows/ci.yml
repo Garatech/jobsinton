@@ -3,8 +3,7 @@ name: Verify JobSinton
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+  pull_request: # Also verify stacked PRs against their actual base.
   workflow_dispatch:
 
 permissions:

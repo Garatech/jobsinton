@@ -1,3 +1,4 @@
+import { useLanguage, LanguageSwitch } from './i18n/Language';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { findCompany, findOpportunity, opportunities } from './catalog/data';
 import { clearSaved, loadSaved, SAVED_STORAGE_KEY, writeSaved } from './catalog/saved';
@@ -17,6 +18,7 @@ const nav = [['home', 'Overview'], ['opportunities', 'Opportunities'], ['compani
 
 /** Current is the shared application shell; routes retain ordinary browser history. */
 export function App() {
+  const { t } = useLanguage();
   const route = useRoute();
   const main = useRef<HTMLElement>(null);
   const [initial] = useState(loadSaved);
@@ -48,13 +50,13 @@ export function App() {
     || (route.page === 'companies' && (!route.id || Boolean(company)));
   const title = !valid ? 'Page not found' : job?.title || company?.name || ({ home: 'Overview', opportunities: 'Opportunities', companies: 'Companies', saved: 'Saved opportunities', profile: 'Your profile', status: 'Service status' } as Record<string, string>)[route.page];
   useLayoutEffect(() => {
-    document.title = title + ' · JobSinton';
+    document.title = t(title) + ' · JobSinton';
     if (previousRoute.current !== route.hash) {
       document.getElementById('main')?.focus({ preventScroll: true });
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
       previousRoute.current = route.hash;
     }
-  }, [route.hash, title]);
+  }, [route.hash, title, t]);
   usePageFade(main, valid ? route.page + '/' + route.id : 'not-found');
   function toggle(id: string) {
     const exists = saved.includes(id);
@@ -70,23 +72,24 @@ export function App() {
     });
   }
   function clearShortlist() {
-    if (!window.confirm('Clear all saved opportunities from this browser? Your profile will be kept.')) return;
+    if (!window.confirm(t('Clear all saved opportunities from this browser? Your profile will be kept.'))) return;
     if (!clearSaved()) { setMessage(''); setStorageError('The shortlist could not be cleared. Allow browser storage and try again.'); return; }
     setSaved([]); setStorageError(''); setMessage('Your shortlist is clear.');
     window.requestAnimationFrame(() => document.querySelector<HTMLElement>('.empty-state a')?.focus());
   }
   const actions = { saved, onToggle: toggle };
   return <>
-    <a className="skip-link" href="#main" onClick={event => { event.preventDefault(); document.getElementById('main')?.focus(); }}>Skip to content</a>
+    <a className="skip-link" href="#main" onClick={event => { event.preventDefault(); document.getElementById('main')?.focus(); }}>{t("Skip to content")}</a>
     <div className="page-shell"><header className="site-header">
-      <a className="brand" href="#home" aria-label="JobSinton home"><span className="brand-mark" aria-hidden="true">js</span><span>JobSinton<span className="brand-dot">.</span></span></a>
-      <nav className="site-nav" aria-label="Main navigation">{nav.map(([page, label]) => <a href={'#' + page} key={page} aria-current={route.page === page ? 'page' : undefined}>
-        {label}{page === 'saved' && <span className="saved-count">{saved.length}</span>}
+      <a className="brand" href="#home" aria-label={t("JobSinton home")}><span className="brand-mark" aria-hidden="true">js</span><span>JobSinton<span className="brand-dot">.</span></span></a>
+      <nav className="site-nav" aria-label={t("Main navigation")}>{nav.map(([page, label]) => <a href={'#' + page} key={page} aria-current={route.page === page ? 'page' : undefined}>
+        {t(label)}{page === 'saved' && <span className="saved-count">{saved.length}</span>}
       </a>)}</nav>
+      <LanguageSwitch />
     </header>
     <main ref={main} id="main" tabIndex={-1}>
-      {storageError && <p className="notice notice-error storage-notice" role="alert">{storageError} <a href="#saved">Review shortlist</a></p>}
-      {!valid && <><PageHeading eyebrow="A DIFFERENT DIRECTION" title="Page not found." /><div className="app-empty"><a className="button primary" href="#opportunities">Explore opportunities</a></div></>}
+      {storageError && <p className="notice notice-error storage-notice" role="alert">{t(storageError)} <a href="#saved">{t("Review shortlist")}</a></p>}
+      {!valid && <><PageHeading eyebrow="A DIFFERENT DIRECTION" title="Page not found." /><div className="app-empty"><a className="button primary" href="#opportunities">{t("Explore opportunities")}</a></div></>}
       {valid && route.page === 'home' && <Home profile={profile} {...actions} />}
       {valid && route.page === 'opportunities' && !job && <Search key={route.hash + ':' + route.revision} query={route.query} profile={profile} {...actions} />}
       {job && <OpportunityDetail key={job.id} job={job} profile={profile} {...actions} />}
@@ -94,11 +97,11 @@ export function App() {
       {company && <CompanyDetail key={company.id} company={company} {...actions} />}
       {valid && route.page === 'saved' && <>
         <PageHeading eyebrow="YOUR SHORTLIST" title="Worth coming back to." description="A little space for your next move." />
-        <div className="section-heading saved-toolbar"><p role="status">{saved.length} saved {saved.length === 1 ? 'opportunity' : 'opportunities'}</p><div className="actions">
-          <a className="text-link" href="#opportunities">Keep exploring <span aria-hidden="true">↗</span></a>{(saved.length > 0 || storageError) && <button className="text-button" type="button" onClick={clearShortlist}>Clear shortlist</button>}
+        <div className="section-heading saved-toolbar"><p role="status">{saved.length} {t(saved.length === 1 ? 'saved opportunity' : 'saved opportunities')}</p><div className="actions">
+          <a className="text-link" href="#opportunities">{t("Keep exploring")} <span aria-hidden="true">↗</span></a>{(saved.length > 0 || storageError) && <button className="text-button" type="button" onClick={clearShortlist}>{t("Clear shortlist")}</button>}
         </div></div>
         {saved.length ? <JobList jobs={opportunities.filter(j => saved.includes(j.id))} className="saved-jobs" {...actions} /> :
-          <EmptyState title="A clear space for your next move." description="Save an opportunity while you explore. It will be waiting here."><a className="button primary" href="#opportunities">Explore opportunities</a></EmptyState>}
+          <EmptyState title="A clear space for your next move." description="Save an opportunity while you explore. It will be waiting here."><a className="button primary" href="#opportunities">{t("Explore opportunities")}</a></EmptyState>}
       </>}
       {/* Keep the editor mounted so a local draft survives ordinary navigation. */}
       <div hidden={route.page !== 'profile' || !valid}>
@@ -107,7 +110,7 @@ export function App() {
       </div>
       <div hidden={route.page !== 'status' || !valid}><Status /></div>
     </main>
-    <footer className="page-footer"><span>A Gara’s Workshop project</span><span>Demo catalog: fictional opportunities and companies</span><a href="#status">Service status</a></footer>
-    </div><p className="toast" role="status" aria-live="polite">{message}</p>
+    <footer className="page-footer"><span>{t("A Gara’s Workshop project")}</span><span>{t("Demo catalog: fictional opportunities and companies")}</span><a href="#status">{t("Service status")}</a></footer>
+    </div><p className="toast" role="status" aria-live="polite">{t(message)}</p>
   </>;
 }

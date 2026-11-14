@@ -332,3 +332,8 @@ dialog .actions { flex-direction:column; align-items:stretch; }
 .provider-credit { display:inline-block; min-width:116px; min-height:23px; font-size:20px; line-height:24px; text-align:right; color:var(--green); }
 .live-pages { margin-top:16px; }
 @media (max-width:640px) { .live-job { flex-direction:column; } .live-job-aside { justify-items:start; } .provider-credit { text-align:left; } }
+
+.language-switch { display:inline-flex; align-items:center; gap:3px; white-space:nowrap; color:var(--muted); }
+.language-switch button { background:none; border:0; padding:6px; min-height:40px; color:var(--muted); font:inherit; font-size:13px; }
+.language-switch button[aria-pressed="true"] { color:var(--green); text-decoration:underline; text-underline-offset:4px; font-weight:700; }
+@media (max-width:850px) { .site-header { flex-wrap:wrap; } .language-switch { margin-left:auto; } .site-nav { order:3; } }
