@@ -1,32 +1,11 @@
-import { reasonSpanish } from '../i18n/reasons';
+import { ComparisonResult } from './ComparisonResult';
 import { useLanguage } from '../i18n/Language';
 import { useEffect, useState } from 'react';
-import { ComparisonError, fetchComparison, type Assessment, type Comparison as Result } from '../api/matching';
+import { ComparisonError, fetchComparison, type Comparison as Result } from '../api/matching';
 import type { Opportunity } from '../catalog/data';
 import type { ProfessionalProfile } from '../profile/model';
 
 type State = { kind: 'loading' } | { kind: 'ready'; result: Result } | { kind: 'error'; message: string };
-const labels: Record<Assessment['dimension'], string> = {
-  ROLE: 'Role', TECHNOLOGY: 'Technology', EXPERIENCE: 'Experience', WORK_MODE: 'Work mode',
-  ATTENDANCE: 'Office days', OFFICE_LOCATION: 'Office location', RESIDENCE: 'Residence',
-  SALARY: 'Salary', OTHER_CONDITIONS: 'Other conditions',
-};
-const summary = {
-  CONFLICT: 'A stated limit is not met.',
-  NEEDS_INFORMATION: 'Some conditions still need confirmation.',
-  NO_KNOWN_CONFLICT: 'No conflict in the limits checked.',
-  NOT_ASSESSED: 'No limits have been assessed.',
-};
-
-function Explanation({ assessment }: { assessment: Assessment }) {
-  const { t, language } = useLanguage();
-  const name = assessment.dimension === 'TECHNOLOGY'
-    ? assessment.evidence.opportunityValues.join(', ') || t('Technologies') : t(labels[assessment.dimension]);
-  return <li data-criterion={assessment.criterion} data-outcome={assessment.outcome}>
-    <strong>{name}</strong> — {language === 'es' ? reasonSpanish[assessment.reason] : assessment.explanation}
-  </li>;
-}
-
 /** Mounted with an identity key so a different profile cannot render old results for a frame. */
 function SavedComparison({ job, profile }: { job: Opportunity; profile: ProfessionalProfile }) {
   const { t } = useLanguage();
@@ -58,22 +37,7 @@ function SavedComparison({ job, profile }: { job: Opportunity; profile: Professi
     }}>{t("Retry comparison")}</button>
     <p className="field-hint">{t("You can still browse and save this opportunity.")}</p>
   </div>;
-  const assessments = state.result.evaluation.assessments;
-  const known = assessments.filter(a => a.dimension !== 'TECHNOLOGY' && (a.outcome === 'ALIGNED' || a.outcome === 'DIFFERENT'));
-  const shared = assessments.filter(a => a.reason === 'TECHNOLOGY_CONFIRMED').flatMap(a => a.evidence.opportunityValues);
-  const unknown = assessments.filter(a => a.outcome === 'UNKNOWN' || a.outcome === 'NOT_ASSESSED');
-  return <div data-comparison-for={state.result.opportunityId}>
-    <p className="comparison-summary" role="status">{t(summary[state.result.evaluation.constraintSummary])}</p>
-    <ul className="fit-list">
-      {shared.length > 0 && <li>{t("Technologies in common:")} {shared.join(', ')}.</li>}
-      {known.map(a => <Explanation key={a.criterion} assessment={a} />)}
-    </ul>
-    <details><summary>{t("What’s still unknown or not assessed")}</summary>
-      <ul className="fit-list">{unknown.map(a => <Explanation key={a.criterion} assessment={a} />)}</ul>
-      <p>{t(job.unknown)}</p>
-    </details>
-    <p className="field-hint">{t("Based on your saved profile. These checks do not establish suitability or work authorization.")}</p>
-  </div>;
+  return <ComparisonResult result={state.result} catalogNote={job.unknown} />;
 }
 
 export function ProfileComparison({ job, profile }: { job: Opportunity; profile: ProfessionalProfile | null }) {

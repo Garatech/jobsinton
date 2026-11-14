@@ -4,7 +4,7 @@ A local search returns a `comparisonRefs` object alongside `listings`. Its keys 
 
 ## Contract
 
-`POST /api/providers/adzuna/compare` accepts exactly `comparisonRef` and `profile` as JSON. Use the `adzuna-local` backend on loopback; browsers must use its own origin. The default backend has no such route. The response uses the existing [matching response and reason codes](MATCHING_API.md#request-and-response), with the original `adzuna:` ID. Success and application errors use `Cache-Control: no-store`. No ranking, score or browser action is part of this endpoint.
+`POST /api/providers/adzuna/compare` accepts exactly `comparisonRef` and `profile` as JSON. Use the `adzuna-local` backend on loopback; browsers must use its own origin. The default backend has no such route. The response uses the existing [matching response and reason codes](MATCHING_API.md#request-and-response), with the original `adzuna:` ID. Success and application errors use `Cache-Control: no-store`. The search card calls this endpoint only when the reader asks to compare; provider order is unchanged.
 
 The reference binds the ID and facts together with a server-generated signature. It contains no profile, excerpt, credentials or referral. It is signed, not encrypted. It expires two hours after issue or when the backend restarts. This is the lifetime of the reference, not the advert. If a provider ID is longer than 256 characters including its prefix, that listing is still shown but has no reference. Clients should only offer comparison when a reference exists.
 
@@ -33,3 +33,9 @@ $comparison.evaluation.assessments | Where-Object criterion -eq 'attendance' | F
 ```
 
 A real excerpt often lacks an exact schedule. In that case an unknown result is expected.
+
+## Verify the search card
+
+From the repository root, run `npm --prefix frontend run test:adzuna`. It builds the client and checks desktop and mobile against the local backend with fictional search results. No provider credentials are needed.
+
+For a manual check, use the [local Adzuna setup](ADZUNA_SEARCH.md) and save a profile on the same origin as the search. On page two, expand an excerpt and choose **Compare with my profile**. The explanation opens inside that card. Switch languages or hide and reopen the result: the page, excerpt and comparison stay in place without another request. A fixed weekly requirement is shown alongside the saved limit; missing attendance stays unknown. Without a saved profile the card links to setup. An expired reference requires an explicit new search. Results are kept only while the current page is displayed.

@@ -22,11 +22,11 @@ export const reasonSpanish: Record<Assessment['reason'], string> = {
   "OFFICE_DIFFERENT": "La oficina está en otra ciudad o país.",
   "OFFICE_UNKNOWN": "Faltan datos sobre la modalidad o la ubicación de la oficina.",
   "OFFICE_NOT_APPLICABLE": "No se compara la ubicación de la oficina en puestos remotos.",
-  "RESIDENCE_ALLOWED": "La oferta no especifica los países de residencia admitidos.",
-  "RESIDENCE_OUTSIDE_POLICY": "La oferta indica expresamente que no hay restricciones por país de residencia.",
-  "RESIDENCE_UNRESTRICTED": "No se ha podido identificar el país de residencia del perfil.",
-  "RESIDENCE_POLICY_UNKNOWN": "El país de residencia está entre los admitidos por la oferta.",
-  "RESIDENCE_COUNTRY_UNKNOWN": "El país de residencia está fuera de los admitidos por la oferta.",
+  "RESIDENCE_ALLOWED": "El país de residencia está entre los admitidos por la oferta.",
+  "RESIDENCE_OUTSIDE_POLICY": "El país de residencia está fuera de los admitidos por la oferta.",
+  "RESIDENCE_UNRESTRICTED": "La oferta indica expresamente que no hay restricciones por país de residencia.",
+  "RESIDENCE_POLICY_UNKNOWN": "La oferta no especifica los países de residencia admitidos.",
+  "RESIDENCE_COUNTRY_UNKNOWN": "No se ha podido identificar el país de residencia del perfil.",
   "SALARY_NOT_CONFIGURED": "No hay una preferencia salarial configurada.",
   "CONDITIONS_NOT_SUPPORTED": "Las demás condiciones laborales no se evalúan en esta versión."
 };

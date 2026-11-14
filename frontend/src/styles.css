@@ -337,3 +337,8 @@ dialog .actions { flex-direction:column; align-items:stretch; }
 .language-switch button { background:none; border:0; padding:6px; min-height:40px; color:var(--muted); font:inherit; font-size:13px; }
 .language-switch button[aria-pressed="true"] { color:var(--green); text-decoration:underline; text-underline-offset:4px; font-weight:700; }
 @media (max-width:850px) { .site-header { flex-wrap:wrap; } .language-switch { margin-left:auto; } .site-nav { order:3; } }
+
+.live-job .live-comparison, .live-job > div > .text-link { display:block; margin-top:12px; }
+.live-comparison > div:not([hidden]) { margin-top:12px; padding-inline-start:14px; border-inline-start:2px solid var(--line); }
+.live-comparison .comparison-summary { font-weight:600; }
+.live-comparison .fit-list { padding-inline-start:18px; }

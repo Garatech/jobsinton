@@ -1,3 +1,5 @@
+import { LiveComparison } from '../matching/LiveComparison';
+import type { ProfessionalProfile } from '../profile/model';
 import { number, translate, type Language } from '../i18n/locale';
 import { useLanguage } from '../i18n/Language';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
@@ -13,14 +15,19 @@ function payLabel(language: Language, salary: Listing['salary']): string {
   return translate(language, 'Not indicated');
 }
 
-function LiveListing({ job }: { job: Listing }) {
+function LiveListing({ job, reference, profile }: {
+  job: Listing; reference?: string; profile: ProfessionalProfile | null;
+}) {
   const { t, language } = useLanguage();
+  const mode = job.matchingFacts?.mode;
+  const modeLabel = mode === 'REMOTE' ? 'Remote' : mode === 'HYBRID' ? 'Hybrid' : mode === 'ONSITE' ? 'On-site' : null;
   const pay = payLabel(language, job.salary);
   return <article className="job live-job"><div>
     <p className="company-name">{job.company || t('Company not indicated')}</p>
     <h3><a href={job.referral} target="_blank" rel="noopener noreferrer">{job.title}</a></h3>
-    <p className="job-meta">{job.locationLabel || t('Location not indicated')} · {t('Work mode: not indicated')}</p>
+    <p className="job-meta">{job.locationLabel || t('Location not indicated')} · {modeLabel ? t('Work mode') + ': ' + t(modeLabel) : t('Work mode: not indicated')}</p>
     {job.excerpt && <details><summary>{t("Read excerpt")}</summary><p>{job.excerpt}</p></details>}
+    {reference && <LiveComparison key={JSON.stringify([reference, profile])} id={job.id} reference={reference} profile={profile} />}
   </div><div className="live-job-aside">
     <p className="job-meta">{t("Salary:")} {pay}{pay !== t('Not indicated') && ' (' + t('currency and period unconfirmed') + ')'}</p>
     <a className="provider-credit" href="https://www.adzuna.es/" target="_blank" rel="noopener noreferrer">Adzuna</a>
@@ -30,7 +37,7 @@ function LiveListing({ job }: { job: Listing }) {
 type State = { kind: 'idle' | 'loading' } | { kind: 'error'; message: string }
   | { kind: 'done'; data: SearchPage; what: string; where: string };
 
-export function AdzunaSearch() {
+export function AdzunaSearch({ profile }: { profile: ProfessionalProfile | null }) {
   const { t } = useLanguage();
   const [what, setWhat] = useState('Java'), [where, setWhere] = useState('Madrid');
   const [state, setState] = useState<State>({ kind: 'idle' });
@@ -66,7 +73,7 @@ export function AdzunaSearch() {
     {state.kind === 'done' && <>
       <p role="status">{state.data.listings.length ? state.data.listings.length + ' ' + t(state.data.listings.length === 1 ? 'opportunity' : 'opportunities') :
         t(state.data.received ? 'No usable opportunities on this page' : 'No opportunities found')} · {state.what} / {state.where} · {t('Page')} {state.data.page}</p>
-      <div className="jobs">{state.data.listings.map(job => <LiveListing key={job.id} job={job} />)}</div>
+      <div className="jobs">{state.data.listings.map(job => <LiveListing key={job.id} job={job} profile={profile} reference={state.data.comparisonRefs.get(job.id)} />)}</div>
       {state.what === what.trim() && state.where === where.trim() && <div className="actions live-pages">
         {state.data.page > 1 && <button className="secondary-button" onClick={() => void submit(state.what, state.where, state.data.page - 1)}>{t("Previous page")}</button>}
         {state.data.page < 5 && state.data.received === 10 && <button className="secondary-button" onClick={() => void submit(state.what, state.where, state.data.page + 1)}>{t("Next page")}</button>}

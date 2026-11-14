@@ -4,6 +4,10 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Compare Adzuna results in search
+
+- Open a bilingual profile comparison on a returned listing without losing the page or repeating the search. Weekly attendance shows the stated requirement and saved limit when known. [Verification](docs/ADZUNA_COMPARISON.md#verify-the-search-card).
+
 ### Added — Compare an Adzuna result locally
 
 - Compare the selected search result with a saved profile without fetching or storing the advert. The response uses the existing matching rules and preserves unknown conditions. See [the contract and offline checks](docs/ADZUNA_COMPARISON.md).
