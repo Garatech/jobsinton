@@ -80,6 +80,10 @@ export async function fetchComparison(opportunityId: string, profile: Profession
     if (response.status === 404) throw new ComparisonError('This opportunity is not available for comparison. Refresh the page and try again.');
     throw new ComparisonError('The comparison is unavailable. Please try again.');
   }
+  return readComparison(response, opportunityId);
+}
+
+export async function readComparison(response: Response, opportunityId: string): Promise<Comparison> {
   const raw = await response.text();
   if (raw.length > 131_072) throw new ComparisonError('The comparison response could not be verified. Please try again.');
   return parseComparison(JSON.parse(raw) as unknown, opportunityId);

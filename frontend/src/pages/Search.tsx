@@ -29,7 +29,7 @@ export function Search(props: SearchProps) {
       <button type="button" aria-pressed={live} onClick={() => setLive(true)}>{t("Adzuna · Spain")}</button>
     </div>}
     <div hidden={live}><CatalogSearch {...props} /></div>
-    {live && <AdzunaSearch />}
+    {live && <AdzunaSearch profile={props.profile} />}
   </>;
 }
 
