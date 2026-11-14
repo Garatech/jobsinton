@@ -171,4 +171,4 @@ The profile increment is checked separately in its PR and requires the manual ch
 
 ## Optional local provider search
 
-See [Adzuna search](ADZUNA_SEARCH.md) for offline tests, local credentials and one manual request. The normal development setup above does not need a provider account.
+See [Adzuna search](ADZUNA_SEARCH.md) for offline tests and the local browser or PowerShell walkthrough. The normal development setup above does not need a provider account.

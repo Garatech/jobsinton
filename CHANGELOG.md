@@ -4,6 +4,11 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Local Adzuna search in Opportunities (2026-11-14)
+
+- Added an optional Spain source beside the sample catalog. Explicit searches and page controls use the backend; opening an excerpt reuses the current result. Unknown facts stay visible and provider results remain in memory.
+- Added [local browser setup and offline checks](docs/ADZUNA_SEARCH.md#verify-the-browser-without-keys). The default development server continues to serve the sample catalog.
+
 ### Fixed — Office-day limit in the saved profile (2026-11-14)
 
 - A remote preference now shows “Not specified” for the weekly office limit, consistent with matching. Saved profiles and ranking rules are unchanged.
