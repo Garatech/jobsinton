@@ -22,7 +22,7 @@ test('one real batch orders only filtered offers and survives layout, shortlist 
   await seed(page);
   const batches: { opportunityIds: string[]; profile: object }[] = [];
   page.on('request', r => { if (r.url().endsWith(endpoint)) batches.push(r.postDataJSON()); });
-  await page.goto('/#opportunities');
+  await page.goto('/#opportunities?source=sample');
   await expect(sort(page)).toHaveValue('newest');
   await expect(cards(page).first()).toHaveAttribute('data-job', 'data-engineer');
   await sort(page).selectOption('salary');

@@ -1,5 +1,7 @@
 # First live source: Spain
 
+> **Superseded by the Multi-ATS Direct Provider Engine:** The Adzuna aggregator integration evaluated below has been removed from the active pipeline. JobSinton now fetches live vacancies directly from 5 unauthenticated public company ATS JSON APIs (Greenhouse, Lever, SmartRecruiters, Workable, and Ashby) with zero API keys required. See [ATS_PROVIDERS.md](ATS_PROVIDERS.md) for the active architecture. The historical evaluation record from November 2026 is preserved below.
+
 Source selected for local evaluation · 13 November 2026 · Personal portfolio, EUR 0 budget.
 
 **Select Adzuna's Job Search API for one local evaluation.** It documents Spain, keyword/location search and a free evaluation key. This answers which source to test first. It does not establish Spanish vacancy volume, approve a permanent public demo, or activate a provider. The running application and CI still use fictional opportunities. No account was created, terms accepted, credentials inspected, provider contacted or live search performed in this review.

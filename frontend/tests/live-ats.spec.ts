@@ -1,0 +1,226 @@
+import { expect, test, type Page } from '@playwright/test';
+
+const MOCK_FEED = {
+  fetchedAt: '2026-11-17T12:00:00Z',
+  cached: false,
+  cacheAgeSeconds: 0,
+  totalBoards: 6,
+  succeededBoards: 5,
+  failedBoards: 1,
+  boards: [
+    { companySlug: 'cabify', companyName: 'Cabify', provider: 'greenhouse', providerLabel: 'Greenhouse', ok: true, jobCount: 1, durationMs: 145, error: null },
+    { companySlug: 'tomtom', companyName: 'TomTom', provider: 'lever', providerLabel: 'Lever', ok: true, jobCount: 1, durationMs: 210, error: null },
+    { companySlug: 'Celonis', companyName: 'Celonis', provider: 'smartrecruiters', providerLabel: 'SmartRecruiters', ok: true, jobCount: 1, durationMs: 260, error: null },
+    { companySlug: 'mediaradar', companyName: 'MediaRadar', provider: 'workable', providerLabel: 'Workable', ok: true, jobCount: 1, durationMs: 185, error: null },
+    { companySlug: 'invopop', companyName: 'Invopop', provider: 'ashby', providerLabel: 'Ashby', ok: true, jobCount: 1, durationMs: 130, error: null },
+    { companySlug: 'broken-board', companyName: 'Broken Co', provider: 'ashby', providerLabel: 'Ashby', ok: false, jobCount: 0, durationMs: 8000, error: 'Timed out after 8000ms' },
+  ],
+  jobs: [
+    {
+      id: 'greenhouse:cabify:101',
+      sourceId: '101',
+      provider: 'greenhouse',
+      providerLabel: 'Greenhouse',
+      companySlug: 'cabify',
+      companyName: 'Cabify',
+      title: 'Full Stack Engineer (Java Spring Boot & Angular)',
+      location: 'Madrid, Spain',
+      workplaceType: 'hybrid',
+      publishedAt: '2026-11-17T08:00:00Z',
+      hoursSincePublished: 4,
+      description: 'Build scalable mobility platforms using Java 21, Spring Boot, Angular, PostgreSQL and Docker in Madrid.',
+      descriptionSnippet: 'Build scalable mobility platforms using Java 21, Spring Boot, Angular, PostgreSQL and Docker in Madrid.',
+      applyUrl: 'https://boards.greenhouse.io/cabify/jobs/101',
+      department: 'Engineering',
+      compensation: null,
+      hasFullDescription: true,
+    },
+    {
+      id: 'ashby:invopop:ash-1',
+      sourceId: 'ash-1',
+      provider: 'ashby',
+      providerLabel: 'Ashby',
+      companySlug: 'invopop',
+      companyName: 'Invopop',
+      title: 'Product Engineer (React, TypeScript & Node.js)',
+      location: 'Madrid, Spain · Remote EU',
+      workplaceType: 'remote',
+      publishedAt: '2026-11-16T06:00:00Z',
+      hoursSincePublished: 30,
+      description: 'Modern invoicing API built with TypeScript, React, Node.js, PostgreSQL and Docker.',
+      descriptionSnippet: 'Modern invoicing API built with TypeScript, React, Node.js, PostgreSQL and Docker.',
+      applyUrl: 'https://jobs.ashbyhq.com/invopop/ash-1/application',
+      department: 'Product',
+      compensation: '€45K – €58K',
+      hasFullDescription: true,
+    },
+    {
+      id: 'smartrecruiters:Celonis:sr-sap',
+      sourceId: 'sr-sap',
+      provider: 'smartrecruiters',
+      providerLabel: 'SmartRecruiters',
+      companySlug: 'Celonis',
+      companyName: 'Celonis',
+      title: 'Junior SAP ABAP Developer',
+      location: 'Madrid, Spain, Remote',
+      workplaceType: 'remote',
+      publishedAt: '2026-11-16T18:00:00Z',
+      hoursSincePublished: 18,
+      description: '',
+      descriptionSnippet: '',
+      applyUrl: 'https://jobs.smartrecruiters.com/Celonis/sr-sap',
+      department: 'Enterprise Engineering',
+      compensation: null,
+      hasFullDescription: false,
+    },
+    {
+      id: 'lever:tomtom:lev-1',
+      sourceId: 'lev-1',
+      provider: 'lever',
+      providerLabel: 'Lever',
+      companySlug: 'tomtom',
+      companyName: 'TomTom',
+      title: 'Backend Software Engineer',
+      location: 'Amsterdam, Netherlands',
+      workplaceType: 'onsite',
+      publishedAt: '2026-11-10T12:00:00Z',
+      hoursSincePublished: 168,
+      description: 'Distributed navigation backend using Java, Kubernetes and Docker.',
+      descriptionSnippet: 'Distributed navigation backend using Java, Kubernetes and Docker.',
+      applyUrl: 'https://jobs.eu.lever.co/tomtom/lev-1/apply',
+      department: 'Maps',
+      compensation: null,
+      hasFullDescription: true,
+    },
+    {
+      id: 'workable:mediaradar:wk-9',
+      sourceId: 'wk-9',
+      provider: 'workable',
+      providerLabel: 'Workable',
+      companySlug: 'mediaradar',
+      companyName: 'MediaRadar',
+      title: 'Account Executive EMEA',
+      location: 'London, United Kingdom',
+      workplaceType: 'hybrid',
+      publishedAt: '2026-11-12T12:00:00Z',
+      hoursSincePublished: 120,
+      description: 'Enterprise B2B sales role with strong capacity for SaaS pipeline growth.',
+      descriptionSnippet: 'Enterprise B2B sales role with strong capacity for SaaS pipeline growth.',
+      applyUrl: 'https://apply.workable.com/mediaradar/j/wk-9/',
+      department: 'Sales',
+      compensation: null,
+      hasFullDescription: true,
+    },
+  ],
+};
+
+async function mockAtsApi(page: Page, onJobsRequest?: (url: string) => void) {
+  await page.route('**/api/ats/jobs*', async (route) => {
+    onJobsRequest?.(route.request().url());
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json; charset=utf-8',
+      body: JSON.stringify(MOCK_FEED),
+    });
+  });
+  await page.route('**/api/ats/smartrecruiters/Celonis/sr-sap', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json; charset=utf-8',
+      body: JSON.stringify({
+        id: 'smartrecruiters:Celonis:sr-sap',
+        description: 'SAP S/4HANA clean core development using ABAP OO, RAP, CAP, OData v4, Fiori and SAP BTP.',
+        descriptionSnippet: 'SAP S/4HANA clean core development using ABAP OO, RAP, CAP, OData v4, Fiori and SAP BTP.',
+        applyUrl: 'https://jobs.smartrecruiters.com/Celonis/sr-sap/apply',
+        hasFullDescription: true,
+      }),
+    });
+  });
+}
+
+test('zero-friction live ATS feed loads immediately with presets, Blip badges, filters, and direct apply links', async ({ page }) => {
+  const requestedUrls: string[] = [];
+  await mockAtsApi(page, (url) => requestedUrls.push(url));
+
+  await page.goto('/#opportunities');
+
+  // Defaults straight to Live ATS Boards without needing keys or forms.
+  await expect(page.getByRole('button', { name: 'Live ATS Boards', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText(/5 \/ 6 company boards live/)).toBeVisible();
+
+  // Default All Tech preset shows the 4 software/tech roles and excludes the non-tech Sales role.
+  await expect(page.locator('[data-ats-job]')).toHaveCount(4);
+
+  // Blip freshness badges and Ashby compensation render clearly.
+  const cabifyCard = page.locator('[data-ats-job="greenhouse:cabify:101"]');
+  await expect(cabifyCard).toContainText('🔥 Posted 4h ago');
+  await expect(cabifyCard).toContainText('Greenhouse');
+  await expect(cabifyCard.getByRole('link', { name: /Apply on Company Site/ })).toHaveAttribute(
+    'href',
+    'https://boards.greenhouse.io/cabify/jobs/101',
+  );
+  await expect(cabifyCard.getByRole('link', { name: /Apply on Company Site/ })).toHaveAttribute('target', '_blank');
+
+  const invopopCard = page.locator('[data-ats-job="ashby:invopop:ash-1"]');
+  await expect(invopopCard).toContainText('⚡ Posted 30h ago');
+  await expect(invopopCard).toContainText('€45K – €58K');
+
+  // Inspect board health diagnostics drawer showing partial upstream timeout.
+  await page.getByRole('button', { name: /Board status/ }).click();
+  await expect(page.getByText('Timed out after 8000ms')).toBeVisible();
+
+  // Switch to Track A (SAP & Enterprise) and hydrate SmartRecruiters description on demand.
+  await page.getByRole('button', { name: /Track A · SAP & Enterprise/ }).click();
+  await expect(page.locator('[data-ats-job]')).toHaveCount(1);
+  const celonisCard = page.locator('[data-ats-job="smartrecruiters:Celonis:sr-sap"]');
+  await celonisCard.getByRole('button', { name: 'Load full description', exact: true }).click();
+  await expect(celonisCard).toContainText('SAP S/4HANA clean core development');
+  // Newly hydrated keywords immediately highlight on the card.
+  await expect(celonisCard.locator('.ats-match-chip', { hasText: 'OData' })).toBeVisible();
+  await expect(celonisCard.locator('.ats-match-chip', { hasText: 'RAP' })).toBeVisible();
+
+  // Switch to Track B (Full Stack) and combine Spain / Madrid / Remote + Fresh (< 48h).
+  await page.getByRole('button', { name: /Track B · Full Stack/ }).click();
+  await expect(page.locator('[data-ats-job]')).toHaveCount(3);
+  await page.getByRole('button', { name: /Fresh \(< 48h\)/ }).click();
+  await expect(page.locator('[data-ats-job]')).toHaveCount(2);
+
+  // Switch to All Fetched Jobs to reveal all 5 postings including Sales.
+  await page.getByRole('button', { name: /All Fetched Jobs/ }).click();
+  await expect(page.locator('[data-ats-job]')).toHaveCount(5);
+
+  // Custom Profile tag editing filters cleanly.
+  await page.getByRole('button', { name: /Custom Profile/ }).click();
+  await page.getByLabel('Add stack keyword').fill('Kubernetes');
+  await page.getByRole('button', { name: 'Add tag', exact: true }).click();
+  await expect(page.locator('.ats-custom-tags')).toContainText('Kubernetes');
+
+  // Force Refresh calls /api/ats/jobs?refresh=true explicitly.
+  await page.getByRole('button', { name: 'Force Refresh', exact: true }).click();
+  await expect.poll(() => requestedUrls.some((url) => url.includes('refresh=true'))).toBe(true);
+});
+
+test('home page renders Live ATS Radar preview, supports ES/EN switch, and fits 320px mobile viewports', async ({ page }) => {
+  await mockAtsApi(page);
+  const errors: string[] = [];
+  page.on('pageerror', (err) => errors.push(err.message));
+
+  await page.goto('/#home');
+  await expect(page.getByRole('heading', { name: 'Fresh directly from company career pages.' })).toBeVisible();
+  await expect(page.locator('.ats-preview-card')).toHaveCount(4);
+
+  // Shortcut pill jumps straight into Track A · SAP on Opportunities.
+  await page.locator('.home-preset-shortcuts a', { hasText: 'Track A · SAP & Enterprise' }).click();
+  await expect(page.getByRole('button', { name: /Track A · SAP & Enterprise/ })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-ats-job="smartrecruiters:Celonis:sr-sap"]')).toBeVisible();
+
+  // Switch language to Spanish in place.
+  await page.getByRole('button', { name: 'Español', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Portales ATS en directo', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.getByText(/portales de empresa activos/)).toBeVisible();
+
+  // Verify narrow mobile viewport has zero horizontal overflow.
+  await page.setViewportSize({ width: 320, height: 800 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  expect(errors).toEqual([]);
+});

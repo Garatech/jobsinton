@@ -31,9 +31,7 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '24'
-      - name: Verify offline provider probe
-        run: node --test tools/adzuna/probe.test.mjs
-      - name: Verify backend HTTP contract
+      - name: Verify backend HTTP contract and ATS adapters
         run: mvn -B -ntp -f backend/pom.xml verify
       - name: Install locked frontend dependencies
         run: npm --prefix frontend ci
@@ -44,9 +42,6 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Verify browser and API integration
         run: npm --prefix frontend run test:e2e
-      - name: Verify private browser search without credentials
-        working-directory: frontend
-        run: npx playwright test --config=playwright.adzuna.config.ts
       - name: Preserve failure evidence
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

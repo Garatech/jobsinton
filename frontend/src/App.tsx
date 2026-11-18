@@ -110,7 +110,7 @@ export function App() {
       </div>
       <div hidden={route.page !== 'status' || !valid}><Status /></div>
     </main>
-    <footer className="page-footer"><span>{t("A Gara’s Workshop project")}</span><span>{t("Demo catalog: fictional opportunities and companies")}</span><a href="#status">{t("Service status")}</a></footer>
+    <footer className="page-footer"><span>{t("A Gara’s Workshop project")}</span><span>{t("Live public ATS boards · Demo catalog included")}</span><a href="#status">{t("Service status")}</a></footer>
     </div><p className="toast" role="status" aria-live="polite">{t(message)}</p>
   </>;
 }

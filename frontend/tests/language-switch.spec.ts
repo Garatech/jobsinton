@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 test.use({ locale: 'es-ES' });
 
 test('Spanish first visit, accessible selector and saved choice across reload', async ({ page }) => {
-  await page.goto('/#opportunities');
+  await page.goto('/#opportunities?source=sample');
   await expect(page.locator('html')).toHaveAttribute('lang','es');
   await expect(page.getByRole('heading',{name:'Ofertas.',exact:true})).toBeVisible();
   await page.getByLabel('Buscar ofertas',{exact:true}).fill('desarrollo backend');

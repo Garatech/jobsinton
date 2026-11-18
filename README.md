@@ -16,12 +16,14 @@ Match scores will express compatibility with a profile, not the likelihood of re
 
 ## Project status
 
-The approved Current design now supports a complete browsing journey: professional profile, searchable fictional opportunities, company pages, details and a browser-local shortlist. Profiles and saved opportunities persist in this browser. Opportunity details use the Java matching API to explain saved-profile comparisons, including differences and missing information. In search, Compatibility orders filtered opportunities against the saved profile; Newest remains the default. Profiles are sent for comparison without server-side storage. Automated build and integration checks cover the application. Live providers, accounts and server-side persistence remain planned.
+JobSinton runs out of the box with **zero API keys or `.env` configuration**. The Java 21 / Spring Boot backend aggregates live openings in parallel from **22 pre-seeded company boards across 5 public ATS JSON APIs** (Greenhouse, Lever, SmartRecruiters, Workable, and Ashby), normalizes publication timestamps and plain-text descriptions, and serves them with a 5-minute TTL cache and board-level fault isolation.
 
-Stack: **Java · Spring Boot · React · TypeScript**.
+The approved Current React interface opens directly onto live ATS postings with **Live ATS Radar** on Home, stack presets (`All Tech`, `Track A · SAP`, `Track B · Full Stack`, `Custom Profile`), one-click freshness (`< 48h`) and Spain/Madrid/Remote filters, Blip-style recency badges, and direct links to each company's official career application page. The fictional `Sample catalog`, browser-local profile and shortlist, and deterministic Java matching/compatibility engine remain integrated alongside live ATS boards. Accounts and server-side persistence remain planned.
+
+Stack: **Java 21 · Spring Boot · React · TypeScript**.
 
 ## Project documentation
 
-[Run the project](docs/DEVELOPMENT.md) · [Design and acceptance checklist](docs/DESIGN.md) · [Matching verification](docs/MATCHING_API.md) · [Architecture](docs/ARCHITECTURE.md) · [Changelog](CHANGELOG.md) · [Development plan](docs/PROJECT_PLAN.md) · [Contributing](CONTRIBUTING.md)
+[Run the project](docs/DEVELOPMENT.md) · [Multi-ATS Providers](docs/ATS_PROVIDERS.md) · [Design and acceptance checklist](docs/DESIGN.md) · [Matching verification](docs/MATCHING_API.md) · [Architecture](docs/ARCHITECTURE.md) · [Changelog](CHANGELOG.md) · [Development plan](docs/PROJECT_PLAN.md) · [Contributing](CONTRIBUTING.md)
 
 A **Gara's Workshop** project.

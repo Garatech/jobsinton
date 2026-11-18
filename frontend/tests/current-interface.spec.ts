@@ -1,12 +1,58 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { opportunities, companies } from '../src/catalog/data';
 import { PROFILE_STORAGE_KEY } from '../src/profile/storage';
 import { SAVED_STORAGE_KEY } from '../src/catalog/saved';
 
 const profile = { role: 'backend', technologies: ['Java', 'Spring Boot'], experienceYears: 3, country: 'Spain', city: 'Madrid', workMode: 'remote', maxOnsiteDays: null };
 
+const stubAtsFeed = {
+  fetchedAt: '2026-11-17T12:00:00Z',
+  cached: true,
+  cacheAgeSeconds: 12,
+  totalBoards: 2,
+  succeededBoards: 2,
+  failedBoards: 0,
+  boards: [
+    { companySlug: 'cabify', companyName: 'Cabify', provider: 'greenhouse', providerLabel: 'Greenhouse', ok: true, jobCount: 1, durationMs: 90, error: null },
+    { companySlug: 'invopop', companyName: 'Invopop', provider: 'ashby', providerLabel: 'Ashby', ok: true, jobCount: 1, durationMs: 85, error: null },
+  ],
+  jobs: [
+    {
+      id: 'greenhouse:cabify:101',
+      sourceId: '101',
+      provider: 'greenhouse',
+      providerLabel: 'Greenhouse',
+      companySlug: 'cabify',
+      companyName: 'Cabify',
+      title: 'Full Stack Engineer (Java & Angular)',
+      location: 'Madrid, Spain',
+      workplaceType: 'hybrid',
+      publishedAt: '2026-11-17T08:00:00Z',
+      hoursSincePublished: 4,
+      description: 'Java, Spring Boot, Angular, PostgreSQL and Docker.',
+      descriptionSnippet: 'Java, Spring Boot, Angular, PostgreSQL and Docker.',
+      applyUrl: 'https://boards.greenhouse.io/cabify/jobs/101',
+      department: 'Engineering',
+      compensation: null,
+      hasFullDescription: true,
+    },
+  ],
+};
+
+async function mockAts(page: Page) {
+  await page.route('**/api/ats/jobs*', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json; charset=utf-8',
+    body: JSON.stringify(stubAtsFeed),
+  }));
+}
+
+test.beforeEach(async ({ page }) => {
+  await mockAts(page);
+});
+
 test('searches, combines filters, orders results and retains the selected layout on reload', async ({ page }) => {
-  await page.goto('/#opportunities');
+  await page.goto('/#opportunities?source=sample');
   await expect(page.locator('.job')).toHaveCount(6);
   await page.getByLabel('Search opportunities').fill('Northline Studio');
   await expect(page.locator('.job')).toHaveCount(2);
@@ -34,12 +80,14 @@ test('searches, combines filters, orders results and retains the selected layout
   await expect(page.locator('.job')).toHaveCount(6);
   await page.getByLabel('Search opportunities').fill('java');
   await page.locator('.site-nav a[href="#opportunities"]').click();
+  await expect(page.getByRole('button', { name: 'Live ATS Boards', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Sample catalog', exact: true }).click();
   await expect(page.getByLabel('Search opportunities')).toHaveValue('');
   await expect(page.locator('.job')).toHaveCount(6);
 });
 
 test('saves across navigation and reload, then restores keyboard focus in the empty shortlist', async ({ page }) => {
-  await page.goto('/#opportunities');
+  await page.goto('/#opportunities?source=sample');
   expect(await page.evaluate(key => localStorage.getItem(key), SAVED_STORAGE_KEY)).toBeNull();
   await page.getByRole('button', { name: 'Save Backend Developer', exact: true }).focus();
   await page.keyboard.press('Enter');
@@ -82,7 +130,7 @@ test('companies, direct links, browser history and unknown routes work', async (
   await page.goto('/#missing');
   await expect(page.getByRole('heading', { name: 'Page not found.' })).toBeVisible();
   await page.getByRole('link', { name: 'Explore opportunities', exact: true }).click();
-  await expect(page.locator('.job')).toHaveCount(6);
+  await expect(page.locator('[data-ats-job]')).toHaveCount(1);
 });
 
 test('existing v1 profiles remain intact and drive the shared interface only after saving', async ({ page }) => {
@@ -114,7 +162,7 @@ test('existing v1 profiles remain intact and drive the shared interface only aft
 });
 
 test('failed shortlist writes and clears keep the persisted data and profile', async ({ page }) => {
-  await page.goto('/#opportunities');
+  await page.goto('/#opportunities?source=sample');
   await page.getByRole('button', { name: 'Save Backend Developer', exact: true }).click();
   await page.evaluate(({ key, profile }) => {
     localStorage.setItem(key, JSON.stringify({ version: 1, profile }));
@@ -154,7 +202,7 @@ for (const raw of ['{broken', '{"version":2,"ids":[]}', '{"version":1,"ids":[nul
 
 test('blocked storage allows browsing without pretending to save', async ({ page }) => {
   await page.addInitScript(() => Object.defineProperty(window, 'localStorage', { get() { throw new DOMException('Blocked', 'SecurityError'); } }));
-  await page.goto('/#opportunities');
+  await page.goto('/#opportunities?source=sample');
   await expect(page.locator('.job')).toHaveCount(6);
   await page.getByRole('button', { name: 'Save Backend Developer', exact: true }).click();
   await expect(page.locator('.saved-count')).toHaveText('0');
@@ -167,7 +215,8 @@ test('saved records discard unknown IDs safely and update other open tabs', asyn
   await page.reload();
   await expect(page.locator('.job')).toHaveCount(1);
   const second = await context.newPage();
-  await second.goto('/#opportunities');
+  await mockAts(second);
+  await second.goto('/#opportunities?source=sample');
   await second.getByRole('button', { name: 'Save Frontend Developer', exact: true }).click();
   await expect(page.locator('.job')).toHaveCount(2);
   await second.close();
