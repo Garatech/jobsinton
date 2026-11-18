@@ -4,7 +4,7 @@ GitHub is the source of truth for shared code and history. A commit on your comp
 
 ## What works today
 
-The React interface checks a real Java service through `GET /api/status`. It displays loading, connected, and unavailable states, allows retries, and stops waiting after five seconds. The professional profile editor saves preferences in this browser and restores them after reload. The approved Current interface includes a searchable fictional catalog, company and opportunity pages, and a browser-local shortlist. Opportunity details explain matching results, and search can order a filtered list by Compatibility using a saved profile. No database or live provider is required. See [the profile verification guide](PROFILE.md) for its rules and acceptance checklist.
+The React interface checks a real Java service through `GET /api/status` and immediately loads live openings through `GET /api/ats/jobs` from 22 pre-seeded company boards across 5 public ATS JSON APIs (**Greenhouse, Lever, SmartRecruiters, Workable, and Ashby**) with zero API keys or `.env` setup. Home previews the freshest openings in **Live ATS Radar**, and Opportunities defaults to **Live ATS Boards** with developer stack presets (`All Tech`, `Track A · SAP`, `Track B · Full Stack`, `Custom Profile`), one-click freshness/location toggles, board health diagnostics, and direct `Apply on Company Site` links. The professional profile editor saves preferences in this browser and restores them after reload. The approved Current interface also retains the searchable fictional `Sample catalog`, company and opportunity pages, a browser-local shortlist, and Java matching/compatibility ranking. No database or provider account is required. See [ATS_PROVIDERS.md](ATS_PROVIDERS.md) and [the profile verification guide](PROFILE.md).
 
 The services are development processes. This guide does not deploy a public application.
 
@@ -169,6 +169,6 @@ The profile increment is checked separately in its PR and requires the manual ch
 - [Codespaces port forwarding](https://docs.github.com/en/codespaces/developing-in-a-codespace/forwarding-ports-in-your-codespace)
 - [Vite host allowlists](https://vite.dev/config/server-options#server-allowedhosts)
 
-## Optional local provider search
+## Live Multi-ATS boards (zero setup)
 
-See [Adzuna search](ADZUNA_SEARCH.md) for offline tests and the local browser or PowerShell walkthrough. The normal development setup above does not need a provider account.
+Starting the backend and frontend with the two commands above immediately activates live fetching from the 22 pre-seeded company boards across Greenhouse, Lever, SmartRecruiters, Workable, and Ashby — no `.env` file, credentials, or extra Spring profiles are required. See [ATS_PROVIDERS.md](ATS_PROVIDERS.md) for endpoints, cache settings, company registry customization, and offline verification details.

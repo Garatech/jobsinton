@@ -18,6 +18,23 @@ async function finishFade(page: Page) {
   await page.locator('#main').evaluate(el => el.getAnimations().forEach(animation => animation.finish()));
 }
 
+test.beforeEach(async ({ page }) => {
+  await page.route('**/api/ats/jobs*', route => route.fulfill({
+    status: 200,
+    contentType: 'application/json; charset=utf-8',
+    body: JSON.stringify({
+      fetchedAt: '2026-11-17T12:00:00Z',
+      cached: true,
+      cacheAgeSeconds: 0,
+      totalBoards: 1,
+      succeededBoards: 1,
+      failedBoards: 0,
+      boards: [],
+      jobs: [],
+    }),
+  }));
+});
+
 test('keyboard navigation fades only incoming content and completes at full opacity', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await inspectFades(page);
@@ -97,12 +114,14 @@ test('rapid navigation and history keep one transition and preserve the profile 
 test('filters, layout, saved actions and in-page anchors do not restart the fade', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'no-preference' });
   await inspectFades(page);
-  await page.goto('/#opportunities');
+  await page.goto('/#opportunities?source=sample');
   await page.getByLabel('Search opportunities').fill('java');
   await page.getByRole('button', { name: 'Card view', exact: true }).click();
   await page.getByRole('button', { name: 'Save Backend Developer', exact: true }).click();
   expect(await activeFades(page)).toBe(0);
   await page.locator('.site-nav a[href="#opportunities"]').click();
+  expect(await activeFades(page)).toBe(0);
+  await page.getByRole('button', { name: 'Sample catalog', exact: true }).click();
   await expect(page.locator('.job')).toHaveCount(6);
   expect(await activeFades(page)).toBe(0);
   await page.getByRole('link', { name: 'Backend Developer', exact: true }).click();

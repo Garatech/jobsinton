@@ -1,0 +1,138 @@
+[
+  {
+    "slug": "cabify",
+    "name": "Cabify",
+    "ats": "greenhouse",
+    "locationHint": "Madrid, Spain"
+  },
+  {
+    "slug": "typeform",
+    "name": "Typeform",
+    "ats": "greenhouse",
+    "locationHint": "Barcelona / Remote"
+  },
+  {
+    "slug": "glovo",
+    "name": "Glovo",
+    "ats": "greenhouse",
+    "locationHint": "Barcelona / Madrid"
+  },
+  {
+    "slug": "datadog",
+    "name": "Datadog",
+    "ats": "greenhouse",
+    "locationHint": "Madrid / EMEA"
+  },
+  {
+    "slug": "stripe",
+    "name": "Stripe",
+    "ats": "greenhouse",
+    "locationHint": "Madrid / Europe / Remote"
+  },
+  {
+    "slug": "affirm",
+    "name": "Affirm",
+    "ats": "greenhouse",
+    "locationHint": "Spain / Remote"
+  },
+  {
+    "slug": "speechify",
+    "name": "Speechify",
+    "ats": "greenhouse",
+    "locationHint": "Remote"
+  },
+  {
+    "slug": "tomtom",
+    "name": "TomTom",
+    "ats": "lever",
+    "region": "eu",
+    "locationHint": "Madrid / Europe"
+  },
+  {
+    "slug": "olx",
+    "name": "OLX",
+    "ats": "lever",
+    "region": "eu",
+    "locationHint": "Europe / Remote"
+  },
+  {
+    "slug": "xtb",
+    "name": "XTB",
+    "ats": "lever",
+    "region": "eu",
+    "locationHint": "Europe / Remote"
+  },
+  {
+    "slug": "creatio",
+    "name": "Creatio",
+    "ats": "lever",
+    "region": "eu",
+    "locationHint": "Europe / Remote"
+  },
+  {
+    "slug": "AlterSolutions",
+    "name": "Alter Solutions",
+    "ats": "smartrecruiters",
+    "locationHint": "Madrid / Europe"
+  },
+  {
+    "slug": "Celonis",
+    "name": "Celonis",
+    "ats": "smartrecruiters",
+    "locationHint": "Madrid / Munich"
+  },
+  {
+    "slug": "BoschGroup",
+    "name": "Bosch Group",
+    "ats": "smartrecruiters",
+    "locationHint": "Madrid / Europe"
+  },
+  {
+    "slug": "Visa",
+    "name": "Visa",
+    "ats": "smartrecruiters",
+    "locationHint": "Madrid / Europe"
+  },
+  {
+    "slug": "teleperformance-spain",
+    "name": "Teleperformance Spain",
+    "ats": "workable",
+    "locationHint": "Madrid / Spain"
+  },
+  {
+    "slug": "mediaradar",
+    "name": "MediaRadar",
+    "ats": "workable",
+    "locationHint": "Remote / Europe"
+  },
+  {
+    "slug": "invopop",
+    "name": "Invopop",
+    "ats": "ashby",
+    "locationHint": "Madrid / Remote"
+  },
+  {
+    "slug": "happyrobot.ai",
+    "name": "HappyRobot",
+    "ats": "ashby",
+    "locationHint": "Madrid / Remote"
+  },
+  {
+    "slug": "vic.ai",
+    "name": "Vic.ai",
+    "ats": "ashby",
+    "locationHint": "Remote / Europe"
+  },
+  {
+    "slug": "airapps",
+    "name": "Air Apps",
+    "ats": "ashby",
+    "locationHint": "Remote / Europe"
+  },
+  {
+    "slug": "openai",
+    "name": "OpenAI",
+    "ats": "ashby",
+    "locationHint": "Global / Europe"
+  }
+]

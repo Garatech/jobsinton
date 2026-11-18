@@ -4,6 +4,17 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Multi-ATS direct provider engine
+
+- Replaced the aggregator-based live job path with a zero-configuration **Multi-ATS Direct Provider Engine** querying 5 unauthenticated public ATS JSON APIs (**Greenhouse**, **Lever Global & EU**, **SmartRecruiters**, **Workable v1 & v3**, and **Ashby**) across **22 pre-seeded company boards** (`backend/src/main/resources/ats/companies.json`).
+- Added Java 21 virtual-thread parallel fetching with board-level fault isolation, 8-second per-request timeouts, 12 MiB payload cap, `https://`-only URL validation, HTML entity/tag cleaning, deduplication, newest-first sorting, 5-minute TTL caching with stampede coalescing, and on-demand SmartRecruiters detail hydration (`GET /api/ats/jobs`, `GET /api/ats/boards`, `GET /api/ats/smartrecruiters/{companySlug}/{postingId}`).
+- Added a zero-friction **Live ATS Boards** experience as the default view on `#opportunities` plus **Live ATS Radar** on `#home`, complete with developer stack presets (`All Tech / Software Roles`, `Track A · SAP & Enterprise`, `Track B · Full Stack (Java / JS)`, `Custom Profile`), token-boundary skill matching, one-click quick filters (`My Profile Matches`, `Fresh (< 48h)`, `Spain / Madrid / Remote`, `All Fetched Jobs`), Blip freshness badges (`🔥 <= 24h`, `⚡ 25–48h`), board health diagnostics, Force Refresh, and direct `Apply on Company Site` links.
+- Added offline backend unit/MockMvc tests and deterministic Playwright E2E + scoring tests in English and Spanish; documented the architecture in [ATS_PROVIDERS.md](docs/ATS_PROVIDERS.md).
+
+### Removed — Deprecated Adzuna integration
+
+- Removed the key-gated Adzuna backend adapter, local Spring profile, frontend search/comparison components, PowerShell/Node probe scripts, and dedicated Adzuna CI/Playwright configs in favor of direct public company ATS endpoints. Historical evaluation docs remain archived for reference.
+
 ### Decision — Adzuna result order
 
 - Retain provider order and per-listing profile comparisons. The first measured live page produced no evidence-based ordering across ten listings. [Observation and review criteria](docs/ADZUNA_PAGE_STUDY.md#ordering-decision-5d2).

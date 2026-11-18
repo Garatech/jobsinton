@@ -6,7 +6,7 @@ The first increment establishes one real request through the complete stack:
 
 Browser → Vite development proxy → Spring Boot → JSON response → connection state.
 
-The browser calls `/api/status` on its own origin. Vite forwards `/api` to `http://127.0.0.1:8080`, so local development and private Codespaces port forwarding use the same frontend code. The Vite host allowlist is derived from this Codespace's name and forwarding domain; it does not trust every host. No broad CORS policy is needed. Production routing is not configured.
+The browser calls `/api/status`, `/api/matching/*`, and `/api/ats/*` on its own origin. Vite forwards `/api/status`, `/api/matching`, and `/api/ats` to `http://127.0.0.1:8080`, so local development and private Codespaces port forwarding use the same frontend code. The Vite host allowlist is derived from this Codespace's name and forwarding domain; it does not trust every host. No broad CORS policy is needed. Production routing is not configured.
 
 ## Responsibilities
 
@@ -14,24 +14,29 @@ The browser calls `/api/status` on its own origin. Vite forwards `/api` to `http
 | --- | --- |
 | `backend/.../JobSintonApplication.java` | Start Spring Boot |
 | `backend/.../system/SystemStatusController.java` | Own the public service-status contract |
+| `backend/.../providers/ats/` | Multi-ATS direct provider engine: 5 public ATS adapters (Greenhouse, Lever, SmartRecruiters, Workable, Ashby), 22-company registry, parallel fault-isolated feed service with TTL cache, and `/api/ats/*` REST API |
+| `backend/src/main/resources/ats/companies.json` | Pre-seeded registry of public company ATS boards |
 | `backend/.../matching/` | Pure Java matching domain, immutable facts, validation and versioned explanations |
 | `backend/.../matching/api/` | Bounded matching endpoint, saved-profile validation and fictional catalog adapter |
+| `frontend/src/api/ats.ts` | Live ATS feed client, runtime validation, short TTL cache, and SmartRecruiters on-demand detail hydration |
+| `frontend/src/ats/` | Developer stack presets (`All Tech`, `Track A · SAP`, `Track B · Full Stack`, `Custom Profile`) and token-boundary keyword scoring & freshness helpers |
+| `frontend/src/pages/LiveJobsBoard.tsx` | Zero-friction live ATS feed UI with board health bar, quick toggles, preset pills, and direct company apply links |
 | `frontend/src/api/matching.ts` | Matching requests and complete response validation |
 | `frontend/src/matching/Comparison.tsx` | Saved-profile comparison lifecycle and Current panel |
 | `frontend/src/api/status.ts` | HTTP request and runtime validation of external JSON |
 | `frontend/src/App.tsx` | Shared Current shell, route composition, profile and shortlist state |
 | `frontend/src/navigation.ts` | Hash navigation and direct-link handling |
-| `frontend/src/pages/` | Home, search, companies, details and service status |
+| `frontend/src/pages/` | Home (with Live ATS Radar), live/sample opportunities search, companies, details and service status |
 | `frontend/src/catalog/` | Typed fictional catalog and validated shortlist storage |
 | `frontend/src/profile/model.ts` | Profile contract, normalization, validation, and saved-data parsing |
 | `frontend/src/profile/storage.ts` | Guarded reads, writes, and removal of the browser-local profile |
 | `frontend/src/profile/ProfileEditor.tsx` | Editable draft, validation feedback, and last-saved summary |
 | `frontend/src/styles.css` | Responsive visual foundation without external assets |
-| `frontend/tests/` | Browser journeys against the real API, plus controlled failures |
+| `frontend/tests/` | Browser journeys against the real API, deterministic ATS stubs, and controlled failures |
 | `.github/workflows/ci.yml` | Reproduce builds and integration checks in GitHub |
 | `.devcontainer/` | Optional shared cloud development environment |
 
-The profile editor persists the saved snapshot in the browser; comparison requests send it transiently to the backend. The catalog module supplies fictional data and browser-local saved IDs. The matching domain module is independent of the HTTP and frontend boundaries. The pure Java [ranker](RANKING.md#java-implementation) reuses the matching engine across one profile and a filtered offer set. Its result preserves each comparison, its exact sorting evidence and any unavailable offers. The [batch endpoint](RANKING.md#batch-api-and-search-behavior) returns ordered IDs and unavailable IDs for the filtered set. The client validates membership, versions and request ownership before updating search. Provider connectors remain future work.
+The profile editor persists the saved snapshot in the browser; comparison requests send it transiently to the backend. The catalog module supplies fictional data and browser-local saved IDs. The matching domain module is independent of the HTTP and frontend boundaries. The pure Java [ranker](RANKING.md#java-implementation) reuses the matching engine across one profile and a filtered offer set. Its result preserves each comparison, its exact sorting evidence and any unavailable offers. The [batch endpoint](RANKING.md#batch-api-and-search-behavior) returns ordered IDs and unavailable IDs for the filtered set. The client validates membership, versions and request ownership before updating search. Live public ATS fetching is implemented in `providers/ats/` without API keys or database setup; see [ATS_PROVIDERS.md](ATS_PROVIDERS.md).
 
 ## API contract
 

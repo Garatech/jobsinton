@@ -11,8 +11,7 @@
     "typecheck": "tsc --noEmit",
     "build": "npm run typecheck && vite build",
     "preview": "vite preview",
-    "test:e2e": "playwright test",
-    "test:adzuna": "npm run build && playwright test --config=playwright.adzuna.config.ts"
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "react": "19.3.0",

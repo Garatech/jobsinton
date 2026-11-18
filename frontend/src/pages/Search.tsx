@@ -1,35 +1,50 @@
 import { translate } from '../i18n/locale';
 import { useLanguage } from '../i18n/Language';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AdzunaSearch } from './AdzunaSearch';
-import { localSearchAvailable } from '../api/adzuna';
 import { findCompany, opportunities } from '../catalog/data';
 import { EmptyState, JobList, PageHeading, type SavedActions } from '../ui';
 import { useRankedOrder } from '../matching/useRankedOrder';
 import type { ProfessionalProfile } from '../profile/model';
+import { LiveJobsBoard } from './LiveJobsBoard';
 
 type Sort = 'newest' | 'salary' | 'compatibility';
 const roles = ['Backend', 'Frontend', 'Full stack', 'Data', 'Platform', 'SAP'];
 const modes = ['Remote', 'Hybrid', 'On-site'];
 type SearchProps = SavedActions & { query: string; profile: ProfessionalProfile | null };
 
+function shouldStartInSampleCatalog(query: string): boolean {
+  if (!query) return false;
+  const params = new URLSearchParams(query);
+  if (params.get('source') === 'sample') return true;
+  if (params.get('source') === 'live') return false;
+  // Deep links from profile direction or sample-catalog filter URLs open directly in Sample catalog.
+  return params.has('role') || params.has('mode') || params.has('salary')
+    || params.has('view') || params.has('sort') || params.has('q');
+}
+
 export function Search(props: SearchProps) {
   const { t } = useLanguage();
-  const [available, setAvailable] = useState(false);
-  const [live, setLive] = useState(false);
-  useEffect(() => {
-    const controller = new AbortController();
-    localSearchAvailable(controller.signal).then(value => { if (!controller.signal.aborted) setAvailable(value); });
-    return () => controller.abort();
-  }, []);
+  const [live, setLive] = useState<boolean>(() => !shouldStartInSampleCatalog(props.query));
+
   return <>
-    <PageHeading eyebrow="FIND YOUR NEXT CHAPTER" title="Opportunities." description="Good work, on your terms." />
-    {available && <div className="source-selector" role="group" aria-label={t("Opportunity source")}>
-      <button type="button" aria-pressed={!live} onClick={() => setLive(false)}>{t("Sample catalog")}</button>
-      <button type="button" aria-pressed={live} onClick={() => setLive(true)}>{t("Adzuna · Spain")}</button>
-    </div>}
-    <div hidden={live}><CatalogSearch {...props} /></div>
-    {live && <AdzunaSearch profile={props.profile} />}
+    <PageHeading
+      eyebrow={live ? 'DIRECT COMPANY ATS FEEDS' : 'FIND YOUR NEXT CHAPTER'}
+      title="Opportunities."
+      description={live
+        ? 'Fresh roles fetched directly from official company ATS boards — no aggregators, no API keys.'
+        : 'Good work, on your terms.'}
+    />
+    <div className="source-selector" role="group" aria-label={t('Opportunity source')}>
+      <button type="button" aria-pressed={live} onClick={() => setLive(true)}>
+        {t('Live ATS Boards')}
+      </button>
+      <button type="button" aria-pressed={!live} onClick={() => setLive(false)}>
+        {t('Sample catalog')}
+      </button>
+    </div>
+    {live
+      ? <LiveJobsBoard query={props.query} profile={props.profile} />
+      : <CatalogSearch {...props} />}
   </>;
 }
 
@@ -54,14 +69,15 @@ function CatalogSearch({ query, profile, ...actions }: SearchProps) {
   const input = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const params = new URLSearchParams();
+    params.set('source', 'sample');
     const entries = { q: text.trim(), role, mode: workModes.join(','), salary: salary === '0' ? '' : salary, sort: sort === 'newest' ? '' : sort, view: layout === 'list' ? '' : layout };
     for (const [key, value] of Object.entries(entries)) if (value) params.set(key, value);
-    history.replaceState(null, '', '#opportunities' + (params.size ? '?' + params.toString() : ''));
+    history.replaceState(null, '', '#opportunities?' + params.toString());
   }, [text, role, workModes, salary, sort, layout]);
   const terms = text.trim().toLowerCase().split(/\s+/).filter(Boolean);
   const filtered = opportunities.filter(job => {
     const searchable = [job.title, translate('es', job.title), findCompany(job.company)!.name, job.location, translate('es', job.location), ...job.tags].join(' ').toLowerCase();
-    return terms.every(t => searchable.includes(t)) && (!role || role === job.role)
+    return terms.every(term => searchable.includes(term)) && (!role || role === job.role)
       && (!workModes.length || workModes.includes(job.mode)) && job.salary >= Number(salary);
   }).sort((a, b) => sort === 'salary' ? b.salary - a.salary : b.published.localeCompare(a.published));
   const idsKey = sort === 'compatibility' && profile && filtered.length
