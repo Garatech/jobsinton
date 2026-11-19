@@ -158,11 +158,12 @@ public final class PersonioAdapter implements AtsProviderAdapter {
             String applyUrl
     ) {
         ParsedPosition withDescription(String newDescription, String donorSuffix) {
+            String updatedWorkplace = inferPersonioWorkplace(location, newDescription);
             return new ParsedPosition(
                     id,
                     title,
                     location,
-                    workplaceType,
+                    updatedWorkplace,
                     publishedAt,
                     newDescription,
                     metadataSuffix.isEmpty() ? donorSuffix : metadataSuffix,
@@ -314,7 +315,7 @@ public final class PersonioAdapter implements AtsProviderAdapter {
 
         String workplaceType = inferPersonioWorkplace(
                 (location == null ? "" : location) + " " + (schedule == null ? "" : schedule),
-                ""
+                description
         );
 
         return new ParsedPosition(
