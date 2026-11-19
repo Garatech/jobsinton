@@ -65,6 +65,16 @@ public class AtsConfiguration {
     }
 
     @Bean
+    PersonioAdapter personioAdapter(AtsHttpClient http) {
+        return new PersonioAdapter(http);
+    }
+
+    @Bean
+    RecruiteeAdapter recruiteeAdapter(AtsHttpClient http) {
+        return new RecruiteeAdapter(http);
+    }
+
+    @Bean
     AtsFeedService atsFeedService(
             CompanyRegistry registry,
             GreenhouseAdapter greenhouse,
@@ -72,13 +82,15 @@ public class AtsConfiguration {
             SmartRecruitersAdapter smartRecruiters,
             WorkableAdapter workable,
             AshbyAdapter ashby,
+            PersonioAdapter personio,
+            RecruiteeAdapter recruitee,
             Clock clock,
             FirstSeenRegistry firstSeenRegistry,
             @Value("${jobsinton.ats.cache-ttl-seconds:300}") long cacheTtlSeconds
     ) {
         return new AtsFeedService(
                 registry,
-                List.of(greenhouse, lever, smartRecruiters, workable, ashby),
+                List.of(greenhouse, lever, smartRecruiters, workable, ashby, personio, recruitee),
                 smartRecruiters,
                 clock,
                 Duration.ofSeconds(Math.max(0L, cacheTtlSeconds)),

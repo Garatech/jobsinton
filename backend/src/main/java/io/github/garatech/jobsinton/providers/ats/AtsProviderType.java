@@ -2,13 +2,15 @@ package io.github.garatech.jobsinton.providers.ats;
 
 import java.util.Locale;
 
-/** Supported public Applicant Tracking System (ATS) JSON job board providers. */
+/** Supported public Applicant Tracking System (ATS) job board providers across JSON and XML endpoints. */
 public enum AtsProviderType {
     GREENHOUSE("greenhouse", "Greenhouse"),
     LEVER("lever", "Lever"),
     SMARTRECRUITERS("smartrecruiters", "SmartRecruiters"),
     WORKABLE("workable", "Workable"),
-    ASHBY("ashby", "Ashby");
+    ASHBY("ashby", "Ashby"),
+    PERSONIO("personio", "Personio"),
+    RECRUITEE("recruitee", "Recruitee");
 
     private final String id;
     private final String displayName;
