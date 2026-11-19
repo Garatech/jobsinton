@@ -105,4 +105,43 @@ class AtsFeedServiceTest {
         assertThat(forced.cached()).isFalse();
         assertThat(greenhouseCalls.get()).isEqualTo(2);
     }
+
+    @Test
+    void firstSeenRegistryPreventsEditedOldJobsFromFakingFreshAge() {
+        Instant fixedNow = Instant.parse("2026-11-18T12:00:00Z");
+        Clock clock = Clock.fixed(fixedNow, ZoneOffset.UTC);
+        CompanyBoard board = new CompanyBoard("cabify", "Cabify", "greenhouse", null, "Madrid");
+        CompanyRegistry registry = new CompanyRegistry(List.of(board));
+
+        FirstSeenRegistry firstSeen = new FirstSeenRegistry();
+        firstSeen.recordBatch(
+                List.of(new RawAtsJob("101", AtsProviderType.GREENHOUSE, "cabify", "Cabify", "Edited Old Role", "Madrid",
+                        "hybrid", Instant.parse("2026-11-13T12:00:00Z"), "Java", "https://example.com/101", "Eng", null, true)),
+                Instant.parse("2026-11-13T12:00:00Z")
+        );
+
+        AtsProviderAdapter gh = new AtsProviderAdapter() {
+            @Override
+            public AtsProviderType type() {
+                return AtsProviderType.GREENHOUSE;
+            }
+
+            @Override
+            public List<RawAtsJob> fetch(CompanyBoard b) {
+                return List.of(
+                        new RawAtsJob("101", AtsProviderType.GREENHOUSE, "cabify", "Cabify", "Edited Old Role", "Madrid",
+                                "hybrid", Instant.parse("2026-11-18T10:00:00Z"), "Java", "https://example.com/101",
+                                "Eng", null, true)
+                );
+            }
+        };
+
+        AtsFeedService service = new AtsFeedService(
+                registry, List.of(gh), new SmartRecruitersAdapter(null, 0), clock, Duration.ofMinutes(5), firstSeen
+        );
+        AtsFeedResponse feed = service.getFeed(false);
+        assertThat(feed.jobs()).hasSize(1);
+        assertThat(feed.jobs().getFirst().hoursSincePublished()).isEqualTo(120L);
+        assertThat(feed.jobs().getFirst().firstSeenAt()).isEqualTo("2026-11-13T12:00:00Z");
+    }
 }

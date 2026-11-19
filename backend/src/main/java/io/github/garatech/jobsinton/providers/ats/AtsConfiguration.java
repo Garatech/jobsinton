@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
@@ -25,6 +26,14 @@ public class AtsConfiguration {
     @Bean
     CompanyRegistry companyRegistry() {
         return CompanyRegistry.loadDefault();
+    }
+
+    @Bean
+    FirstSeenRegistry firstSeenRegistry(
+            @Value("${jobsinton.ats.seen-jobs-file:data/ats-seen-jobs.json}") String seenFile
+    ) {
+        Path path = seenFile == null || seenFile.isBlank() ? null : Path.of(seenFile.strip());
+        return new FirstSeenRegistry(path);
     }
 
     @Bean
@@ -64,6 +73,7 @@ public class AtsConfiguration {
             WorkableAdapter workable,
             AshbyAdapter ashby,
             Clock clock,
+            FirstSeenRegistry firstSeenRegistry,
             @Value("${jobsinton.ats.cache-ttl-seconds:300}") long cacheTtlSeconds
     ) {
         return new AtsFeedService(
@@ -71,7 +81,8 @@ public class AtsConfiguration {
                 List.of(greenhouse, lever, smartRecruiters, workable, ashby),
                 smartRecruiters,
                 clock,
-                Duration.ofSeconds(Math.max(0L, cacheTtlSeconds))
+                Duration.ofSeconds(Math.max(0L, cacheTtlSeconds)),
+                firstSeenRegistry
         );
     }
 }

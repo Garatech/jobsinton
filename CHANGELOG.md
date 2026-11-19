@@ -4,6 +4,12 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Fixed — ATS EU cluster fallbacks, Spain geo-priority enrichment & First-Seen age tracking
+
+- Updated `GreenhouseAdapter` to prefer `first_published` over `updated_at` and automatically fall back to `boards-api.eu.greenhouse.io` on HTTP 404 or empty boards; added bidirectional Global ↔ EU 404 fallback in `LeverAdapter`.
+- Updated `JdkAtsHttpClient` with a browser-compatible `User-Agent` header so Ashby boards never reject requests with HTTP 403, and updated `SmartRecruitersAdapter` to prioritize Spain (`Madrid`, `Barcelona`, `ES`, etc.) and EU Remote postings before spending bounded detail calls.
+- Added lightweight local first-seen timestamp persistence (`FirstSeenRegistry` → gitignored `data/ats-seen-jobs.json`) so recruiter edits to old listings never fake a `< 24h` freshness badge.
+
 ### Added — Multi-ATS direct provider engine
 
 - Replaced the aggregator-based live job path with a zero-configuration **Multi-ATS Direct Provider Engine** querying 5 unauthenticated public ATS JSON APIs (**Greenhouse**, **Lever Global & EU**, **SmartRecruiters**, **Workable v1 & v3**, and **Ashby**) across **22 pre-seeded company boards** (`backend/src/main/resources/ats/companies.json`).

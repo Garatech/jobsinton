@@ -26,7 +26,8 @@ import static org.assertj.core.api.Assertions.assertThat;
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
         properties = {
                 "jobsinton.ats.cache-ttl-seconds=300",
-                "jobsinton.ats.smartrecruiters-detail-cap=0"
+                "jobsinton.ats.smartrecruiters-detail-cap=0",
+                "jobsinton.ats.seen-jobs-file="
         }
 )
 @Import(AtsControllerIntegrationTest.OfflineAtsConfig.class)

@@ -1,7 +1,7 @@
 package io.github.garatech.jobsinton.providers.ats;
 
-import java.time.Instant;
 import java.time.Duration;
+import java.time.Instant;
 
 /** Internal normalized posting produced by an ATS adapter before feed-level freshness calculation. */
 public record RawAtsJob(
@@ -24,9 +24,17 @@ public record RawAtsJob(
     }
 
     public AtsJob toApiJob(Instant now) {
+        return toApiJob(now, null);
+    }
+
+    public AtsJob toApiJob(Instant now, Instant firstSeenAt) {
+        Instant effectiveOrigin = publishedAt;
+        if (firstSeenAt != null && (effectiveOrigin == null || firstSeenAt.isBefore(effectiveOrigin))) {
+            effectiveOrigin = firstSeenAt;
+        }
         Long hours = null;
-        if (publishedAt != null) {
-            long diff = Duration.between(publishedAt, now).toHours();
+        if (effectiveOrigin != null) {
+            long diff = Duration.between(effectiveOrigin, now).toHours();
             hours = Math.max(0L, diff);
         }
         String cleanDesc = description == null ? "" : description;
@@ -41,6 +49,7 @@ public record RawAtsJob(
                 location,
                 workplaceType,
                 publishedAt == null ? null : publishedAt.toString(),
+                firstSeenAt == null ? (publishedAt == null ? null : publishedAt.toString()) : firstSeenAt.toString(),
                 hours,
                 cleanDesc,
                 HtmlTextCleaner.snippet(cleanDesc, 260),

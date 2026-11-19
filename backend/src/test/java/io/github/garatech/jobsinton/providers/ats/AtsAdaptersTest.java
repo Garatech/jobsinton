@@ -387,4 +387,47 @@ class AtsAdaptersTest {
                 .isInstanceOf(AtsFetchException.class)
                 .hasMessageContaining("503");
     }
+
+    @Test
+    void greenhouseAdapterPrefersFirstPublishedAndFallsBackToEuCluster() {
+        List<URI> requested = new ArrayList<>();
+        AtsHttpClient stub = new AtsHttpClient() {
+            @Override
+            public HttpReply get(URI uri) {
+                requested.add(uri);
+                if (uri.getHost().equals("boards-api.greenhouse.io")) {
+                    return status(404);
+                }
+                return ok("""
+                        {
+                          "jobs": [
+                            {
+                              "id": 777,
+                              "title": "Java Backend Developer",
+                              "first_published": "2026-11-10T10:00:00Z",
+                              "updated_at": "2026-11-18T10:00:00Z",
+                              "location": { "name": "Madrid, Spain" },
+                              "absolute_url": "https://boards.eu.greenhouse.io/clarityai/jobs/777",
+                              "content": "<p>Spring Boot &amp; PostgreSQL</p>"
+                            }
+                          ]
+                        }
+                        """);
+            }
+
+            @Override
+            public HttpReply postJson(URI uri, String jsonBody) {
+                throw new AssertionError("Unexpected POST");
+            }
+        };
+
+        var board = new CompanyBoard("clarityai", "Clarity AI", "greenhouse", "eu", "Madrid");
+        var jobs = new GreenhouseAdapter(stub).fetch(board);
+        assertThat(requested).containsExactly(
+                URI.create("https://boards-api.greenhouse.io/v1/boards/clarityai/jobs?content=true"),
+                URI.create("https://boards-api.eu.greenhouse.io/v1/boards/clarityai/jobs?content=true")
+        );
+        assertThat(jobs).hasSize(1);
+        assertThat(jobs.getFirst().publishedAt()).isEqualTo(Instant.parse("2026-11-10T10:00:00Z"));
+    }
 }

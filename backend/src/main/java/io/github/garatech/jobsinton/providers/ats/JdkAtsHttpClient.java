@@ -18,7 +18,8 @@ import java.util.concurrent.TimeoutException;
 /** Resilient JDK HttpClient with per-request deadlines, safe HTTPS redirect following, and streaming byte limits. */
 public final class JdkAtsHttpClient implements AtsHttpClient {
     static final int MAX_BYTES = 12 * 1024 * 1024; // 12 MiB handles large Greenhouse boards safely.
-    private static final String USER_AGENT = "JobSinton/1.0 (+https://github.com/Garatech/jobsinton)";
+    private static final String USER_AGENT =
+            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 JobSinton/2.0";
 
     private final HttpClient client;
     private final Duration requestTimeout;
@@ -44,7 +45,7 @@ public final class JdkAtsHttpClient implements AtsHttpClient {
     public HttpReply get(URI uri) {
         HttpRequest request = HttpRequest.newBuilder(uri)
                 .timeout(requestTimeout)
-                .header("Accept", "application/json")
+                .header("Accept", "application/json, application/xml, text/xml, application/rss+xml, text/html, */*;q=0.8")
                 .header("User-Agent", USER_AGENT)
                 .GET()
                 .build();

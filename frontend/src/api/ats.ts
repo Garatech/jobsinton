@@ -11,6 +11,7 @@ export interface AtsJob {
   location: string | null;
   workplaceType: 'remote' | 'hybrid' | 'onsite' | null;
   publishedAt: string | null;
+  firstSeenAt?: string | null;
   hoursSincePublished: number | null;
   description: string;
   descriptionSnippet: string;
@@ -124,6 +125,8 @@ function parseJob(raw: unknown): AtsJob | null {
   const workplaceType = workplaceRaw && VALID_WORKPLACE.has(workplaceRaw)
     ? (workplaceRaw as 'remote' | 'hybrid' | 'onsite')
     : null;
+  const publishedAt = optionalString(raw.publishedAt);
+  const firstSeenAt = optionalString(raw.firstSeenAt) ?? publishedAt;
   return {
     id: raw.id,
     sourceId: raw.sourceId,
@@ -134,7 +137,8 @@ function parseJob(raw: unknown): AtsJob | null {
     title: raw.title.trim(),
     location: optionalString(raw.location),
     workplaceType,
-    publishedAt: optionalString(raw.publishedAt),
+    publishedAt,
+    firstSeenAt,
     hoursSincePublished: typeof raw.hoursSincePublished === 'number' && Number.isFinite(raw.hoursSincePublished)
       ? Math.max(0, Math.floor(raw.hoursSincePublished))
       : null,

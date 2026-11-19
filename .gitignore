@@ -16,6 +16,8 @@ test-results/
 
 # Local data, logs, and editor files
 local-data/
+data/
+backend/data/
 *.log
 .idea/
 *.iml
