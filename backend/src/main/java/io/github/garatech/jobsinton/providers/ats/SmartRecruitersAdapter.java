@@ -246,18 +246,27 @@ public final class SmartRecruitersAdapter implements AtsProviderAdapter {
 
     private static int priorityScore(RawAtsJob job) {
         int score = 0;
-        String loc = job.location() == null ? "" : job.location().toLowerCase(Locale.ROOT);
-        if (loc.contains("madrid") || loc.contains("spain") || loc.contains("españa") || loc.contains("barcelona")) {
-            score += 40;
-        }
-        if ("remote".equals(job.workplaceType()) || loc.contains("remote")) {
-            score += 20;
+        String loc = job.location() == null ? "" : job.location();
+        String lowerLoc = loc.toLowerCase(Locale.ROOT);
+        if (AtsSupport.isSpainOrEuLocation(loc)) {
+            score += 100;
+            if (lowerLoc.contains("madrid")) {
+                score += 20;
+            }
+        } else if (AtsSupport.isNonEuFakeRemote(loc)) {
+            score -= 80;
+        } else if ("remote".equals(job.workplaceType()) || lowerLoc.contains("remote")
+                || lowerLoc.contains("europe") || lowerLoc.contains("emea")) {
+            score += 45;
         }
         String title = job.title().toLowerCase(Locale.ROOT);
-        if (title.contains("sap") || title.contains("abap") || title.contains("java") || title.contains("full stack")
+        if (title.contains("sap") || title.contains("abap") || title.contains("s/4hana")
+                || title.contains("java") || title.contains("spring") || title.contains("full stack")
                 || title.contains("fullstack") || title.contains("angular") || title.contains("react")
-                || title.contains("node") || title.contains("software") || title.contains("developer")
-                || title.contains("engineer") || title.contains("backend") || title.contains("frontend")) {
+                || title.contains("node") || title.contains("typescript") || title.contains("software")
+                || title.contains("developer") || title.contains("engineer") || title.contains("backend")
+                || title.contains("frontend") || title.contains("desarrollador") || title.contains("programador")
+                || title.contains("consultor")) {
             score += 35;
         }
         return score;

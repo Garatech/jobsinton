@@ -33,12 +33,13 @@ public final class LeverAdapter implements AtsProviderAdapter {
     @Override
     public List<RawAtsJob> fetch(CompanyBoard board) {
         String slug = AtsSupport.encodePathSegment(board.slug());
-        URI primaryUri = URI.create((board.isEuRegion() ? EU_BASE : GLOBAL_BASE) + slug + "?mode=json");
+        boolean preferEu = board.isEuRegion();
+        URI primaryUri = URI.create((preferEu ? EU_BASE : GLOBAL_BASE) + slug + "?mode=json");
         var reply = http.get(primaryUri);
-        if (!board.isEuRegion() && reply.status() == 404) {
-            // Auto-fallback to EU Lever cluster when the company is hosted on api.eu.lever.co.
-            URI euUri = URI.create(EU_BASE + slug + "?mode=json");
-            reply = http.get(euUri);
+        if (reply.status() == 404) {
+            // Auto-fallback to the alternate Lever cluster (Global <-> EU) when primary returns 404.
+            URI fallbackUri = URI.create((preferEu ? GLOBAL_BASE : EU_BASE) + slug + "?mode=json");
+            reply = http.get(fallbackUri);
         }
         if (reply.status() != 200) {
             throw new AtsFetchException("HTTP " + reply.status() + " from Lever");

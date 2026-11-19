@@ -167,6 +167,37 @@ final class AtsSupport {
         return null;
     }
 
+    static boolean isSpainOrEuLocation(String text) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+        String lower = text.toLowerCase(Locale.ROOT);
+        return lower.contains("madrid") || lower.contains("barcelona") || lower.contains("valencia")
+                || lower.contains("málaga") || lower.contains("malaga") || lower.contains("sevilla")
+                || lower.contains("bilbao") || lower.contains("zaragoza") || lower.contains("pozuelo")
+                || lower.contains("las rozas") || lower.contains("alcobendas") || lower.contains("tres cantos")
+                || lower.contains("getafe") || lower.contains("boadilla") || lower.contains("alicante")
+                || lower.contains("coruña") || lower.contains("coruna") || lower.contains("vigo")
+                || lower.contains("granada") || lower.contains("oviedo") || lower.contains("valladolid")
+                || lower.contains("san sebastián") || lower.contains("san sebastian") || lower.contains("cartagena")
+                || lower.contains("murcia") || lower.contains("castellón") || lower.contains("castellon")
+                || lower.contains("spain") || lower.contains("españa") || lower.contains("espana")
+                || lower.contains("iberia") || lower.contains("galicia") || lower.contains("asturias");
+    }
+
+    static boolean isNonEuFakeRemote(String text) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+        String lower = text.toLowerCase(Locale.ROOT);
+        return lower.contains("us only") || lower.contains("u.s. only") || lower.contains("united states")
+                || lower.contains("remote - us") || lower.contains("remote (us)") || lower.contains("north america")
+                || lower.contains("canada") || lower.contains("latam") || lower.contains("latin america")
+                || lower.contains("apac") || lower.contains("india") || lower.contains("uk only")
+                || lower.contains("united kingdom only") || lower.contains("australia")
+                || lower.contains("brazil") || lower.contains("mexico");
+    }
+
     static String countryDisplayName(String raw) {
         if (raw == null || raw.isBlank()) {
             return null;

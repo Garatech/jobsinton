@@ -16,7 +16,8 @@ import java.util.regex.Pattern;
 
 /**
  * Aggregates live postings across all configured public ATS company boards in parallel,
- * isolating individual board failures and caching the combined feed in memory.
+ * isolating individual board failures, tracking first-seen timestamps via {@link FirstSeenRegistry},
+ * and caching the combined feed in memory.
  */
 public final class AtsFeedService {
     private static final Pattern SAFE_POSTING_ID = Pattern.compile("^[A-Za-z0-9._-]{1,100}$");
@@ -26,6 +27,7 @@ public final class AtsFeedService {
     private final SmartRecruitersAdapter smartRecruitersAdapter;
     private final Clock clock;
     private final Duration cacheTtl;
+    private final FirstSeenRegistry firstSeenRegistry;
 
     private final Object lock = new Object();
     private volatile CachedFeed cache;
@@ -34,11 +36,13 @@ public final class AtsFeedService {
     private record BoardOutcome(BoardStatus status, List<RawAtsJob> jobs) {}
 
     private record CachedFeed(Instant fetchedAt, List<BoardStatus> boards, List<RawAtsJob> jobs) {
-        AtsFeedResponse toResponse(Instant now, boolean cached) {
+        AtsFeedResponse toResponse(Instant now, boolean cached, FirstSeenRegistry firstSeen) {
             long ageSeconds = Math.max(0L, Duration.between(fetchedAt, now).getSeconds());
             int succeeded = (int) boards.stream().filter(BoardStatus::ok).count();
             int failed = boards.size() - succeeded;
-            List<AtsJob> apiJobs = jobs.stream().map(job -> job.toApiJob(now)).toList();
+            List<AtsJob> apiJobs = jobs.stream()
+                    .map(job -> job.toApiJob(now, firstSeen != null ? firstSeen.getFirstSeen(job.compositeId()) : null))
+                    .toList();
             return new AtsFeedResponse(
                     fetchedAt.toString(),
                     cached,
@@ -59,6 +63,17 @@ public final class AtsFeedService {
             Clock clock,
             Duration cacheTtl
     ) {
+        this(registry, adapterList, smartRecruitersAdapter, clock, cacheTtl, new FirstSeenRegistry());
+    }
+
+    public AtsFeedService(
+            CompanyRegistry registry,
+            List<AtsProviderAdapter> adapterList,
+            SmartRecruitersAdapter smartRecruitersAdapter,
+            Clock clock,
+            Duration cacheTtl,
+            FirstSeenRegistry firstSeenRegistry
+    ) {
         this.registry = registry;
         this.adapters = new EnumMap<>(AtsProviderType.class);
         for (AtsProviderAdapter adapter : adapterList) {
@@ -67,6 +82,7 @@ public final class AtsFeedService {
         this.smartRecruitersAdapter = smartRecruitersAdapter;
         this.clock = clock;
         this.cacheTtl = cacheTtl;
+        this.firstSeenRegistry = firstSeenRegistry != null ? firstSeenRegistry : new FirstSeenRegistry();
     }
 
     public List<CompanyBoard> boards() {
@@ -78,7 +94,7 @@ public final class AtsFeedService {
         if (!forceRefresh) {
             CachedFeed current = cache;
             if (current != null && !isExpired(current, now)) {
-                return current.toResponse(now, true);
+                return current.toResponse(now, true, firstSeenRegistry);
             }
         }
 
@@ -86,7 +102,7 @@ public final class AtsFeedService {
         boolean owner = false;
         synchronized (lock) {
             if (!forceRefresh && cache != null && !isExpired(cache, clock.instant())) {
-                return cache.toResponse(clock.instant(), true);
+                return cache.toResponse(clock.instant(), true, firstSeenRegistry);
             }
             if (inFlight != null && !inFlight.isDone()) {
                 future = inFlight;
@@ -105,7 +121,7 @@ public final class AtsFeedService {
                     inFlight = null;
                 }
                 future.complete(fresh);
-                return fresh.toResponse(clock.instant(), false);
+                return fresh.toResponse(clock.instant(), false, firstSeenRegistry);
             } catch (Throwable error) {
                 synchronized (lock) {
                     inFlight = null;
@@ -116,7 +132,7 @@ public final class AtsFeedService {
         }
 
         CachedFeed joined = future.join();
-        return joined.toResponse(clock.instant(), false);
+        return joined.toResponse(clock.instant(), false, firstSeenRegistry);
     }
 
     /** On-demand SmartRecruiters posting detail hydration for registered boards only. */
@@ -195,13 +211,25 @@ public final class AtsFeedService {
             }
         }
 
+        Instant fetchedAt = clock.instant();
+        firstSeenRegistry.recordBatch(deduplicated.values(), fetchedAt);
+
         List<RawAtsJob> sortedJobs = new ArrayList<>(deduplicated.values());
         sortedJobs.sort(Comparator
-                .comparing(RawAtsJob::publishedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+                .comparing(this::effectiveOriginTimestamp, Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(RawAtsJob::companyName, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(RawAtsJob::title, String.CASE_INSENSITIVE_ORDER));
 
-        return new CachedFeed(clock.instant(), List.copyOf(statuses), List.copyOf(sortedJobs));
+        return new CachedFeed(fetchedAt, List.copyOf(statuses), List.copyOf(sortedJobs));
+    }
+
+    private Instant effectiveOriginTimestamp(RawAtsJob job) {
+        Instant pub = job.publishedAt();
+        Instant seen = firstSeenRegistry.getFirstSeen(job.compositeId());
+        if (pub != null && seen != null) {
+            return seen.isBefore(pub) ? seen : pub;
+        }
+        return pub != null ? pub : seen;
     }
 
     private BoardOutcome fetchBoardSafely(CompanyBoard board) {
