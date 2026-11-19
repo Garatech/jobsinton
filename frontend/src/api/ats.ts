@@ -1,4 +1,13 @@
-export type AtsProviderId = 'greenhouse' | 'lever' | 'smartrecruiters' | 'workable' | 'ashby';
+export type AtsProviderId =
+  | 'greenhouse'
+  | 'lever'
+  | 'smartrecruiters'
+  | 'workable'
+  | 'ashby'
+  | 'personio'
+  | 'recruitee'
+  | 'teamtailor'
+  | 'factorial';
 
 export interface AtsJob {
   id: string;
@@ -11,6 +20,7 @@ export interface AtsJob {
   location: string | null;
   workplaceType: 'remote' | 'hybrid' | 'onsite' | null;
   publishedAt: string | null;
+  firstSeenAt?: string | null;
   hoursSincePublished: number | null;
   description: string;
   descriptionSnippet: string;
@@ -50,11 +60,36 @@ export interface SmartRecruitersDetail {
   hasFullDescription: boolean;
 }
 
-const VALID_PROVIDERS = new Set<AtsProviderId>(['greenhouse', 'lever', 'smartrecruiters', 'workable', 'ashby']);
+export interface DiscoveredBoardSummary {
+  slug: string;
+  name: string;
+  ats: AtsProviderId;
+  jobCount: number;
+  newlyAdded: boolean;
+}
+
+export interface AtsDiscoveryResponse {
+  discoveredCount: number;
+  discovered: DiscoveredBoardSummary[];
+  message: string;
+}
+
+const VALID_PROVIDERS = new Set<AtsProviderId>([
+  'greenhouse',
+  'lever',
+  'smartrecruiters',
+  'workable',
+  'ashby',
+  'personio',
+  'recruitee',
+  'teamtailor',
+  'factorial',
+]);
 const VALID_WORKPLACE = new Set(['remote', 'hybrid', 'onsite']);
-const CLIENT_CACHE_TTL_MS = 5 * 60 * 1000;
-const FEED_TIMEOUT_MS = 25_000;
+const CLIENT_CACHE_TTL_MS = 10 * 60 * 1000;
+const FEED_TIMEOUT_MS = 30_000;
 const DETAIL_TIMEOUT_MS = 10_000;
+const DISCOVERY_TIMEOUT_MS = 25_000;
 
 let memoryCache: { feed: AtsFeedResponse; storedAt: number } | null = null;
 let inflightFeed: Promise<AtsFeedResponse> | null = null;
@@ -124,6 +159,8 @@ function parseJob(raw: unknown): AtsJob | null {
   const workplaceType = workplaceRaw && VALID_WORKPLACE.has(workplaceRaw)
     ? (workplaceRaw as 'remote' | 'hybrid' | 'onsite')
     : null;
+  const publishedAt = optionalString(raw.publishedAt);
+  const firstSeenAt = optionalString(raw.firstSeenAt) ?? publishedAt;
   return {
     id: raw.id,
     sourceId: raw.sourceId,
@@ -134,7 +171,8 @@ function parseJob(raw: unknown): AtsJob | null {
     title: raw.title.trim(),
     location: optionalString(raw.location),
     workplaceType,
-    publishedAt: optionalString(raw.publishedAt),
+    publishedAt,
+    firstSeenAt,
     hoursSincePublished: typeof raw.hoursSincePublished === 'number' && Number.isFinite(raw.hoursSincePublished)
       ? Math.max(0, Math.floor(raw.hoursSincePublished))
       : null,
@@ -187,6 +225,31 @@ export function parseSmartRecruitersDetail(payload: unknown): SmartRecruitersDet
     descriptionSnippet: typeof payload.descriptionSnippet === 'string' ? payload.descriptionSnippet : '',
     applyUrl,
     hasFullDescription: Boolean(payload.hasFullDescription),
+  };
+}
+
+export function parseDiscoveryResponse(payload: unknown): AtsDiscoveryResponse {
+  if (!isRecord(payload) || typeof payload.discoveredCount !== 'number' || !Array.isArray(payload.discovered)) {
+    throw new Error('Could not verify ATS discovery response.');
+  }
+  const discovered: DiscoveredBoardSummary[] = [];
+  for (const item of payload.discovered) {
+    if (!isRecord(item) || !isRecord(item.board)) continue;
+    const board = item.board;
+    if (typeof board.slug !== 'string' || typeof board.name !== 'string' || typeof board.ats !== 'string') continue;
+    if (!VALID_PROVIDERS.has(board.ats as AtsProviderId)) continue;
+    discovered.push({
+      slug: board.slug,
+      name: board.name,
+      ats: board.ats as AtsProviderId,
+      jobCount: typeof item.jobCount === 'number' ? item.jobCount : 0,
+      newlyAdded: Boolean(item.newlyAdded),
+    });
+  }
+  return {
+    discoveredCount: payload.discoveredCount,
+    discovered,
+    message: typeof payload.message === 'string' ? payload.message : '',
   };
 }
 
@@ -318,5 +381,55 @@ export async function fetchSmartRecruitersDetail(
   } finally {
     window.clearTimeout(timer);
     signal?.removeEventListener('abort', onExternalAbort);
+  }
+}
+
+export async function discoverAtsFromUrl(url: string): Promise<AtsDiscoveryResponse> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), DISCOVERY_TIMEOUT_MS);
+  try {
+    const response = await fetch('/api/ats/discover/url', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ url }),
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+    const data: unknown = await response.json().catch(() => null);
+    if (!response.ok) {
+      const msg = isRecord(data) && typeof data.message === 'string'
+        ? data.message
+        : 'Could not discover an ATS board from that URL.';
+      throw new Error(msg);
+    }
+    clearAtsClientCache();
+    return parseDiscoveryResponse(data);
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+
+export async function probeAtsCompanies(candidates: string[]): Promise<AtsDiscoveryResponse> {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), DISCOVERY_TIMEOUT_MS);
+  try {
+    const response = await fetch('/api/ats/discover/probe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ candidates }),
+      cache: 'no-store',
+      signal: controller.signal,
+    });
+    const data: unknown = await response.json().catch(() => null);
+    if (!response.ok) {
+      const msg = isRecord(data) && typeof data.message === 'string'
+        ? data.message
+        : 'Could not probe candidate company slugs.';
+      throw new Error(msg);
+    }
+    clearAtsClientCache();
+    return parseDiscoveryResponse(data);
+  } finally {
+    window.clearTimeout(timer);
   }
 }

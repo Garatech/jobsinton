@@ -1,58 +1,53 @@
-# Multi-ATS direct provider engine
+# Multi-ATS direct provider engine & Spain/EU SME Discovery (Phase 2)
 
-JobSinton fetches live openings directly from public company Applicant Tracking System (ATS) JSON endpoints with **zero API keys, zero `.env` configuration, and EUR 0 budget**. Instead of relying on rate-limited job aggregators (such as the deprecated Adzuna integration), every fetched listing carries the employer's publication timestamp, plain-text description for skill matching, and direct `https://` application link.
+JobSinton fetches live openings directly from public company Applicant Tracking System (ATS) endpoints across **9 ATS platforms** with **zero API keys, zero `.env` configuration, and EUR 0 budget**. In addition to global tech scaleups, Phase 2 targets **Spanish SMEs (PYMEs), mid-sized engineering hubs in Madrid/Barcelona/Valencia/Málaga, and SAP & Java/Full Stack consultancies** hiring in Spain and EU Remote.
 
-## Supported public ATS platforms
+## Supported public ATS platforms (9 engines)
 
-| ATS | Public endpoint(s) | Key field mappings & handling |
-| --- | --- | --- |
-| **Greenhouse** | `GET https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true` | `id`, `title`, `updated_at` (ISO 8601), `location.name`, `content` (double-decoded HTML → clean plain text), `absolute_url` |
-| **Lever** | Global: `GET https://api.lever.co/v0/postings/{slug}?mode=json`<br>EU: `GET https://api.eu.lever.co/v0/postings/{slug}?mode=json` | `id`, `text` (title), `createdAt` (epoch ms → ISO 8601), `categories.location` / `allLocations`, `workplaceType`, `descriptionPlain` + `lists[].content`, `applyUrl` / `hostedUrl`. Supports explicit `region: "eu"` or automatic Global → EU fallback on HTTP 404 |
-| **SmartRecruiters** | List: `GET https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=100`<br>Detail: `GET https://api.smartrecruiters.com/v1/companies/{slug}/postings/{id}` | `id`, `name`, `releasedDate`, `location` (`city`, `country`, `remote`), fallback apply URL `https://jobs.smartrecruiters.com/{slug}/{id}`. Enriches top prioritized postings up to `jobsinton.ats.smartrecruiters-detail-cap` during feed load and supports on-demand detail hydration (`GET /api/ats/smartrecruiters/{slug}/{id}`) |
-| **Workable** | v1 widget: `GET https://apply.workable.com/api/v1/widget/accounts/{slug}?details=true`<br>v3 fallback: `POST https://apply.workable.com/api/v3/accounts/{slug}/jobs` | `shortcode`, `title`, `published_on`, `city` / `country` / `telecommuting`, `description` (HTML → plain text), `url` (fallback `https://apply.workable.com/{slug}/j/{shortcode}/`). Follows standard 302 redirects and falls back to v3 POST when v1 returns 404/410 or empty |
-| **Ashby** | `GET https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=true` | `id`, `title`, `publishedAt`, `location` / `secondaryLocations`, `isRemote` / `workplaceType`, `descriptionPlain` (fallback `descriptionHtml`), `compensation.compensationTierSummary`, `applyUrl` / `jobUrl` |
+| ATS | Format | Public endpoint(s) | Key field mappings & handling |
+| --- | --- | --- | --- |
+| **Personio** | XML Feed | Primary: `GET https://{slug}.jobs.personio.com/xml?language=es`<br>Fallback/Merge: `GET https://{slug}.jobs.personio.de/xml?language=en` | `<workzag-jobs><position>`: `<id>`, `<name>`, `<createdAt>` (ISO 8601), `<office>` + `<additionalOffices>`, `<jobDescriptions>` CDATA HTML, `<department>`, `<seniority>`, `<yearsOfExperience>`. **Dual-Language XML Rule:** merges English `<jobDescriptions>` automatically when an English-authored position returns empty descriptions on `?language=es` |
+| **Recruitee (Tellent)** | JSON REST | `GET https://{slug}.recruitee.com/api/offers/` | `offers[]`: `id`, `title`, `published_at`, `location` / `city` / `country_code`, boolean `remote` / `hybrid` / `on_site`, `description` + `requirements`, structured `salary` (`min`, `max`, `currency`), `careers_apply_url` |
+| **Teamtailor** | RSS / XML | `GET https://{domain_or_slug}/jobs.rss` | `<channel><item>` with `xmlns:tt="http://teamtailor.com/rss"`: numeric ID from `<link>` (`/jobs/(\d+)`) or `<guid>`, `<title>`, RFC-1123 `<pubDate>`, `<tt:remoteStatus>` (`fully`/`temporary` → `remote`, `hybrid` → `hybrid`, `none` → `onsite`), `<tt:locations>`, `<tt:department>`, `<description>` |
+| **Factorial HR** | HTML / JSON-LD | `GET https://{slug}.factorialhr.es/` (fallback `.factorialhr.com`) | Parses embedded `application/ld+json` (`JobPosting`) and public `/job_posting/{slug_and_id}` cards (ignoring spontaneous `/apply` links), plus bounded detail page enrichment (`jobsinton.ats.factorial-detail-cap=6`) for Spain/EU eligible vacancies |
+| **Greenhouse** | JSON REST | Primary: `GET https://boards-api.greenhouse.io/v1/boards/{slug}/jobs?content=true`<br>EU Fallback: `GET https://boards-api.eu.greenhouse.io/v1/boards/{slug}/jobs?content=true` | `id`, `title`, prefers `first_published` over `updated_at`, `location.name`, double-decoded `content` HTML, `absolute_url`. Automatically falls back to the EU cluster on HTTP 404 or empty `jobs[]` |
+| **Lever** | JSON REST | EU: `GET https://api.eu.lever.co/v0/postings/{slug}?mode=json`<br>Global: `GET https://api.lever.co/v0/postings/{slug}?mode=json` | `id`, `text` (title), `createdAt` (epoch ms → ISO 8601), `categories.location` / `allLocations`, `workplaceType`, `descriptionPlain` + `lists[].content`, `applyUrl` / `hostedUrl`. Bidirectional 404 fallback between EU and Global clusters |
+| **SmartRecruiters** | JSON REST | List: `GET https://api.smartrecruiters.com/v1/companies/{slug}/postings?limit=100`<br>Detail: `GET https://api.smartrecruiters.com/v1/companies/{slug}/postings/{id}` | `id`, `name`, `releasedDate`, `location` (`city`, `country`, `remote`). **Spain/EU Geo-Priority Detail Cap:** prioritizes Spain (`Madrid`, `Barcelona`, `ES`, etc.) and EU Remote postings before spending `jobsinton.ats.smartrecruiters-detail-cap=6` startup detail calls, plus on-demand hydration (`GET /api/ats/smartrecruiters/{slug}/{id}`) |
+| **Workable** | JSON REST | v1 widget: `GET https://apply.workable.com/api/v1/widget/accounts/{slug}?details=true`<br>v3 fallback: `POST https://apply.workable.com/api/v3/accounts/{slug}/jobs` | `shortcode`, `title`, `published_on`, `city` / `country` / `telecommuting`, `description`, `url` |
+| **Ashby** | JSON REST | `GET https://api.ashbyhq.com/posting-api/job-board/{slug}?includeCompensation=true` | `id`, `title`, `publishedAt`, `location` / `secondaryLocations`, `isRemote` / `workplaceType`, `descriptionPlain`, `compensation.compensationTierSummary`, `applyUrl`. Sends browser-compatible `User-Agent` and filters out `isListed == false` |
 
-## Pre-seeded company registry
+## Pre-seeded Spain & EU company registry (222 boards)
 
-`backend/src/main/resources/ats/companies.json` ships with **22 pre-seeded company boards** spanning Madrid, Spain, Europe, and Remote tech employers across all 5 ATS platforms:
+`backend/src/main/resources/ats/companies.json` ships with **222 verified company boards** focused on Madrid, Barcelona, Valencia, Málaga, Sevilla, Bilbao, and EU Remote employers across all 9 ATS platforms:
 
-- **Greenhouse (7):** Cabify (`cabify`), Typeform (`typeform`), Glovo (`glovo`), Datadog (`datadog`), Stripe (`stripe`), Affirm (`affirm`), Speechify (`speechify`)
-- **Lever EU (4):** TomTom (`tomtom`), OLX (`olx`), XTB (`xtb`), Creatio (`creatio`)
-- **SmartRecruiters (4):** Alter Solutions (`AlterSolutions`), Celonis (`Celonis`), Bosch Group (`BoschGroup`), Visa (`Visa`)
-- **Workable (2):** Teleperformance Spain (`teleperformance-spain`), MediaRadar (`mediaradar`)
-- **Ashby (5):** Invopop (`invopop`), HappyRobot (`happyrobot.ai`), Vic.ai (`vic.ai`), Air Apps (`airapps`), OpenAI (`openai`)
+- **Personio (35):** Otto Group one.O Spain (OSP Spain), Paradigma Digital, Kaleidos (Penpot), Pasiona Consulting, XITASO Spain, rindus, TNG Technology Consulting, OKAPI:Orbits, Ultralytics, SENSIA Solutions, ECIX Group, Accumin, Astrafy, Caravelo, Bookboost, Ohpen, Farlabo, Tuio, Zaleos, STEMDO, Satlink, viastore GROUP, Mirai RiskTech, Plenit, YABA, Mercanis, GBTEC, Clicars, Fourvenues, Inconcert, Personio Madrid Hub, sennder Technologies, Holaluz, Trade Republic, Raisin
+- **Teamtailor (26):** knowmad mood, Q-Tech, Kapres Technology, Next Digital, SDG Group Spain, Sacyr, Alsea España, Timestamp, CONVOTIS Iberia, Nextlane, Luzia, Ucademy, INNOCV Solutions, Multiverse Computing, Winid, Leadtech Group, Leyton Spain, Livo, Unleash, HORSE Spain, Endivo Consulting, OCA Global, Civitatis (`empleo.civitatis.com`), PcComponentes (`careers.pccomponentes.com`), BigBuy (`talent.bigbuy.eu`), Harbiz (`careers.harbiz.io`)
+- **Recruitee (25):** ATG Europe (ESA / ESAC Madrid), etalytics, cbs Corporate Business Solutions Spain, DOSS2 Talent, Qualifyze, seQura, TransPerfect Tech, AIM Sport, Business Insights, Ready, Hostaway, Affidea Group, Tether, CyberArrow, Óscala, Zara Tech, SpotLab, Plukon Food Group Spain IT, Metyis Spain, LITIT, Making Science, Acid Tango, homming, Runroom, Tellent
+- **Factorial HR (20):** Factorial HR, LedaMC, Embat, Grupo Noria (TIC KOBEX), Idrica, Occicor, ENCAMINA, Green Eagle Solutions, Interacso, Playtomic, Billin, FCM Digital, elDiario.es, KRUK España, Agentero, GameHouse Spain, Partium, The Keenfolks, Payflow, Wetaca
+- **SmartRecruiters (23):** Devoteam Spain, Inetum Spain, T-Systems Iberia, Sopra Steria Spain, Scalian Spain, IODigital, Alter Solutions Spain, Miratech, SAP Spain, Bosch Group Spain, Nexthink Madrid Hub, Radisson Hotel Group IT Hub Madrid, Bertelsmann / Arvato Services Spain, Taxera Technologies, Colliers International Tech Hub Madrid, Bullhorn Consultants, Celonis, Visa Madrid, Amadeus IT Group Madrid, Eurofins Spain, Publicis Groupe / Sapient Spain, Econocom España, Avery Dennison Spain
+- **Workable (23):** MediaRadar Madrid Hub, Treatwell Spain, Flexcompute, Codurance Spain, Plain Concepts, Frontiers Madrid, Teleperformance Spain Tech, Exoticca, Titan OS, Expereo, Unit8 Madrid, Destinus Madrid, Mondia Group Madrid, Trinetix, Toloka AI, Seedtag, ODILO, Internxt, Voicemod, Landbot, Declarando, Barkibu, Worldsensing
+- **Ashby (18):** Docplanner (Doctoralia), Vic.ai Madrid, Air Apps Madrid, HappyRobot Madrid, Taxfix Madrid Hub, Pleo Madrid Hub, ElevenLabs, OpenAI Madrid, Sierra Madrid, Anyone AI, Everfield Spain, Perk Barcelona, Alan Spain, Joko, Invopop, PostHog, Supabase, Langfuse
+- **Greenhouse (32):** BVNK, Affirm Spain, Thoughtworks Spain, Celonis Madrid Hub, Ebury Madrid, Fever, Okta Spain, Grafana Labs Spain, Netlify Spain, Scopely Spain, Appinio Madrid, Nuvolar, Mozilla Spain, Cabify, Clarity AI, Devo, CARTO, Tinybird, Job&Talent, RavenPack, Flywire, Glovo, Typeform, Wallbox, TravelPerk, Paack, Belvo, Freepik Company, Datadog Madrid Hub, Stripe Spain, Elastic Spain, Speechify
+- **Lever (20):** Westernacher Consulting Spain, Prima Tech Hub Madrid, TomTom Madrid, OLX Group Spain, Finom, Creatio Madrid, XTB Madrid, CoinsPaid, Everseen Spain, Quadcode, Diabolocom Spain, Dun & Bradstreet, Spotahome, Lingokids, Capchase Madrid, Fintonic, Preply Barcelona, Qonto Spain, Spendesk, Stuart
 
-Adding or removing a company requires editing `companies.json` (each entry specifies `slug`, `name`, `ats`, optional `region`, and optional `locationHint`).
+## 3-Tier Smart Geographical Filter & Anti-"Fake Remote" Blocker
 
-## Backend architecture & resilience
+Without discarding global jobs from the backend feed, `frontend/src/ats/scoring.ts` and `LiveJobsBoard.tsx` classify every posting into 3 geographical scopes:
 
-All backend ATS code lives under `backend/src/main/java/io/github/garatech/jobsinton/providers/ats/`:
+1. **`🇪🇸 Spain Only` (`spain-only`):** Matches roles explicitly located in Spain or Spanish cities/tech parks (`Madrid`, `Alcobendas`, `Tres Cantos`, `Las Rozas`, `Pozuelo`, `Boadilla`, `Getafe`, `Barcelona`, `Málaga`, `Valencia`, `Sevilla`, `Bilbao`, `Zaragoza`, `A Coruña`, `Vigo`, `Alicante`, `Granada`, `Oviedo`, `Valladolid`, `San Sebastián`, `Murcia`, `Cartagena`, `Castellón`, `Spain`, `España`, `Iberia`, `Galicia`, `Asturias`).
+2. **`🇪🇺 Spain + EU Remote` (`spain-eu-remote` — DEFAULT ON LAUNCH):** Includes 100% of `Spain Only` jobs plus genuine remote openings eligible from Europe (`Europe`, `EU`, `EMEA`, `CET`, `CEST`, `Anywhere`, `Worldwide`).
+   - **🚫 Anti-"Fake Remote" Blocker:** Automatically excludes remote postings restricted to non-EU regions (`US only`, `U.S. only`, `United States`, `Remote - US`, `North America`, `Canada`, `LATAM`, `Latin America`, `Brazil`, `Mexico`, `APAC`, `India`, `UK only`, `United Kingdom only`, `Australia`, `PST`, `EST`, `CST`, `must reside in the US`).
+   - Sorts Tier 1 (`Spain / Madrid`) above Tier 2 (`EU Remote`) when relevance scores tie.
+3. **`🌍 Global` (`global`):** Displays 100% of fetched jobs worldwide with zero geographical filtering.
 
-- **Parallel fault-isolated fetching (`AtsFeedService`):** Queries all registered boards concurrently using Java 21 virtual threads. If an individual board times out, returns 404/429/5xx, or returns malformed JSON, it is recorded in `boards[]` with `ok: false` and an explicit error summary without breaking the remaining boards.
-- **Bounded HTTP transport (`JdkAtsHttpClient`):** Enforces a configurable per-request timeout (`jobsinton.ats.request-timeout-ms=8000`), follows normal redirects (`Redirect.NORMAL`), caps streamed response payloads at 12 MiB, and validates every normalized `applyUrl` to require `https://`.
-- **In-memory TTL cache & stampede coalescing:** Caches the aggregated `AtsFeedResponse` for `jobsinton.ats.cache-ttl-seconds=300` (5 minutes) and coalesces concurrent requests onto one in-flight fetch. Passing `?refresh=true` bypasses the cache.
-- **Deduplication & freshness:** Deduplicates across `(ats, companySlug, externalId)` and `applyUrl`, computes `hoursSincePublished` from the injected `Clock`, and orders jobs newest-first (undated listings last).
+### Junior / Seniority Affinity Adjustment
 
-### Backend REST endpoints
+- **Junior / Entry Boost (`+20` to `+30` pts + `🎯 Junior / Entry Fit` badge):** Triggered by `junior`, `jr`, `intern`, `beca`, `prácticas`, `early career`, `graduate`, `entry-level`, `engineer I`, `developer I`, `1-2 years`, `1-3 years`.
+- **Senior / Staff Penalty (`-25` pts + `⚠️ Senior/Staff` warning badge):** Triggered when titles demand `Staff`, `Principal`, `Director`, `Head of`, `Engineering Manager`, or `8+ years`.
 
-- `GET /api/ats/jobs` (optional `?refresh=true`): Returns the unified `AtsFeedResponse` (`fetchedAt`, `cached`, `cacheAgeSeconds`, `totalBoards`, `succeededBoards`, `failedBoards`, `boards[]`, `jobs[]`).
-- `GET /api/ats/boards`: Returns the configured `CompanyBoard` registry without making outbound HTTP calls.
-- `GET /api/ats/smartrecruiters/{companySlug}/{postingId}`: Fetches full plain-text description and direct `applyUrl` for a SmartRecruiters posting on demand and patches the in-memory feed cache when present.
+## "Blip" Auto-Discovery Engine & Local Persistence
 
-## Frontend zero-friction UX & stack presets
-
-- **Instant load on launch:** Vite proxies `/api/ats` to `http://127.0.0.1:8080`. The Home page (`#home`) previews the freshest live ATS postings in **Live ATS Radar**, and Opportunities (`#opportunities`) defaults directly to **Live ATS Boards** (while keeping the fictional `Sample catalog` accessible via toggle or `?source=sample`).
-- **Developer stack presets (`frontend/src/ats/presets.ts`):**
-  - `All Tech / Software Roles`
-  - `Track A · SAP & Enterprise` (`SAP`, `ABAP`, `S/4HANA`, `RAP`, `CAP`, `OData`, `Fiori`, `BTP` — with alias matching for `ABAP OO`, `OData v4`, `SAPUI5`, `SAP HANA`)
-  - `Track B · Full Stack (Java / JS)` (`Java`, `Spring Boot`, `Angular`, `Node.js`, `React`, `TypeScript`, `PostgreSQL`, `Docker`)
-  - `Custom Profile` (editable skill tags persisted in browser `localStorage`, plus one-click sync from the saved Professional Profile)
-- **Token-boundary keyword matching (`frontend/src/ats/scoring.ts`):** Matches technical terms cleanly without false substring hits (for example, `Java` does not match `JavaScript`, `RAP` does not match `bootstrap`, `CAP` does not match `capacity`, `SAP` does not match `asap`) and supports one-click view toggles: **My Profile Matches**, **Fresh (< 48h)**, **Spain / Madrid / Remote**, and **All Fetched Jobs**.
-- **Freshness highlights:** Badges postings published within 24 hours (`🔥 Posted Xh ago`) and 25–48 hours (`⚡ Posted Xh ago`), displays live board health diagnostics, and links directly to each company's official career application page (`Apply on Company Site ↗`).
-
-## Offline verification
-
-Automated CI and local verification never depend on live third-party ATS servers:
-
-- **Backend unit & MockMvc tests:** `mvn -B -ntp -f backend/pom.xml test` runs `HtmlTextCleanerTest`, `AtsAdaptersTest`, `JdkAtsHttpClientTest`, `AtsFeedServiceTest`, and `AtsControllerIntegrationTest` using deterministic fixtures and stub transports.
-- **Frontend scoring & Playwright E2E tests:** `npm --prefix frontend run test:e2e` runs `ats-scoring.spec.ts` and `live-ats.spec.ts` (plus all existing desktop/mobile journeys) with deterministic stubbed `/api/ats/jobs` and `/api/ats/smartrecruiters/*` payloads.
+- **Career Page URL Auto-Sniffer (`POST /api/ats/discover/url`):** Accepts any direct ATS URL, job posting URL, or corporate `"Work with us"` page URL, scans HTML links/iframes/scripts for signatures of all 9 ATS platforms, live-verifies the discovered board, persists it to `data/custom-companies.json` (gitignored), and merges its jobs directly into the active feed cache.
+- **Batch Company Name / Slug Probe (`POST /api/ats/discover/probe`):** Normalizes candidate company names or slugs and probes all 9 ATS platforms in parallel using bounded virtual threads (`Semaphore`), saving every active board found.
+- **"First-Seen" Local Persistence (`FirstSeenRegistry` → `data/ats-seen-jobs.json`, gitignored):** Records the earliest local sighting timestamp (`firstSeenAt`) for every job ID and computes `hoursSincePublished` from `min(publishedAt, firstSeenAt)` so recruiter edits to old Greenhouse jobs (`updated_at`) never fake a `🔥 Fresh (< 24h)` badge.
+- **1-Click Job Triage (`⭐ Save`, `✅ Applied`, `✕ Dismiss`):** Persists triage decisions in browser `localStorage` (`jobsinton.ats-triage-v1`) with a **"Hide Applied & Dismissed"** toggle (active by default) and **"View Applied"** / **"⭐ Saved"** quick filters.

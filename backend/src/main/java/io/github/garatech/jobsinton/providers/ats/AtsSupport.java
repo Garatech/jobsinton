@@ -131,6 +131,11 @@ final class AtsSupport {
         try {
             return LocalDate.parse(trimmed).atStartOfDay(ZoneOffset.UTC).toInstant();
         } catch (DateTimeParseException ignored) {
+            // Fall through to RFC-1123 (used by Teamtailor RSS <pubDate>).
+        }
+        try {
+            return java.time.ZonedDateTime.parse(trimmed, java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
+        } catch (DateTimeParseException ignored) {
             return null;
         }
     }
@@ -140,13 +145,15 @@ final class AtsSupport {
             return null;
         }
         String lower = raw.strip().toLowerCase(Locale.ROOT);
-        if (lower.contains("remote") || lower.contains("telecommut") || lower.contains("remoto")) {
-            return "remote";
+        if ("fully".equals(lower) || "temporary".equals(lower)
+                || lower.contains("remote") || lower.contains("telecommut") || lower.contains("remoto")
+                || lower.contains("teletrabajo") || lower.contains("mobil")) {
+            return lower.contains("hybrid") || lower.contains("híbrid") || lower.contains("hibrid") ? "hybrid" : "remote";
         }
         if (lower.contains("hybrid") || lower.contains("híbrid") || lower.contains("hibrid")) {
             return "hybrid";
         }
-        if (lower.contains("onsite") || lower.contains("on-site") || lower.contains("on_site")
+        if ("none".equals(lower) || lower.contains("onsite") || lower.contains("on-site") || lower.contains("on_site")
                 || lower.contains("in-office") || lower.contains("office") || lower.contains("presencial")) {
             return "onsite";
         }
@@ -159,12 +166,43 @@ final class AtsSupport {
         }
         String lower = location.toLowerCase(Locale.ROOT);
         if (lower.contains("remote") || lower.contains("remoto") || lower.contains("teletrabajo")) {
-            return lower.contains("hybrid") || lower.contains("híbrid") ? "hybrid" : "remote";
+            return lower.contains("hybrid") || lower.contains("híbrid") || lower.contains("hibrid") ? "hybrid" : "remote";
         }
         if (lower.contains("hybrid") || lower.contains("híbrid") || lower.contains("hibrid")) {
             return "hybrid";
         }
         return null;
+    }
+
+    static boolean isSpainOrEuLocation(String text) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+        String lower = text.toLowerCase(Locale.ROOT);
+        return lower.contains("madrid") || lower.contains("barcelona") || lower.contains("valencia")
+                || lower.contains("málaga") || lower.contains("malaga") || lower.contains("sevilla")
+                || lower.contains("bilbao") || lower.contains("zaragoza") || lower.contains("pozuelo")
+                || lower.contains("las rozas") || lower.contains("alcobendas") || lower.contains("tres cantos")
+                || lower.contains("getafe") || lower.contains("boadilla") || lower.contains("alicante")
+                || lower.contains("coruña") || lower.contains("coruna") || lower.contains("vigo")
+                || lower.contains("granada") || lower.contains("oviedo") || lower.contains("valladolid")
+                || lower.contains("san sebastián") || lower.contains("san sebastian") || lower.contains("cartagena")
+                || lower.contains("murcia") || lower.contains("castellón") || lower.contains("castellon")
+                || lower.contains("spain") || lower.contains("españa") || lower.contains("espana")
+                || lower.contains("iberia") || lower.contains("galicia") || lower.contains("asturias");
+    }
+
+    static boolean isNonEuFakeRemote(String text) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
+        String lower = text.toLowerCase(Locale.ROOT);
+        return lower.contains("us only") || lower.contains("u.s. only") || lower.contains("united states")
+                || lower.contains("remote - us") || lower.contains("remote (us)") || lower.contains("north america")
+                || lower.contains("canada") || lower.contains("latam") || lower.contains("latin america")
+                || lower.contains("apac") || lower.contains("india") || lower.contains("uk only")
+                || lower.contains("united kingdom only") || lower.contains("australia")
+                || lower.contains("brazil") || lower.contains("mexico");
     }
 
     static String countryDisplayName(String raw) {

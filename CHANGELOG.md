@@ -4,6 +4,15 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Phase 2: Spain/EU SME 9-ATS Engine, 3-Tier Geo Filter & Auto-Discovery
+
+- Expanded the Multi-ATS Direct Provider Engine from 5 to **9 public ATS platforms** by adding **Personio** (`PersonioAdapter` with dual-language `es`/`en` XML merge and `.com`/`.de` fallback), **Recruitee / Tellent** (`RecruiteeAdapter`), **Teamtailor** (`TeamtailorAdapter` RSS with `xmlns:tt` namespace), and **Factorial HR** (`FactorialAdapter` JSON-LD & HTML `/job_posting/` extraction with bounded detail enrichment).
+- Hardened existing adapters: browser-compatible `User-Agent` and `isListed != false` check for Ashby, `first_published` preference and automatic `boards-api.eu.greenhouse.io` fallback for Greenhouse, bidirectional EU/Global fallback for Lever, and Spain/EU geo-priority detail enrichment for SmartRecruiters.
+- Expanded `backend/src/main/resources/ats/companies.json` from 22 to **222 verified company boards** across Madrid, Spain, and EU Remote SMEs, scaleups, and SAP/Java consultancies, with bounded virtual-thread `Semaphore` concurrency (`jobsinton.ats.max-concurrency=18`) and a 10-minute default cache TTL.
+- Added the **Blip ATS Auto-Discovery Engine** (`AtsDiscoveryService`): Career URL Auto-Sniffer (`POST /api/ats/discover/url`) and Batch Company Slug Probe (`POST /api/ats/discover/probe`), persisting newly discovered boards in `data/custom-companies.json` and merging their jobs live into the feed cache.
+- Added lightweight **"First-Seen" local persistence** (`FirstSeenRegistry` → `data/ats-seen-jobs.json`) so recruiter edits to old jobs (`updated_at`) never fake fresh `< 24h` badges.
+- Upgraded location filtering to a **3-Tier Geographical Filter** (`🇪🇸 Spain Only`, `🇪🇺 Spain + EU Remote` default with **Anti-Fake-Remote Blocker** excluding US/UK/Canada/LATAM/APAC-only remote postings, and `🌍 Global`), added Junior/Seniority scoring adjustments and badges (`🎯 Junior / Entry Fit`, `⚠️ Senior/Staff`), and added 1-click job triage (`⭐ Save`, `✅ Applied`, `✕ Dismiss` + `Hide Applied & Dismissed`). See [ATS_PROVIDERS.md](docs/ATS_PROVIDERS.md).
+
 ### Added — Multi-ATS direct provider engine
 
 - Replaced the aggregator-based live job path with a zero-configuration **Multi-ATS Direct Provider Engine** querying 5 unauthenticated public ATS JSON APIs (**Greenhouse**, **Lever Global & EU**, **SmartRecruiters**, **Workable v1 & v3**, and **Ashby**) across **22 pre-seeded company boards** (`backend/src/main/resources/ats/companies.json`).

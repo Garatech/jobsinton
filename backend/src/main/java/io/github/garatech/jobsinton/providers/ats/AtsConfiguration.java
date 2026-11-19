@@ -4,11 +4,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 
-/** Zero-config Spring wiring for the Multi-ATS Direct Provider Engine (no API keys required). */
+/** Zero-config Spring wiring for the 9-provider Multi-ATS Engine, FirstSeenRegistry, and Auto-Discovery service. */
 @Configuration
 public class AtsConfiguration {
 
@@ -23,8 +24,19 @@ public class AtsConfiguration {
     }
 
     @Bean
-    CompanyRegistry companyRegistry() {
-        return CompanyRegistry.loadDefault();
+    CompanyRegistry companyRegistry(
+            @Value("${jobsinton.ats.custom-companies-file:data/custom-companies.json}") String customFile
+    ) {
+        Path path = customFile == null || customFile.isBlank() ? null : Path.of(customFile.strip());
+        return CompanyRegistry.loadFromClasspath(CompanyRegistry.DEFAULT_RESOURCE, path);
+    }
+
+    @Bean
+    FirstSeenRegistry firstSeenRegistry(
+            @Value("${jobsinton.ats.seen-jobs-file:data/ats-seen-jobs.json}") String seenFile
+    ) {
+        Path path = seenFile == null || seenFile.isBlank() ? null : Path.of(seenFile.strip());
+        return new FirstSeenRegistry(path);
     }
 
     @Bean
@@ -56,6 +68,29 @@ public class AtsConfiguration {
     }
 
     @Bean
+    PersonioAdapter personioAdapter(AtsHttpClient http) {
+        return new PersonioAdapter(http);
+    }
+
+    @Bean
+    RecruiteeAdapter recruiteeAdapter(AtsHttpClient http) {
+        return new RecruiteeAdapter(http);
+    }
+
+    @Bean
+    TeamtailorAdapter teamtailorAdapter(AtsHttpClient http) {
+        return new TeamtailorAdapter(http);
+    }
+
+    @Bean
+    FactorialAdapter factorialAdapter(
+            AtsHttpClient http,
+            @Value("${jobsinton.ats.factorial-detail-cap:6}") int detailCap
+    ) {
+        return new FactorialAdapter(http, detailCap);
+    }
+
+    @Bean
     AtsFeedService atsFeedService(
             CompanyRegistry registry,
             GreenhouseAdapter greenhouse,
@@ -63,15 +98,28 @@ public class AtsConfiguration {
             SmartRecruitersAdapter smartRecruiters,
             WorkableAdapter workable,
             AshbyAdapter ashby,
+            PersonioAdapter personio,
+            RecruiteeAdapter recruitee,
+            TeamtailorAdapter teamtailor,
+            FactorialAdapter factorial,
             Clock clock,
-            @Value("${jobsinton.ats.cache-ttl-seconds:300}") long cacheTtlSeconds
+            FirstSeenRegistry firstSeenRegistry,
+            @Value("${jobsinton.ats.cache-ttl-seconds:600}") long cacheTtlSeconds,
+            @Value("${jobsinton.ats.max-concurrency:18}") int maxConcurrency
     ) {
         return new AtsFeedService(
                 registry,
-                List.of(greenhouse, lever, smartRecruiters, workable, ashby),
+                List.of(greenhouse, lever, smartRecruiters, workable, ashby, personio, recruitee, teamtailor, factorial),
                 smartRecruiters,
                 clock,
-                Duration.ofSeconds(Math.max(0L, cacheTtlSeconds))
+                Duration.ofSeconds(Math.max(0L, cacheTtlSeconds)),
+                firstSeenRegistry,
+                maxConcurrency
         );
+    }
+
+    @Bean
+    AtsDiscoveryService atsDiscoveryService(AtsHttpClient http, AtsFeedService feedService) {
+        return new AtsDiscoveryService(http, feedService);
     }
 }

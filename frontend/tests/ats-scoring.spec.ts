@@ -1,6 +1,15 @@
 import { expect, test } from '@playwright/test';
 import { parseAtsFeed, type AtsJob } from '../src/api/ats';
-import { evaluateAtsJob, formatFreshness, isSpainMadridOrRemote, matchesKeyword, sortScoredJobs } from '../src/ats/scoring';
+import {
+  classifyGeoTier,
+  detectSenioritySignal,
+  evaluateAtsJob,
+  formatFreshness,
+  isSpainMadridOrRemote,
+  matchesGeoScope,
+  matchesKeyword,
+  sortScoredJobs,
+} from '../src/ats/scoring';
 
 function makeJob(overrides: Partial<AtsJob> = {}): AtsJob {
   return {
@@ -43,12 +52,76 @@ test('matchesKeyword respects token boundaries and avoids false substrings', () 
   expect(matchesKeyword('NodeJS + ReactJS + Postgres', 'PostgreSQL')).toBe(true);
 });
 
-test('detects Spain, Madrid, and Remote roles reliably', () => {
-  expect(isSpainMadridOrRemote(makeJob({ location: 'Madrid, Spain', workplaceType: 'onsite' }))).toBe(true);
-  expect(isSpainMadridOrRemote(makeJob({ location: 'Barcelona', workplaceType: 'hybrid' }))).toBe(true);
-  expect(isSpainMadridOrRemote(makeJob({ location: 'London, UK', workplaceType: 'remote' }))).toBe(true);
+test('3-Tier Geographical Filter distinguishes Spain Only, EU Remote, and blocks Fake US/LATAM/UK Remote', () => {
+  const madridJob = evaluateAtsJob(
+    makeJob({ location: 'Madrid, Spain', workplaceType: 'onsite' }),
+    'all-tech',
+    [],
+  );
+  const pozueloJob = evaluateAtsJob(
+    makeJob({ location: 'Pozuelo de Alarcón (Madrid)', workplaceType: 'hybrid' }),
+    'all-tech',
+    [],
+  );
+  const euRemoteJob = evaluateAtsJob(
+    makeJob({ location: 'Remote - Europe (CET)', workplaceType: 'remote' }),
+    'all-tech',
+    [],
+  );
+  const fakeUsRemote = evaluateAtsJob(
+    makeJob({ location: 'Remote (US Only)', workplaceType: 'remote', title: 'Software Engineer (Remote - US)' }),
+    'all-tech',
+    [],
+  );
+  const fakeUkRemote = evaluateAtsJob(
+    makeJob({ location: 'Remote - UK only', workplaceType: 'remote' }),
+    'all-tech',
+    [],
+  );
+  const onsiteSf = evaluateAtsJob(
+    makeJob({ location: 'San Francisco, CA', workplaceType: 'onsite' }),
+    'all-tech',
+    [],
+  );
+
+  expect(madridJob.isSpainOnly).toBe(true);
+  expect(madridJob.isSpainOrEuRemote).toBe(true);
+  expect(pozueloJob.isSpainOnly).toBe(true);
+
+  expect(euRemoteJob.isSpainOnly).toBe(false);
+  expect(euRemoteJob.isSpainOrEuRemote).toBe(true);
+  expect(euRemoteJob.geoTier).toBe('eu-remote');
+
+  expect(fakeUsRemote.isFakeRemoteBlocked).toBe(true);
+  expect(fakeUsRemote.isSpainOrEuRemote).toBe(false);
+  expect(matchesGeoScope(fakeUsRemote, 'spain-eu-remote')).toBe(false);
+  expect(matchesGeoScope(fakeUsRemote, 'global')).toBe(true);
+
+  expect(fakeUkRemote.isFakeRemoteBlocked).toBe(true);
+  expect(fakeUkRemote.isSpainOrEuRemote).toBe(false);
+
+  expect(onsiteSf.isSpainOrEuRemote).toBe(false);
   expect(isSpainMadridOrRemote(makeJob({ location: 'Remote - EMEA', workplaceType: null }))).toBe(true);
-  expect(isSpainMadridOrRemote(makeJob({ location: 'San Francisco, CA', workplaceType: 'onsite' }))).toBe(false);
+  expect(classifyGeoTier(makeJob({ location: 'Remote - LATAM', workplaceType: 'remote' })).isFakeRemoteBlocked).toBe(true);
+});
+
+test('boosts Junior/Entry roles, penalizes Staff/Principal roles, and ranks Spain Tier 1 above EU Remote Tier 2', () => {
+  const juniorMadrid = evaluateAtsJob(
+    makeJob({ id: 'jr', title: 'Junior Java Spring Boot Developer', location: 'Madrid, Spain', hoursSincePublished: 6 }),
+    'fullstack',
+    [],
+  );
+  const staffRole = evaluateAtsJob(
+    makeJob({ id: 'staff', title: 'Staff Principal Java Engineer', location: 'Madrid, Spain', hoursSincePublished: 6 }),
+    'fullstack',
+    [],
+  );
+
+  expect(juniorMadrid.senioritySignal).toBe('junior');
+  expect(staffRole.senioritySignal).toBe('senior-warning');
+  expect(juniorMadrid.score).toBeGreaterThan(staffRole.score);
+  expect(detectSenioritySignal({ title: 'Software Engineer Intern (Beca)', description: '' }).signal).toBe('junior');
+  expect(detectSenioritySignal({ title: 'Engineering Manager', description: '10+ years required' }).signal).toBe('senior-warning');
 });
 
 test('ranks matched fresh roles above stale non-matches and formats Blip freshness badges', () => {
@@ -87,31 +160,45 @@ test('ranks matched fresh roles above stale non-matches and formats Blip freshne
   expect(formatFreshness(6, null, 'es')).toEqual({ tier: 'hot', text: '🔥 Hace 6h' });
 });
 
-test('parseAtsFeed validates structure and strips unsafe non-https applyUrls', () => {
+test('parseAtsFeed accepts all 9 ATS providers and strips unsafe non-https applyUrls', () => {
   const parsed = parseAtsFeed({
     fetchedAt: '2026-11-17T12:00:00Z',
     cached: false,
     cacheAgeSeconds: 0,
-    totalBoards: 1,
-    succeededBoards: 1,
+    totalBoards: 2,
+    succeededBoards: 2,
     failedBoards: 0,
-    boards: [{
-      companySlug: 'cabify',
-      companyName: 'Cabify',
-      provider: 'greenhouse',
-      providerLabel: 'Greenhouse',
-      ok: true,
-      jobCount: 1,
-      durationMs: 120,
-      error: null,
-    }],
+    boards: [
+      {
+        companySlug: 'cabify',
+        companyName: 'Cabify',
+        provider: 'greenhouse',
+        providerLabel: 'Greenhouse',
+        ok: true,
+        jobCount: 1,
+        durationMs: 120,
+        error: null,
+      },
+      {
+        companySlug: 'paradigmadigital',
+        companyName: 'Paradigma Digital',
+        provider: 'personio',
+        providerLabel: 'Personio',
+        ok: true,
+        jobCount: 1,
+        durationMs: 95,
+        error: null,
+      },
+    ],
     jobs: [
       makeJob(),
+      makeJob({ id: 'personio:paradigmadigital:9', provider: 'personio', providerLabel: 'Personio' }),
       makeJob({ id: 'bad', applyUrl: 'javascript:alert(1)' }),
     ],
   });
-  expect(parsed.jobs).toHaveLength(1);
+  expect(parsed.jobs).toHaveLength(2);
   expect(parsed.jobs[0].id).toBe('greenhouse:cabify:1');
+  expect(parsed.jobs[1].provider).toBe('personio');
   expect(() => parseAtsFeed(null)).toThrow();
   expect(() => parseAtsFeed({ jobs: [] })).toThrow();
 });

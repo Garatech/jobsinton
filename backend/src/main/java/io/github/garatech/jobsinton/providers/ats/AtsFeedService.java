@@ -12,20 +12,25 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.regex.Pattern;
 
 /**
  * Aggregates live postings across all configured public ATS company boards in parallel,
- * isolating individual board failures and caching the combined feed in memory.
+ * isolating individual board failures, bounding upstream concurrency with a Semaphore,
+ * tracking first-seen timestamps via {@link FirstSeenRegistry}, and caching the combined feed in memory.
  */
 public final class AtsFeedService {
     private static final Pattern SAFE_POSTING_ID = Pattern.compile("^[A-Za-z0-9._-]{1,100}$");
+    public static final int DEFAULT_MAX_CONCURRENCY = 18;
 
     private final CompanyRegistry registry;
     private final Map<AtsProviderType, AtsProviderAdapter> adapters;
     private final SmartRecruitersAdapter smartRecruitersAdapter;
     private final Clock clock;
     private final Duration cacheTtl;
+    private final FirstSeenRegistry firstSeenRegistry;
+    private final int maxConcurrency;
 
     private final Object lock = new Object();
     private volatile CachedFeed cache;
@@ -34,11 +39,13 @@ public final class AtsFeedService {
     private record BoardOutcome(BoardStatus status, List<RawAtsJob> jobs) {}
 
     private record CachedFeed(Instant fetchedAt, List<BoardStatus> boards, List<RawAtsJob> jobs) {
-        AtsFeedResponse toResponse(Instant now, boolean cached) {
+        AtsFeedResponse toResponse(Instant now, boolean cached, FirstSeenRegistry firstSeen) {
             long ageSeconds = Math.max(0L, Duration.between(fetchedAt, now).getSeconds());
             int succeeded = (int) boards.stream().filter(BoardStatus::ok).count();
             int failed = boards.size() - succeeded;
-            List<AtsJob> apiJobs = jobs.stream().map(job -> job.toApiJob(now)).toList();
+            List<AtsJob> apiJobs = jobs.stream()
+                    .map(job -> job.toApiJob(now, firstSeen != null ? firstSeen.getFirstSeen(job.compositeId()) : null))
+                    .toList();
             return new AtsFeedResponse(
                     fetchedAt.toString(),
                     cached,
@@ -59,6 +66,18 @@ public final class AtsFeedService {
             Clock clock,
             Duration cacheTtl
     ) {
+        this(registry, adapterList, smartRecruitersAdapter, clock, cacheTtl, new FirstSeenRegistry(), DEFAULT_MAX_CONCURRENCY);
+    }
+
+    public AtsFeedService(
+            CompanyRegistry registry,
+            List<AtsProviderAdapter> adapterList,
+            SmartRecruitersAdapter smartRecruitersAdapter,
+            Clock clock,
+            Duration cacheTtl,
+            FirstSeenRegistry firstSeenRegistry,
+            int maxConcurrency
+    ) {
         this.registry = registry;
         this.adapters = new EnumMap<>(AtsProviderType.class);
         for (AtsProviderAdapter adapter : adapterList) {
@@ -67,10 +86,24 @@ public final class AtsFeedService {
         this.smartRecruitersAdapter = smartRecruitersAdapter;
         this.clock = clock;
         this.cacheTtl = cacheTtl;
+        this.firstSeenRegistry = firstSeenRegistry != null ? firstSeenRegistry : new FirstSeenRegistry();
+        this.maxConcurrency = Math.max(1, maxConcurrency);
     }
 
     public List<CompanyBoard> boards() {
         return registry.boards();
+    }
+
+    public CompanyRegistry registry() {
+        return registry;
+    }
+
+    public FirstSeenRegistry firstSeenRegistry() {
+        return firstSeenRegistry;
+    }
+
+    public AtsProviderAdapter adapterFor(AtsProviderType type) {
+        return adapters.get(type);
     }
 
     public AtsFeedResponse getFeed(boolean forceRefresh) {
@@ -78,7 +111,7 @@ public final class AtsFeedService {
         if (!forceRefresh) {
             CachedFeed current = cache;
             if (current != null && !isExpired(current, now)) {
-                return current.toResponse(now, true);
+                return current.toResponse(now, true, firstSeenRegistry);
             }
         }
 
@@ -86,7 +119,7 @@ public final class AtsFeedService {
         boolean owner = false;
         synchronized (lock) {
             if (!forceRefresh && cache != null && !isExpired(cache, clock.instant())) {
-                return cache.toResponse(clock.instant(), true);
+                return cache.toResponse(clock.instant(), true, firstSeenRegistry);
             }
             if (inFlight != null && !inFlight.isDone()) {
                 future = inFlight;
@@ -105,7 +138,7 @@ public final class AtsFeedService {
                     inFlight = null;
                 }
                 future.complete(fresh);
-                return fresh.toResponse(clock.instant(), false);
+                return fresh.toResponse(clock.instant(), false, firstSeenRegistry);
             } catch (Throwable error) {
                 synchronized (lock) {
                     inFlight = null;
@@ -116,7 +149,57 @@ public final class AtsFeedService {
         }
 
         CachedFeed joined = future.join();
-        return joined.toResponse(clock.instant(), false);
+        return joined.toResponse(clock.instant(), false, firstSeenRegistry);
+    }
+
+    /**
+     * Merges a newly discovered company board and its live jobs directly into the in-memory feed cache
+     * so the frontend immediately sees the discovered jobs without waiting for a full 200-board refresh.
+     */
+    public void mergeDiscoveredBoard(CompanyBoard board, List<RawAtsJob> discoveredJobs, long durationMs) {
+        Instant now = clock.instant();
+        firstSeenRegistry.recordBatch(discoveredJobs, now);
+        BoardStatus newStatus = new BoardStatus(
+                board.slug(),
+                board.name(),
+                board.providerType().id(),
+                board.providerType().displayName(),
+                true,
+                discoveredJobs.size(),
+                durationMs,
+                null
+        );
+        synchronized (lock) {
+            CachedFeed current = cache;
+            if (current == null) {
+                return;
+            }
+            List<BoardStatus> updatedBoards = new ArrayList<>(current.boards().size() + 1);
+            boolean replacedBoard = false;
+            for (BoardStatus existing : current.boards()) {
+                if (existing.provider().equals(board.ats()) && existing.companySlug().equalsIgnoreCase(board.slug())) {
+                    updatedBoards.add(newStatus);
+                    replacedBoard = true;
+                } else {
+                    updatedBoards.add(existing);
+                }
+            }
+            if (!replacedBoard) {
+                updatedBoards.add(newStatus);
+            }
+
+            Map<String, RawAtsJob> mergedJobs = new LinkedHashMap<>();
+            for (RawAtsJob job : discoveredJobs) {
+                mergedJobs.put(job.compositeId(), job);
+            }
+            for (RawAtsJob job : current.jobs()) {
+                mergedJobs.putIfAbsent(job.compositeId(), job);
+            }
+
+            List<RawAtsJob> sortedJobs = new ArrayList<>(mergedJobs.values());
+            sortJobsByEffectiveRecency(sortedJobs);
+            cache = new CachedFeed(current.fetchedAt(), List.copyOf(updatedBoards), List.copyOf(sortedJobs));
+        }
     }
 
     /** On-demand SmartRecruiters posting detail hydration for registered boards only. */
@@ -178,10 +261,29 @@ public final class AtsFeedService {
 
     private CachedFeed fetchAllBoards() {
         List<CompanyBoard> boards = registry.boards();
+        Semaphore permits = new Semaphore(maxConcurrency);
         List<BoardOutcome> outcomes;
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
             List<CompletableFuture<BoardOutcome>> futures = boards.stream()
-                    .map(board -> CompletableFuture.supplyAsync(() -> fetchBoardSafely(board), executor))
+                    .map(board -> CompletableFuture.supplyAsync(() -> {
+                        boolean acquired = false;
+                        try {
+                            permits.acquire();
+                            acquired = true;
+                            return fetchBoardSafely(board);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            AtsProviderType type = board.providerType();
+                            return new BoardOutcome(
+                                    new BoardStatus(board.slug(), board.name(), type.id(), type.displayName(), false, 0, 0L, "Interrupted"),
+                                    List.of()
+                            );
+                        } finally {
+                            if (acquired) {
+                                permits.release();
+                            }
+                        }
+                    }, executor))
                     .toList();
             outcomes = futures.stream().map(CompletableFuture::join).toList();
         }
@@ -195,13 +297,29 @@ public final class AtsFeedService {
             }
         }
 
+        Instant fetchedAt = clock.instant();
+        firstSeenRegistry.recordBatch(deduplicated.values(), fetchedAt);
+
         List<RawAtsJob> sortedJobs = new ArrayList<>(deduplicated.values());
-        sortedJobs.sort(Comparator
-                .comparing(RawAtsJob::publishedAt, Comparator.nullsLast(Comparator.reverseOrder()))
+        sortJobsByEffectiveRecency(sortedJobs);
+
+        return new CachedFeed(fetchedAt, List.copyOf(statuses), List.copyOf(sortedJobs));
+    }
+
+    private void sortJobsByEffectiveRecency(List<RawAtsJob> jobs) {
+        jobs.sort(Comparator
+                .comparing(this::effectiveOriginTimestamp, Comparator.nullsLast(Comparator.reverseOrder()))
                 .thenComparing(RawAtsJob::companyName, String.CASE_INSENSITIVE_ORDER)
                 .thenComparing(RawAtsJob::title, String.CASE_INSENSITIVE_ORDER));
+    }
 
-        return new CachedFeed(clock.instant(), List.copyOf(statuses), List.copyOf(sortedJobs));
+    private Instant effectiveOriginTimestamp(RawAtsJob job) {
+        Instant pub = job.publishedAt();
+        Instant seen = firstSeenRegistry.getFirstSeen(job.compositeId());
+        if (pub != null && seen != null) {
+            return seen.isBefore(pub) ? seen : pub;
+        }
+        return pub != null ? pub : seen;
     }
 
     private BoardOutcome fetchBoardSafely(CompanyBoard board) {

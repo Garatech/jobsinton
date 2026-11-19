@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
+  discoverAtsFromUrl,
   fetchAtsFeed,
   fetchSmartRecruitersDetail,
   getCachedAtsFeed,
+  probeAtsCompanies,
+  type AtsDiscoveryResponse,
   type AtsFeedResponse,
   type AtsJob,
   type AtsProviderId,
@@ -17,7 +20,9 @@ import {
 import {
   evaluateAtsJob,
   formatFreshness,
+  matchesGeoScope,
   sortScoredJobs,
+  type GeoScope,
   type ScoredAtsJob,
 } from '../ats/scoring';
 import { useLanguage } from '../i18n/Language';
@@ -25,6 +30,10 @@ import type { ProfessionalProfile } from '../profile/model';
 import { EmptyState } from '../ui';
 
 const PROVIDERS: readonly { id: AtsProviderId; label: string }[] = [
+  { id: 'personio', label: 'Personio' },
+  { id: 'teamtailor', label: 'Teamtailor' },
+  { id: 'recruitee', label: 'Recruitee' },
+  { id: 'factorial', label: 'Factorial HR' },
   { id: 'greenhouse', label: 'Greenhouse' },
   { id: 'lever', label: 'Lever' },
   { id: 'smartrecruiters', label: 'SmartRecruiters' },
@@ -39,6 +48,44 @@ const WORKPLACE_LABELS: Record<'remote' | 'hybrid' | 'onsite', string> = {
 };
 
 const PAGE_BATCH = 40;
+export const TRIAGE_STORAGE_KEY = 'jobsinton.ats-triage-v1';
+
+export type JobTriageStatus = 'saved' | 'applied' | 'dismissed';
+type TriageMap = Record<string, JobTriageStatus>;
+
+function loadTriageMap(): TriageMap {
+  try {
+    const raw = window.localStorage.getItem(TRIAGE_STORAGE_KEY);
+    if (!raw) return {};
+    const parsed: unknown = JSON.parse(raw);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {};
+    const out: TriageMap = {};
+    for (const [k, v] of Object.entries(parsed)) {
+      if (v === 'saved' || v === 'applied' || v === 'dismissed') {
+        out[k] = v;
+      }
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function saveTriageMap(map: TriageMap): void {
+  try {
+    window.localStorage.setItem(TRIAGE_STORAGE_KEY, JSON.stringify(map));
+  } catch {
+    // Ignore storage quota / privacy mode errors.
+  }
+}
+
+function parseInitialGeoScope(params: URLSearchParams): GeoScope {
+  const geo = params.get('geo');
+  if (geo === 'spain-only' || geo === 'spain-eu-remote' || geo === 'global') return geo;
+  if (params.get('filter') === 'all') return 'global';
+  if (params.get('filter') === 'spain-only') return 'spain-only';
+  return 'spain-eu-remote';
+}
 
 type FeedState =
   | { kind: 'loading'; previous: AtsFeedResponse | null }
@@ -64,14 +111,27 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
   const [tagInput, setTagInput] = useState('');
   const [tagError, setTagError] = useState('');
 
+  const [geoScope, setGeoScope] = useState<GeoScope>(() => parseInitialGeoScope(initialParams));
   const [onlyMatches, setOnlyMatches] = useState<boolean>(() => initialParams.get('filter') !== 'all');
   const [onlyFresh, setOnlyFresh] = useState<boolean>(() => initialParams.get('filter') === 'fresh');
-  const [onlySpainRemote, setOnlySpainRemote] = useState<boolean>(() => initialParams.get('filter') === 'spain');
   const [providerFilter, setProviderFilter] = useState<AtsProviderId | 'all'>('all');
   const [searchText, setSearchText] = useState('');
   const [sortMode, setSortMode] = useState<'relevance' | 'newest'>('relevance');
   const [visibleLimit, setVisibleLimit] = useState(PAGE_BATCH);
   const [showBoards, setShowBoards] = useState(false);
+
+  // Triage state (Saved / Applied / Dismissed)
+  const [triageMap, setTriageMap] = useState<TriageMap>(() => loadTriageMap());
+  const [hideAppliedDismissed, setHideAppliedDismissed] = useState<boolean>(true);
+  const [viewTriageFilter, setViewTriageFilter] = useState<'none' | 'saved' | 'applied'>('none');
+
+  // Auto-Discovery panel state
+  const [showDiscovery, setShowDiscovery] = useState<boolean>(false);
+  const [discoverUrlInput, setDiscoverUrlInput] = useState('');
+  const [probeCandidatesInput, setProbeCandidatesInput] = useState('');
+  const [discoveryBusy, setDiscoveryBusy] = useState<boolean>(false);
+  const [discoveryResult, setDiscoveryResult] = useState<AtsDiscoveryResponse | null>(null);
+  const [discoveryError, setDiscoveryError] = useState<string>('');
 
   const loadFeed = useCallback((refresh: boolean, signal?: AbortSignal) => {
     setState((current) => ({
@@ -120,6 +180,19 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
     });
   }, []);
 
+  const handleTriageToggle = useCallback((jobId: string, targetStatus: JobTriageStatus) => {
+    setTriageMap((current) => {
+      const next = { ...current };
+      if (next[jobId] === targetStatus) {
+        delete next[jobId];
+      } else {
+        next[jobId] = targetStatus;
+      }
+      saveTriageMap(next);
+      return next;
+    });
+  }, []);
+
   const presetCounts = useMemo(() => {
     const counts: Record<StackPresetId, number> = {
       'all-tech': 0,
@@ -144,29 +217,61 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
   const quickCounts = useMemo(() => {
     let matches = 0;
     let fresh = 0;
-    let spainRemote = 0;
+    let spainOnly = 0;
+    let spainEuRemote = 0;
+    let savedCount = 0;
+    let appliedCount = 0;
+    let dismissedCount = 0;
     const byProvider: Record<AtsProviderId, number> = {
       greenhouse: 0,
       lever: 0,
       smartrecruiters: 0,
       workable: 0,
       ashby: 0,
+      personio: 0,
+      recruitee: 0,
+      teamtailor: 0,
+      factorial: 0,
     };
     for (const item of evaluatedAll) {
       if (item.isMatch) matches++;
       if (item.isFresh48h) fresh++;
-      if (item.isSpainOrRemote) spainRemote++;
-      byProvider[item.job.provider]++;
+      if (item.isSpainOnly) spainOnly++;
+      if (item.isSpainOrEuRemote) spainEuRemote++;
+      byProvider[item.job.provider] = (byProvider[item.job.provider] ?? 0) + 1;
+      const tStatus = triageMap[item.job.id];
+      if (tStatus === 'saved') savedCount++;
+      else if (tStatus === 'applied') appliedCount++;
+      else if (tStatus === 'dismissed') dismissedCount++;
     }
-    return { matches, fresh, spainRemote, byProvider };
-  }, [evaluatedAll]);
+    return {
+      matches,
+      fresh,
+      spainOnly,
+      spainEuRemote,
+      savedCount,
+      appliedCount,
+      dismissedCount,
+      byProvider,
+    };
+  }, [evaluatedAll, triageMap]);
 
   const filteredJobs = useMemo(() => {
     const terms = searchText.trim().toLowerCase().split(/\s+/).filter(Boolean);
     const matching = evaluatedAll.filter((item) => {
+      const triageStatus = triageMap[item.job.id];
+      if (viewTriageFilter === 'applied') {
+        return triageStatus === 'applied';
+      }
+      if (viewTriageFilter === 'saved') {
+        return triageStatus === 'saved';
+      }
+      if (hideAppliedDismissed && (triageStatus === 'applied' || triageStatus === 'dismissed')) {
+        return false;
+      }
+      if (!matchesGeoScope(item, geoScope)) return false;
       if (onlyMatches && !item.isMatch) return false;
       if (onlyFresh && !item.isFresh48h) return false;
-      if (onlySpainRemote && !item.isSpainOrRemote) return false;
       if (providerFilter !== 'all' && item.job.provider !== providerFilter) return false;
       if (terms.length > 0) {
         const haystack = [
@@ -183,21 +288,35 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
       return true;
     });
     return sortScoredJobs(matching, sortMode);
-  }, [evaluatedAll, onlyMatches, onlyFresh, onlySpainRemote, providerFilter, searchText, sortMode]);
+  }, [
+    evaluatedAll,
+    triageMap,
+    viewTriageFilter,
+    hideAppliedDismissed,
+    geoScope,
+    onlyMatches,
+    onlyFresh,
+    providerFilter,
+    searchText,
+    sortMode,
+  ]);
 
-  const showingAllFetched = !onlyMatches && !onlyFresh && !onlySpainRemote
-    && providerFilter === 'all' && searchText.trim() === '';
+  const showingAllFetched = !onlyMatches && !onlyFresh && geoScope === 'global'
+    && viewTriageFilter === 'none' && providerFilter === 'all' && searchText.trim() === '';
 
   function selectPreset(next: StackPresetId) {
     setPreset(next);
     setOnlyMatches(true);
+    setViewTriageFilter('none');
     setVisibleLimit(PAGE_BATCH);
   }
 
   function showAllFetched() {
     setOnlyMatches(false);
     setOnlyFresh(false);
-    setOnlySpainRemote(false);
+    setGeoScope('global');
+    setViewTriageFilter('none');
+    setHideAppliedDismissed(false);
     setProviderFilter('all');
     setSearchText('');
     setVisibleLimit(PAGE_BATCH);
@@ -243,6 +362,50 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
     setTagError('');
   }
 
+  async function handleDiscoverUrlSubmit(event: FormEvent) {
+    event.preventDefault();
+    const url = discoverUrlInput.trim();
+    if (!url || discoveryBusy) return;
+    setDiscoveryBusy(true);
+    setDiscoveryError('');
+    setDiscoveryResult(null);
+    try {
+      const res = await discoverAtsFromUrl(url);
+      setDiscoveryResult(res);
+      if (res.discoveredCount > 0) {
+        setDiscoverUrlInput('');
+        loadFeed(false);
+      }
+    } catch (err) {
+      setDiscoveryError(err instanceof Error ? err.message : 'Could not discover an ATS board from that URL.');
+    } finally {
+      setDiscoveryBusy(false);
+    }
+  }
+
+  async function handleProbeSubmit(event: FormEvent) {
+    event.preventDefault();
+    const raw = probeCandidatesInput.trim();
+    if (!raw || discoveryBusy) return;
+    const list = raw.split(/[,\n;]+/).map((s) => s.trim()).filter(Boolean);
+    if (list.length === 0) return;
+    setDiscoveryBusy(true);
+    setDiscoveryError('');
+    setDiscoveryResult(null);
+    try {
+      const res = await probeAtsCompanies(list);
+      setDiscoveryResult(res);
+      if (res.discoveredCount > 0) {
+        setProbeCandidatesInput('');
+        loadFeed(false);
+      }
+    } catch (err) {
+      setDiscoveryError(err instanceof Error ? err.message : 'Could not probe candidate company slugs.');
+    } finally {
+      setDiscoveryBusy(false);
+    }
+  }
+
   const activePresetMeta = STACK_PRESETS.find((item) => item.id === preset) ?? STACK_PRESETS[0];
   const displayedJobs = filteredJobs.slice(0, visibleLimit);
   const remainingCount = Math.max(0, filteredJobs.length - displayedJobs.length);
@@ -282,6 +445,14 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
         </div>
 
         <div className="ats-status-actions">
+          <button
+            type="button"
+            className="text-button"
+            aria-expanded={showDiscovery}
+            onClick={() => setShowDiscovery((open) => !open)}
+          >
+            {t(showDiscovery ? 'Hide company discovery' : '➕ Discover / Add Companies')}
+          </button>
           {activeFeed && (
             <button
               type="button"
@@ -308,6 +479,69 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
         <p className="notice notice-error ats-error-banner" role="alert">
           {t(state.message)}
         </p>
+      )}
+
+      {/* Blip Auto-Discovery Engine & Watchlist Manager Panel */}
+      {showDiscovery && (
+        <div className="ats-discovery-panel" role="region" aria-label={t('ATS Auto-Discovery Engine')}>
+          <div className="ats-presets-head">
+            <p className="eyebrow">{t('BLIP AUTO-DISCOVERY ENGINE · 9 ATS PLATFORMS')}</p>
+            <p className="ats-preset-desc">
+              {t('Paste any corporate career URL or job link to auto-detect its ATS, or batch-probe company names across Personio, Recruitee, Teamtailor, Factorial, Greenhouse, Lever, SmartRecruiters, Workable, and Ashby.')}
+            </p>
+          </div>
+
+          <div className="ats-discovery-forms">
+            <form className="ats-custom-form" onSubmit={handleDiscoverUrlSubmit}>
+              <label className="sr-only" htmlFor="ats-discover-url">{t('Career or job board URL')}</label>
+              <input
+                id="ats-discover-url"
+                type="text"
+                placeholder={t('Paste Career / Job URL (e.g. https://acme.teamtailor.com/jobs or company.es/careers)')}
+                value={discoverUrlInput}
+                onChange={(e) => setDiscoverUrlInput(e.target.value)}
+                disabled={discoveryBusy}
+              />
+              <button type="submit" className="secondary-button" disabled={discoveryBusy || !discoverUrlInput.trim()}>
+                {t(discoveryBusy ? 'Scanning…' : 'Sniff Career URL')}
+              </button>
+            </form>
+
+            <form className="ats-custom-form" onSubmit={handleProbeSubmit}>
+              <label className="sr-only" htmlFor="ats-probe-input">{t('Company names or slugs to probe')}</label>
+              <input
+                id="ats-probe-input"
+                type="text"
+                placeholder={t('Batch-probe company slugs (e.g. marsbased, seidor, stratesys)')}
+                value={probeCandidatesInput}
+                onChange={(e) => setProbeCandidatesInput(e.target.value)}
+                disabled={discoveryBusy}
+              />
+              <button type="submit" className="secondary-button" disabled={discoveryBusy || !probeCandidatesInput.trim()}>
+                {t(discoveryBusy ? 'Probing 9 ATS…' : 'Probe Companies')}
+              </button>
+            </form>
+          </div>
+
+          {discoveryError && (
+            <p className="field-error" role="alert">{t(discoveryError)}</p>
+          )}
+
+          {discoveryResult && (
+            <div className="ats-discovery-feedback" role="status">
+              <p><strong>{t(discoveryResult.message)}</strong></p>
+              {discoveryResult.discovered.length > 0 && (
+                <ul className="tags ats-matched-tags">
+                  {discoveryResult.discovered.map((b) => (
+                    <li key={`${b.ats}:${b.slug}`} className="ats-match-chip">
+                      {b.name} ({b.ats} · {b.jobCount} {t(b.jobCount === 1 ? 'job' : 'jobs')})
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {showBoards && activeFeed && (
@@ -406,13 +640,13 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
         )}
       </div>
 
-      {/* Smart One-Click Quick Filters */}
+      {/* 3-Tier Geographical Scope + Smart Quick Filters */}
       <div className="ats-quick-filters" role="group" aria-label={t('Quick filters')}>
         <button
           type="button"
-          className={'ats-toggle-pill' + (onlyMatches ? ' active' : '')}
-          aria-pressed={onlyMatches}
-          onClick={() => { setOnlyMatches((v) => !v); setVisibleLimit(PAGE_BATCH); }}
+          className={'ats-toggle-pill' + (onlyMatches && viewTriageFilter === 'none' ? ' active' : '')}
+          aria-pressed={onlyMatches && viewTriageFilter === 'none'}
+          onClick={() => { setViewTriageFilter('none'); setOnlyMatches((v) => !v); setVisibleLimit(PAGE_BATCH); }}
         >
           <span>{t('My Profile Matches')}</span>
           {activeFeed && <span className="pill-count">{quickCounts.matches}</span>}
@@ -420,22 +654,43 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
 
         <button
           type="button"
-          className={'ats-toggle-pill fresh-pill' + (onlyFresh ? ' active' : '')}
-          aria-pressed={onlyFresh}
-          onClick={() => { setOnlyFresh((v) => !v); setVisibleLimit(PAGE_BATCH); }}
+          className={'ats-toggle-pill fresh-pill' + (onlyFresh && viewTriageFilter === 'none' ? ' active' : '')}
+          aria-pressed={onlyFresh && viewTriageFilter === 'none'}
+          onClick={() => { setViewTriageFilter('none'); setOnlyFresh((v) => !v); setVisibleLimit(PAGE_BATCH); }}
         >
           <span>{t('Fresh (< 48h)')}</span>
           {activeFeed && <span className="pill-count">{quickCounts.fresh}</span>}
         </button>
 
+        {/* 3-Tier Geographical Selector */}
         <button
           type="button"
-          className={'ats-toggle-pill' + (onlySpainRemote ? ' active' : '')}
-          aria-pressed={onlySpainRemote}
-          onClick={() => { setOnlySpainRemote((v) => !v); setVisibleLimit(PAGE_BATCH); }}
+          className={'ats-toggle-pill' + (geoScope === 'spain-only' && viewTriageFilter === 'none' ? ' active' : '')}
+          aria-pressed={geoScope === 'spain-only' && viewTriageFilter === 'none'}
+          onClick={() => { setViewTriageFilter('none'); setGeoScope('spain-only'); setVisibleLimit(PAGE_BATCH); }}
         >
-          <span>{t('Spain / Madrid / Remote')}</span>
-          {activeFeed && <span className="pill-count">{quickCounts.spainRemote}</span>}
+          <span>{t('🇪🇸 Spain Only')}</span>
+          {activeFeed && <span className="pill-count">{quickCounts.spainOnly}</span>}
+        </button>
+
+        <button
+          type="button"
+          className={'ats-toggle-pill' + (geoScope === 'spain-eu-remote' && viewTriageFilter === 'none' ? ' active' : '')}
+          aria-pressed={geoScope === 'spain-eu-remote' && viewTriageFilter === 'none'}
+          onClick={() => { setViewTriageFilter('none'); setGeoScope('spain-eu-remote'); setVisibleLimit(PAGE_BATCH); }}
+        >
+          <span>{t('🇪🇺 Spain + EU Remote')}</span>
+          {activeFeed && <span className="pill-count">{quickCounts.spainEuRemote}</span>}
+        </button>
+
+        <button
+          type="button"
+          className={'ats-toggle-pill' + (geoScope === 'global' && !showingAllFetched && viewTriageFilter === 'none' ? ' active' : '')}
+          aria-pressed={geoScope === 'global' && !showingAllFetched && viewTriageFilter === 'none'}
+          onClick={() => { setViewTriageFilter('none'); setGeoScope('global'); setVisibleLimit(PAGE_BATCH); }}
+        >
+          <span>{t('🌍 Global')}</span>
+          {activeFeed && <span className="pill-count">{allJobs.length}</span>}
         </button>
 
         <button
@@ -446,6 +701,44 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
         >
           <span>{t('All Fetched Jobs')}</span>
           {activeFeed && <span className="pill-count">{allJobs.length}</span>}
+        </button>
+
+        {/* Triage Quick Controls */}
+        <button
+          type="button"
+          className={'ats-toggle-pill' + (hideAppliedDismissed && viewTriageFilter === 'none' ? ' active' : '')}
+          aria-pressed={hideAppliedDismissed && viewTriageFilter === 'none'}
+          onClick={() => { setViewTriageFilter('none'); setHideAppliedDismissed((v) => !v); setVisibleLimit(PAGE_BATCH); }}
+        >
+          <span>{t('Hide Applied & Dismissed')}</span>
+        </button>
+
+        {quickCounts.savedCount > 0 && (
+          <button
+            type="button"
+            className={'ats-toggle-pill' + (viewTriageFilter === 'saved' ? ' active' : '')}
+            aria-pressed={viewTriageFilter === 'saved'}
+            onClick={() => {
+              setViewTriageFilter((cur) => (cur === 'saved' ? 'none' : 'saved'));
+              setVisibleLimit(PAGE_BATCH);
+            }}
+          >
+            <span>{t('⭐ Saved')}</span>
+            <span className="pill-count">{quickCounts.savedCount}</span>
+          </button>
+        )}
+
+        <button
+          type="button"
+          className={'ats-toggle-pill' + (viewTriageFilter === 'applied' ? ' active' : '')}
+          aria-pressed={viewTriageFilter === 'applied'}
+          onClick={() => {
+            setViewTriageFilter((cur) => (cur === 'applied' ? 'none' : 'applied'));
+            setVisibleLimit(PAGE_BATCH);
+          }}
+        >
+          <span>{t('View Applied')}</span>
+          <span className="pill-count">{quickCounts.appliedCount}</span>
         </button>
       </div>
 
@@ -507,7 +800,7 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
             }}
           >
             <span>{provider.label}</span>
-            {activeFeed && <span className="provider-mini-count">{quickCounts.byProvider[provider.id]}</span>}
+            {activeFeed && <span className="provider-mini-count">{quickCounts.byProvider[provider.id] ?? 0}</span>}
           </button>
         ))}
       </div>
@@ -540,6 +833,8 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
             <LiveJobCard
               key={scored.job.id}
               scored={scored}
+              triageStatus={triageMap[scored.job.id] ?? null}
+              onTriageToggle={handleTriageToggle}
               onJobHydrated={handleJobHydrated}
             />
           ))}
@@ -591,12 +886,14 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
 
 interface LiveJobCardProps {
   scored: ScoredAtsJob;
+  triageStatus: JobTriageStatus | null;
+  onTriageToggle: (jobId: string, status: JobTriageStatus) => void;
   onJobHydrated: (job: AtsJob) => void;
 }
 
-function LiveJobCard({ scored, onJobHydrated }: LiveJobCardProps) {
+function LiveJobCard({ scored, triageStatus, onTriageToggle, onJobHydrated }: LiveJobCardProps) {
   const { t, language } = useLanguage();
-  const { job, matchedKeywords } = scored;
+  const { job, matchedKeywords, senioritySignal } = scored;
   const [expanded, setExpanded] = useState(false);
   const [hydrating, setHydrating] = useState(false);
   const [hydrateError, setHydrateError] = useState('');
@@ -639,6 +936,12 @@ function LiveJobCard({ scored, onJobHydrated }: LiveJobCardProps) {
             <span className={'ats-freshness ats-freshness-' + freshness.tier}>
               {freshness.text}
             </span>
+          )}
+          {senioritySignal === 'junior' && (
+            <span className="ats-freshness ats-freshness-hot">{t('🎯 Junior / Entry Fit')}</span>
+          )}
+          {senioritySignal === 'senior-warning' && (
+            <span className="ats-freshness ats-freshness-normal">{t('⚠️ Senior/Staff')}</span>
           )}
         </div>
 
@@ -722,6 +1025,32 @@ function LiveJobCard({ scored, onJobHydrated }: LiveJobCardProps) {
         >
           {t('Apply on Company Site')} <span aria-hidden="true">↗</span>
         </a>
+        <div className="ats-triage-actions" role="group" aria-label={t('Job triage')}>
+          <button
+            type="button"
+            className={'ats-toggle-pill' + (triageStatus === 'saved' ? ' active' : '')}
+            aria-pressed={triageStatus === 'saved'}
+            onClick={() => onTriageToggle(job.id, 'saved')}
+          >
+            {t('⭐ Save')}
+          </button>
+          <button
+            type="button"
+            className={'ats-toggle-pill' + (triageStatus === 'applied' ? ' active' : '')}
+            aria-pressed={triageStatus === 'applied'}
+            onClick={() => onTriageToggle(job.id, 'applied')}
+          >
+            {t('✅ Applied')}
+          </button>
+          <button
+            type="button"
+            className={'ats-toggle-pill' + (triageStatus === 'dismissed' ? ' active' : '')}
+            aria-pressed={triageStatus === 'dismissed'}
+            onClick={() => onTriageToggle(job.id, 'dismissed')}
+          >
+            {t('✕ Dismiss')}
+          </button>
+        </div>
       </div>
     </article>
   );

@@ -11,11 +11,13 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Greenhouse public Job Board API adapter.
- * Endpoint: GET https://boards-api.greenhouse.io/v1/boards/{company_slug}/jobs?content=true
+ * Greenhouse public Job Board API adapter with automatic EU instance fallback.
+ * Primary:  GET https://boards-api.greenhouse.io/v1/boards/{company_slug}/jobs?content=true
+ * Fallback: GET https://boards-api.eu.greenhouse.io/v1/boards/{company_slug}/jobs?content=true
  */
 public final class GreenhouseAdapter implements AtsProviderAdapter {
     private static final String BASE_URL = "https://boards-api.greenhouse.io/v1/boards/";
+    private static final String EU_BASE_URL = "https://boards-api.eu.greenhouse.io/v1/boards/";
 
     private final AtsHttpClient http;
     private final JsonMapper json = JsonMapper.builder().build();
@@ -31,13 +33,40 @@ public final class GreenhouseAdapter implements AtsProviderAdapter {
 
     @Override
     public List<RawAtsJob> fetch(CompanyBoard board) {
-        URI uri = URI.create(BASE_URL + AtsSupport.encodePathSegment(board.slug()) + "/jobs?content=true");
-        var reply = http.get(uri);
+        String encodedSlug = AtsSupport.encodePathSegment(board.slug());
+        URI primaryUri = URI.create(BASE_URL + encodedSlug + "/jobs?content=true");
+        URI euUri = URI.create(EU_BASE_URL + encodedSlug + "/jobs?content=true");
+
+        var reply = http.get(primaryUri);
+        if (reply.status() == 404) {
+            var euReply = http.get(euUri);
+            if (euReply.status() == 200) {
+                reply = euReply;
+            }
+        }
         if (reply.status() != 200) {
             throw new AtsFetchException("HTTP " + reply.status() + " from Greenhouse");
         }
+        List<RawAtsJob> jobs = parseJobsPayload(board, reply.body());
+        if (jobs.isEmpty()) {
+            try {
+                var euReply = http.get(euUri);
+                if (euReply.status() == 200) {
+                    List<RawAtsJob> euJobs = parseJobsPayload(board, euReply.body());
+                    if (!euJobs.isEmpty()) {
+                        return euJobs;
+                    }
+                }
+            } catch (AtsFetchException ignored) {
+                // Keep primary empty result if EU fallback fails.
+            }
+        }
+        return jobs;
+    }
+
+    private List<RawAtsJob> parseJobsPayload(CompanyBoard board, byte[] body) {
         try {
-            JsonNode root = json.readTree(reply.body());
+            JsonNode root = json.readTree(body);
             JsonNode jobsNode = root == null ? null : root.path("jobs");
             if (jobsNode == null || !jobsNode.isArray()) {
                 throw new AtsFetchException("Greenhouse payload missing jobs array");
@@ -65,9 +94,10 @@ public final class GreenhouseAdapter implements AtsProviderAdapter {
         if (id == null || title == null || applyUrl == null) {
             return null;
         }
-        Instant publishedAt = AtsSupport.parseTimestamp(job.path("updated_at"));
+        // Prefer first_published over updated_at so minor typo edits don't reset job age.
+        Instant publishedAt = AtsSupport.parseTimestamp(job.path("first_published"));
         if (publishedAt == null) {
-            publishedAt = AtsSupport.parseTimestamp(job.path("first_published"));
+            publishedAt = AtsSupport.parseTimestamp(job.path("updated_at"));
         }
         String location = AtsSupport.text(job.path("location").path("name"));
         String description = HtmlTextCleaner.toPlainText(AtsSupport.text(job.path("content")));
