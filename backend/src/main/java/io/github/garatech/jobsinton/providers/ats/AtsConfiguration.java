@@ -9,7 +9,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 
-/** Zero-config Spring wiring for the Multi-ATS Direct Provider Engine (no API keys required). */
+/** Zero-config Spring wiring for all 9 public ATS platforms (no API keys required). */
 @Configuration
 public class AtsConfiguration {
 
@@ -75,6 +75,19 @@ public class AtsConfiguration {
     }
 
     @Bean
+    TeamtailorAdapter teamtailorAdapter(AtsHttpClient http) {
+        return new TeamtailorAdapter(http);
+    }
+
+    @Bean
+    FactorialAdapter factorialAdapter(
+            AtsHttpClient http,
+            @Value("${jobsinton.ats.factorial-detail-cap:6}") int detailCap
+    ) {
+        return new FactorialAdapter(http, detailCap);
+    }
+
+    @Bean
     AtsFeedService atsFeedService(
             CompanyRegistry registry,
             GreenhouseAdapter greenhouse,
@@ -84,17 +97,21 @@ public class AtsConfiguration {
             AshbyAdapter ashby,
             PersonioAdapter personio,
             RecruiteeAdapter recruitee,
+            TeamtailorAdapter teamtailor,
+            FactorialAdapter factorial,
             Clock clock,
             FirstSeenRegistry firstSeenRegistry,
-            @Value("${jobsinton.ats.cache-ttl-seconds:300}") long cacheTtlSeconds
+            @Value("${jobsinton.ats.cache-ttl-seconds:600}") long cacheTtlSeconds,
+            @Value("${jobsinton.ats.max-concurrency:18}") int maxConcurrency
     ) {
         return new AtsFeedService(
                 registry,
-                List.of(greenhouse, lever, smartRecruiters, workable, ashby, personio, recruitee),
+                List.of(greenhouse, lever, smartRecruiters, workable, ashby, personio, recruitee, teamtailor, factorial),
                 smartRecruiters,
                 clock,
                 Duration.ofSeconds(Math.max(0L, cacheTtlSeconds)),
-                firstSeenRegistry
+                firstSeenRegistry,
+                maxConcurrency
         );
     }
 }

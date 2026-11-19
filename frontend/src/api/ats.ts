@@ -5,7 +5,9 @@ export type AtsProviderId =
   | 'workable'
   | 'ashby'
   | 'personio'
-  | 'recruitee';
+  | 'recruitee'
+  | 'teamtailor'
+  | 'factorial';
 
 export interface AtsJob {
   id: string;
@@ -66,9 +68,11 @@ const VALID_PROVIDERS = new Set<AtsProviderId>([
   'ashby',
   'personio',
   'recruitee',
+  'teamtailor',
+  'factorial',
 ]);
 const VALID_WORKPLACE = new Set(['remote', 'hybrid', 'onsite']);
-const CLIENT_CACHE_TTL_MS = 5 * 60 * 1000;
+const CLIENT_CACHE_TTL_MS = 10 * 60 * 1000;
 const FEED_TIMEOUT_MS = 25_000;
 const DETAIL_TIMEOUT_MS = 10_000;
 

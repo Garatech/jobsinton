@@ -131,6 +131,11 @@ final class AtsSupport {
         try {
             return LocalDate.parse(trimmed).atStartOfDay(ZoneOffset.UTC).toInstant();
         } catch (DateTimeParseException ignored) {
+            // Fall through to RFC-1123 (used by Teamtailor RSS <pubDate>).
+        }
+        try {
+            return java.time.ZonedDateTime.parse(trimmed, java.time.format.DateTimeFormatter.RFC_1123_DATE_TIME).toInstant();
+        } catch (DateTimeParseException ignored) {
             return null;
         }
     }
@@ -140,13 +145,15 @@ final class AtsSupport {
             return null;
         }
         String lower = raw.strip().toLowerCase(Locale.ROOT);
-        if (lower.contains("remote") || lower.contains("telecommut") || lower.contains("remoto")) {
-            return "remote";
+        if ("fully".equals(lower) || "temporary".equals(lower)
+                || lower.contains("remote") || lower.contains("telecommut") || lower.contains("remoto")
+                || lower.contains("teletrabajo") || lower.contains("mobil")) {
+            return lower.contains("hybrid") || lower.contains("híbrid") || lower.contains("hibrid") ? "hybrid" : "remote";
         }
         if (lower.contains("hybrid") || lower.contains("híbrid") || lower.contains("hibrid")) {
             return "hybrid";
         }
-        if (lower.contains("onsite") || lower.contains("on-site") || lower.contains("on_site")
+        if ("none".equals(lower) || lower.contains("onsite") || lower.contains("on-site") || lower.contains("on_site")
                 || lower.contains("in-office") || lower.contains("office") || lower.contains("presencial")) {
             return "onsite";
         }

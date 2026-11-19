@@ -12,15 +12,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Semaphore;
 import java.util.regex.Pattern;
 
 /**
  * Aggregates live postings across all configured public ATS company boards in parallel,
- * isolating individual board failures, tracking first-seen timestamps via {@link FirstSeenRegistry},
- * and caching the combined feed in memory.
+ * isolating individual board failures, bounding upstream concurrency with a Semaphore,
+ * tracking first-seen timestamps via {@link FirstSeenRegistry}, and caching the combined feed in memory.
  */
 public final class AtsFeedService {
     private static final Pattern SAFE_POSTING_ID = Pattern.compile("^[A-Za-z0-9._-]{1,100}$");
+    public static final int DEFAULT_MAX_CONCURRENCY = 18;
 
     private final CompanyRegistry registry;
     private final Map<AtsProviderType, AtsProviderAdapter> adapters;
@@ -28,6 +30,7 @@ public final class AtsFeedService {
     private final Clock clock;
     private final Duration cacheTtl;
     private final FirstSeenRegistry firstSeenRegistry;
+    private final int maxConcurrency;
 
     private final Object lock = new Object();
     private volatile CachedFeed cache;
@@ -63,7 +66,7 @@ public final class AtsFeedService {
             Clock clock,
             Duration cacheTtl
     ) {
-        this(registry, adapterList, smartRecruitersAdapter, clock, cacheTtl, new FirstSeenRegistry());
+        this(registry, adapterList, smartRecruitersAdapter, clock, cacheTtl, new FirstSeenRegistry(), DEFAULT_MAX_CONCURRENCY);
     }
 
     public AtsFeedService(
@@ -74,6 +77,18 @@ public final class AtsFeedService {
             Duration cacheTtl,
             FirstSeenRegistry firstSeenRegistry
     ) {
+        this(registry, adapterList, smartRecruitersAdapter, clock, cacheTtl, firstSeenRegistry, DEFAULT_MAX_CONCURRENCY);
+    }
+
+    public AtsFeedService(
+            CompanyRegistry registry,
+            List<AtsProviderAdapter> adapterList,
+            SmartRecruitersAdapter smartRecruitersAdapter,
+            Clock clock,
+            Duration cacheTtl,
+            FirstSeenRegistry firstSeenRegistry,
+            int maxConcurrency
+    ) {
         this.registry = registry;
         this.adapters = new EnumMap<>(AtsProviderType.class);
         for (AtsProviderAdapter adapter : adapterList) {
@@ -83,6 +98,7 @@ public final class AtsFeedService {
         this.clock = clock;
         this.cacheTtl = cacheTtl;
         this.firstSeenRegistry = firstSeenRegistry != null ? firstSeenRegistry : new FirstSeenRegistry();
+        this.maxConcurrency = Math.max(1, maxConcurrency);
     }
 
     public List<CompanyBoard> boards() {
@@ -194,10 +210,29 @@ public final class AtsFeedService {
 
     private CachedFeed fetchAllBoards() {
         List<CompanyBoard> boards = registry.boards();
+        Semaphore permits = new Semaphore(maxConcurrency);
         List<BoardOutcome> outcomes;
         try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
             List<CompletableFuture<BoardOutcome>> futures = boards.stream()
-                    .map(board -> CompletableFuture.supplyAsync(() -> fetchBoardSafely(board), executor))
+                    .map(board -> CompletableFuture.supplyAsync(() -> {
+                        boolean acquired = false;
+                        try {
+                            permits.acquire();
+                            acquired = true;
+                            return fetchBoardSafely(board);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                            AtsProviderType type = board.providerType();
+                            return new BoardOutcome(
+                                    new BoardStatus(board.slug(), board.name(), type.id(), type.displayName(), false, 0, 0L, "Interrupted"),
+                                    List.of()
+                            );
+                        } finally {
+                            if (acquired) {
+                                permits.release();
+                            }
+                        }
+                    }, executor))
                     .toList();
             outcomes = futures.stream().map(CompletableFuture::join).toList();
         }
