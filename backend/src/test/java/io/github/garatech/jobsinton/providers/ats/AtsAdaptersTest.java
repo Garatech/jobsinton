@@ -558,4 +558,109 @@ class AtsAdaptersTest {
         assertThat(job.description()).contains("Node.js, TypeScript and React.").contains("PostgreSQL");
         assertThat(job.applyUrl()).isEqualTo("https://makingscience.recruitee.com/o/junior-full-stack/c/new");
     }
+
+    @Test
+    void teamtailorAdapterParsesRssWithTeamtailorNamespace() {
+        String rss = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <rss version="2.0" xmlns:tt="http://teamtailor.com/rss">
+                  <channel>
+                    <title>knowmad mood jobs</title>
+                    <item>
+                      <title>Consultor SAP S/4HANA ABAP / RAP</title>
+                      <link>https://knowmadmood.teamtailor.com/jobs/5192041-consultor-sap-s-4hana</link>
+                      <guid>tt-5192041</guid>
+                      <pubDate>Wed, 18 Nov 2026 09:30:00 +0100</pubDate>
+                      <description><![CDATA[<p>Proyecto SAP S/4HANA con ABAP OO, RAP, CAP y OData v4.</p>]]></description>
+                      <tt:remoteStatus>hybrid</tt:remoteStatus>
+                      <tt:department>SAP Enterprise</tt:department>
+                      <tt:locations>
+                        <tt:location>
+                          <tt:city>Madrid</tt:city>
+                          <tt:country>Spain</tt:country>
+                        </tt:location>
+                      </tt:locations>
+                    </item>
+                  </channel>
+                </rss>
+                """;
+        AtsHttpClient stub = new AtsHttpClient() {
+            @Override
+            public HttpReply get(URI uri) {
+                assertThat(uri).isEqualTo(URI.create("https://knowmadmood.teamtailor.com/jobs.rss"));
+                return ok(rss);
+            }
+
+            @Override
+            public HttpReply postJson(URI uri, String jsonBody) {
+                throw new AssertionError("Unexpected POST");
+            }
+        };
+
+        var board = new CompanyBoard("knowmadmood", "knowmad mood", "teamtailor", "eu", "Madrid");
+        var jobs = new TeamtailorAdapter(stub).fetch(board);
+        assertThat(jobs).hasSize(1);
+        RawAtsJob job = jobs.getFirst();
+        assertThat(job.compositeId()).isEqualTo("teamtailor:knowmadmood:5192041");
+        assertThat(job.workplaceType()).isEqualTo("hybrid");
+        assertThat(job.location()).isEqualTo("Madrid, Spain");
+        assertThat(job.publishedAt()).isEqualTo(Instant.parse("2026-11-18T08:30:00Z"));
+        assertThat(job.description()).contains("ABAP OO, RAP, CAP y OData v4");
+        assertThat(job.applyUrl()).isEqualTo("https://knowmadmood.teamtailor.com/jobs/5192041-consultor-sap-s-4hana");
+    }
+
+    @Test
+    void factorialAdapterExtractsJobPostingsAndEnrichesDetails() {
+        String portalHtml = """
+                <html>
+                  <body>
+                    <h3>Madrid</h3>
+                    <div class="job-card">
+                      <a href="/job_posting/full-stack-java-angular-30912">
+                        <h4>Full Stack Java &amp; Angular Developer</h4>
+                        <span>Madrid · Híbrido</span>
+                      </a>
+                    </div>
+                    <a href="/job_posting/spontaneous/apply">Candidatura espontánea</a>
+                  </body>
+                </html>
+                """;
+        String detailHtml = """
+                <html>
+                  <body>
+                    <main>
+                      <h1>Full Stack Java &amp; Angular Developer</h1>
+                      <p>Buscamos desarrollador con Java 21, Spring Boot, Angular, PostgreSQL y Docker en Madrid.</p>
+                    </main>
+                  </body>
+                </html>
+                """;
+
+        AtsHttpClient stub = new AtsHttpClient() {
+            @Override
+            public HttpReply get(URI uri) {
+                if (uri.getPath().contains("/job_posting/full-stack-java-angular-30912")) {
+                    return ok(detailHtml);
+                }
+                return ok(portalHtml);
+            }
+
+            @Override
+            public HttpReply postJson(URI uri, String jsonBody) {
+                throw new AssertionError("Unexpected POST");
+            }
+        };
+
+        var board = new CompanyBoard("playtomic", "Playtomic", "factorial", "eu", "Madrid");
+        var jobs = new FactorialAdapter(stub, 2).fetch(board);
+        assertThat(jobs).hasSize(1);
+        RawAtsJob job = jobs.getFirst();
+        assertThat(job.compositeId()).isEqualTo("factorial:playtomic:30912");
+        assertThat(job.title()).isEqualTo("Full Stack Java & Angular Developer");
+        assertThat(job.location()).contains("Madrid");
+        assertThat(job.workplaceType()).isEqualTo("hybrid");
+        assertThat(job.hasFullDescription()).isTrue();
+        assertThat(job.description()).contains("Java 21, Spring Boot, Angular, PostgreSQL y Docker");
+        assertThat(job.applyUrl()).isEqualTo("https://playtomic.factorialhr.es/job_posting/full-stack-java-angular-30912");
+    }
 }

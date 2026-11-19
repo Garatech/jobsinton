@@ -14,16 +14,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AtsFeedServiceTest {
 
     @Test
-    void loadsDefaultRegistryAcrossAllFiveAtsProviders() {
+    void loadsDefaultRegistryAcrossAllNineAtsProviders() {
         CompanyRegistry registry = CompanyRegistry.loadDefault();
-        assertThat(registry.boards()).hasSize(22);
+        assertThat(registry.boards()).hasSize(222);
         assertThat(registry.boards()).extracting(CompanyBoard::providerType)
                 .containsOnly(
                         AtsProviderType.GREENHOUSE,
                         AtsProviderType.LEVER,
                         AtsProviderType.SMARTRECRUITERS,
                         AtsProviderType.WORKABLE,
-                        AtsProviderType.ASHBY
+                        AtsProviderType.ASHBY,
+                        AtsProviderType.PERSONIO,
+                        AtsProviderType.RECRUITEE,
+                        AtsProviderType.TEAMTAILOR,
+                        AtsProviderType.FACTORIAL
                 );
         assertThat(registry.find(AtsProviderType.LEVER, "tomtom"))
                 .isPresent()

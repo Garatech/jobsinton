@@ -4,6 +4,13 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Teamtailor, Factorial HR & 222-company Spain/EU seed catalog
+
+- Added `TeamtailorAdapter` (`teamtailor`) supporting public RSS `/jobs.rss` feeds with `xmlns:tt="http://teamtailor.com/rss"` namespace (`<tt:remoteStatus>`, `<tt:locations>`, `<tt:department>`) and custom corporate career domains (`empleo.civitatis.com`, `careers.pccomponentes.com`, etc.).
+- Added `FactorialAdapter` (`factorial`) supporting Spanish SME career portals on `.factorialhr.es` and `.factorialhr.com`, parsing embedded `application/ld+json` (`JobPosting`) and public `/job_posting/{id}` cards with bounded detail page enrichment (`jobsinton.ats.factorial-detail-cap=6`).
+- Expanded `backend/src/main/resources/ats/companies.json` from 22 to **222 verified company boards** across all 9 ATS platforms focused on Madrid, Spain, and EU Remote SMEs, scaleups, and SAP/Java consultancies.
+- Added bounded virtual-thread `Semaphore` concurrency (`jobsinton.ats.max-concurrency=18`) in `AtsFeedService` and increased the default feed cache TTL to 10 minutes (`600s`).
+
 ### Added — Personio and Recruitee European SME ATS adapters
 
 - Added `PersonioAdapter` (`personio`) supporting public `<workzag-jobs><position>` XML feeds (`?language=es` and `?language=en` across `.jobs.personio.com` and `.jobs.personio.de`) with automatic dual-language description merging when English-only postings return empty `<jobDescriptions>` on `?language=es`.
