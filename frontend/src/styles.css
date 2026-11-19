@@ -407,6 +407,8 @@ dialog .actions { flex-direction:column; align-items:stretch; }
 .ats-smartrecruiters { background:#f3edf8; color:#4f2873; border-color:#dac9eb; }
 .ats-workable { background:#e6f4f1; color:#145650; border-color:#bfe0da; }
 .ats-ashby { background:#f5efe4; color:#6b4415; border-color:#e2d1b5; }
+.ats-personio { background:#fef3c7; color:#78350f; border-color:#fde68a; }
+.ats-recruitee { background:#e0e7ff; color:#1e3a8a; border-color:#c7d2fe; }
 
 .ats-freshness { display:inline-flex; align-items:center; border-radius:999px; padding:3px 10px; font-size:11px; font-weight:700; }
 .ats-freshness-hot { background:#fde68a; color:#7c2d12; border:1px solid #f59e0b; }

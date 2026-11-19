@@ -4,6 +4,12 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Personio and Recruitee European SME ATS adapters
+
+- Added `PersonioAdapter` (`personio`) supporting public `<workzag-jobs><position>` XML feeds (`?language=es` and `?language=en` across `.jobs.personio.com` and `.jobs.personio.de`) with automatic dual-language description merging when English-only postings return empty `<jobDescriptions>` on `?language=es`.
+- Added `RecruiteeAdapter` (`recruitee`) supporting Tellent/Recruitee public `/api/offers/` JSON endpoints with native `remote`/`hybrid`/`on_site` flags, cleaned description + requirements, and structured salary ranges.
+- Extended `CompanyBoard` and `CompanyRegistry` to support custom `host`, `careersUrl`, `apiEndpoint`, `fallbackEndpoint`, `locations`, `stackMatch`, and `priority` metadata; added Personio and Recruitee provider filters and badges in the frontend.
+
 ### Fixed — ATS EU cluster fallbacks, Spain geo-priority enrichment & First-Seen age tracking
 
 - Updated `GreenhouseAdapter` to prefer `first_published` over `updated_at` and automatically fall back to `boards-api.eu.greenhouse.io` on HTTP 404 or empty boards; added bidirectional Global ↔ EU 404 fallback in `LeverAdapter`.

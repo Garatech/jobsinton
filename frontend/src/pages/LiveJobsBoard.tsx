@@ -25,6 +25,8 @@ import type { ProfessionalProfile } from '../profile/model';
 import { EmptyState } from '../ui';
 
 const PROVIDERS: readonly { id: AtsProviderId; label: string }[] = [
+  { id: 'personio', label: 'Personio' },
+  { id: 'recruitee', label: 'Recruitee' },
   { id: 'greenhouse', label: 'Greenhouse' },
   { id: 'lever', label: 'Lever' },
   { id: 'smartrecruiters', label: 'SmartRecruiters' },
@@ -151,6 +153,8 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
       smartrecruiters: 0,
       workable: 0,
       ashby: 0,
+      personio: 0,
+      recruitee: 0,
     };
     for (const item of evaluatedAll) {
       if (item.isMatch) matches++;

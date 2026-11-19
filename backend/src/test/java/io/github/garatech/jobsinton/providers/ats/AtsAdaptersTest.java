@@ -430,4 +430,132 @@ class AtsAdaptersTest {
         assertThat(jobs).hasSize(1);
         assertThat(jobs.getFirst().publishedAt()).isEqualTo(Instant.parse("2026-11-10T10:00:00Z"));
     }
+
+    @Test
+    void personioAdapterParsesXmlAndMergesEnglishDescriptionsWhenSpanishIsEmpty() {
+        String esXml = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <workzag-jobs>
+                  <position>
+                    <id>1001</id>
+                    <name>Desarrollador Java Spring Boot</name>
+                    <office>Madrid</office>
+                    <additionalOffices><office>Remote Spain</office></additionalOffices>
+                    <department>Engineering</department>
+                    <seniority>junior</seniority>
+                    <yearsOfExperience>1-2</yearsOfExperience>
+                    <schedule>full-time</schedule>
+                    <createdAt>2026-11-18T09:00:00Z</createdAt>
+                    <jobDescriptions>
+                      <jobDescription>
+                        <name>Requisitos</name>
+                        <value><![CDATA[<p>Java 21, Spring Boot, Angular y PostgreSQL en Madrid (Híbrido).</p>]]></value>
+                      </jobDescription>
+                    </jobDescriptions>
+                  </position>
+                  <position>
+                    <id>1002</id>
+                    <name>SAP S/4HANA ABAP Consultant</name>
+                    <office>Madrid</office>
+                    <createdAt>2026-11-18T11:00:00Z</createdAt>
+                    <jobDescriptions></jobDescriptions>
+                  </position>
+                </workzag-jobs>
+                """;
+        String enXml = """
+                <?xml version="1.0" encoding="UTF-8"?>
+                <workzag-jobs>
+                  <position>
+                    <id>1002</id>
+                    <name>SAP S/4HANA ABAP Consultant</name>
+                    <office>Madrid</office>
+                    <createdAt>2026-11-18T11:00:00Z</createdAt>
+                    <jobDescriptions>
+                      <jobDescription>
+                        <name>Role</name>
+                        <value><![CDATA[<p>SAP S/4HANA, ABAP OO, RAP, CAP and OData v4 in Madrid.</p>]]></value>
+                      </jobDescription>
+                    </jobDescriptions>
+                  </position>
+                </workzag-jobs>
+                """;
+
+        AtsHttpClient stub = new AtsHttpClient() {
+            @Override
+            public HttpReply get(URI uri) {
+                if (uri.toString().contains("language=es")) {
+                    return ok(esXml);
+                }
+                return ok(enXml);
+            }
+
+            @Override
+            public HttpReply postJson(URI uri, String jsonBody) {
+                throw new AssertionError("Unexpected POST");
+            }
+        };
+
+        var board = new CompanyBoard("paradigmadigital", "Paradigma Digital", "personio", "eu", "Madrid");
+        var jobs = new PersonioAdapter(stub).fetch(board);
+        assertThat(jobs).hasSize(2);
+
+        RawAtsJob javaJob = jobs.get(0);
+        assertThat(javaJob.compositeId()).isEqualTo("personio:paradigmadigital:1001");
+        assertThat(javaJob.location()).isEqualTo("Madrid · Remote Spain");
+        assertThat(javaJob.workplaceType()).isEqualTo("hybrid");
+        assertThat(javaJob.description()).contains("Java 21, Spring Boot, Angular").contains("Seniority: junior");
+        assertThat(javaJob.applyUrl()).isEqualTo("https://paradigmadigital.jobs.personio.com/job/1001");
+
+        RawAtsJob sapJob = jobs.get(1);
+        assertThat(sapJob.compositeId()).isEqualTo("personio:paradigmadigital:1002");
+        assertThat(sapJob.hasFullDescription()).isTrue();
+        assertThat(sapJob.description()).contains("SAP S/4HANA, ABAP OO, RAP, CAP and OData v4");
+    }
+
+    @Test
+    void recruiteeAdapterParsesOffersFlagsAndSalary() {
+        AtsHttpClient stub = new AtsHttpClient() {
+            @Override
+            public HttpReply get(URI uri) {
+                assertThat(uri).isEqualTo(URI.create("https://makingscience.recruitee.com/api/offers/"));
+                return ok("""
+                        {
+                          "offers": [
+                            {
+                              "id": 8841,
+                              "title": "Junior Full Stack Developer (Node.js / React)",
+                              "published_at": "2026-11-18T10:15:00Z",
+                              "city": "Madrid",
+                              "country_code": "ES",
+                              "remote": false,
+                              "hybrid": true,
+                              "on_site": false,
+                              "department": "Digital Engineering",
+                              "description": "<p>Build products with Node.js, TypeScript and React.</p>",
+                              "requirements": "<ul><li>PostgreSQL</li><li>Docker</li></ul>",
+                              "salary": { "min": 32000, "max": 40000, "currency": "EUR", "period": "year" },
+                              "careers_apply_url": "https://makingscience.recruitee.com/o/junior-full-stack/c/new"
+                            }
+                          ]
+                        }
+                        """);
+            }
+
+            @Override
+            public HttpReply postJson(URI uri, String jsonBody) {
+                throw new AssertionError("Unexpected POST");
+            }
+        };
+
+        var board = new CompanyBoard("makingscience", "Making Science", "recruitee", "eu", "Madrid");
+        var jobs = new RecruiteeAdapter(stub).fetch(board);
+        assertThat(jobs).hasSize(1);
+        RawAtsJob job = jobs.getFirst();
+        assertThat(job.compositeId()).isEqualTo("recruitee:makingscience:8841");
+        assertThat(job.workplaceType()).isEqualTo("hybrid");
+        assertThat(job.location()).isEqualTo("Madrid, Spain");
+        assertThat(job.compensation()).isEqualTo("32000 - 40000 EUR / year");
+        assertThat(job.description()).contains("Node.js, TypeScript and React.").contains("PostgreSQL");
+        assertThat(job.applyUrl()).isEqualTo("https://makingscience.recruitee.com/o/junior-full-stack/c/new");
+    }
 }

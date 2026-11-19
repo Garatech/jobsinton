@@ -1,4 +1,11 @@
-export type AtsProviderId = 'greenhouse' | 'lever' | 'smartrecruiters' | 'workable' | 'ashby';
+export type AtsProviderId =
+  | 'greenhouse'
+  | 'lever'
+  | 'smartrecruiters'
+  | 'workable'
+  | 'ashby'
+  | 'personio'
+  | 'recruitee';
 
 export interface AtsJob {
   id: string;
@@ -51,7 +58,15 @@ export interface SmartRecruitersDetail {
   hasFullDescription: boolean;
 }
 
-const VALID_PROVIDERS = new Set<AtsProviderId>(['greenhouse', 'lever', 'smartrecruiters', 'workable', 'ashby']);
+const VALID_PROVIDERS = new Set<AtsProviderId>([
+  'greenhouse',
+  'lever',
+  'smartrecruiters',
+  'workable',
+  'ashby',
+  'personio',
+  'recruitee',
+]);
 const VALID_WORKPLACE = new Set(['remote', 'hybrid', 'onsite']);
 const CLIENT_CACHE_TTL_MS = 5 * 60 * 1000;
 const FEED_TIMEOUT_MS = 25_000;
