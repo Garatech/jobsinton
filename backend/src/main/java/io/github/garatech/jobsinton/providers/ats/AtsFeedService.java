@@ -105,6 +105,76 @@ public final class AtsFeedService {
         return registry.boards();
     }
 
+    public CompanyRegistry registry() {
+        return registry;
+    }
+
+    public AtsProviderAdapter adapterFor(AtsProviderType type) {
+        return adapters.get(type);
+    }
+
+    /**
+     * Merges a newly discovered company board and its live jobs directly into the active feed cache
+     * so the frontend immediately sees the new jobs without re-fetching all 220+ boards.
+     */
+    public void mergeDiscoveredBoard(CompanyBoard board, List<RawAtsJob> jobs, long durationMs) {
+        if (board == null) {
+            return;
+        }
+        Instant now = clock.instant();
+        List<RawAtsJob> safeJobs = jobs != null ? jobs : List.of();
+        firstSeenRegistry.recordBatch(safeJobs, now);
+
+        AtsProviderType type = board.providerType();
+        BoardStatus newStatus = new BoardStatus(
+                board.slug(),
+                board.name(),
+                type.id(),
+                type.displayName(),
+                true,
+                safeJobs.size(),
+                durationMs,
+                null
+        );
+
+        synchronized (lock) {
+            CachedFeed current = cache;
+            if (current == null) {
+                return;
+            }
+            List<BoardStatus> updatedBoards = new ArrayList<>(current.boards().size() + 1);
+            boolean replaced = false;
+            for (BoardStatus existing : current.boards()) {
+                if (existing.provider().equalsIgnoreCase(type.id())
+                        && existing.companySlug().equalsIgnoreCase(board.slug())) {
+                    updatedBoards.add(newStatus);
+                    replaced = true;
+                } else {
+                    updatedBoards.add(existing);
+                }
+            }
+            if (!replaced) {
+                updatedBoards.add(newStatus);
+            }
+
+            Map<String, RawAtsJob> deduplicated = new LinkedHashMap<>();
+            for (RawAtsJob job : safeJobs) {
+                deduplicated.put(job.compositeId(), job);
+            }
+            for (RawAtsJob existing : current.jobs()) {
+                deduplicated.putIfAbsent(existing.compositeId(), existing);
+            }
+
+            List<RawAtsJob> sortedJobs = new ArrayList<>(deduplicated.values());
+            sortedJobs.sort(Comparator
+                    .comparing(this::effectiveOriginTimestamp, Comparator.nullsLast(Comparator.reverseOrder()))
+                    .thenComparing(RawAtsJob::companyName, String.CASE_INSENSITIVE_ORDER)
+                    .thenComparing(RawAtsJob::title, String.CASE_INSENSITIVE_ORDER));
+
+            cache = new CachedFeed(current.fetchedAt(), List.copyOf(updatedBoards), List.copyOf(sortedJobs));
+        }
+    }
+
     public AtsFeedResponse getFeed(boolean forceRefresh) {
         Instant now = clock.instant();
         if (!forceRefresh) {

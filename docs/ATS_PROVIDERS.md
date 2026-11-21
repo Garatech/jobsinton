@@ -30,7 +30,7 @@ JobSinton fetches live openings directly from public company Applicant Tracking 
 - **Greenhouse (32):** BVNK, Affirm Spain, Thoughtworks Spain, Celonis Madrid Hub, Ebury Madrid, Fever, Okta Spain, Grafana Labs Spain, Netlify Spain, Scopely Spain, Appinio Madrid, Nuvolar, Mozilla Spain, Cabify, Clarity AI, Devo, CARTO, Tinybird, Job&Talent, RavenPack, Flywire, Glovo, Typeform, Wallbox, TravelPerk, Paack, Belvo, Freepik Company, Datadog Madrid Hub, Stripe Spain, Elastic Spain, Speechify
 - **Lever (20):** Westernacher Consulting Spain, Prima Tech Hub Madrid, TomTom Madrid, OLX Group Spain, Finom, Creatio Madrid, XTB Madrid, CoinsPaid, Everseen Spain, Quadcode, Diabolocom Spain, Dun & Bradstreet, Spotahome, Lingokids, Capchase Madrid, Fintonic, Preply Barcelona, Qonto Spain, Spendesk, Stuart
 
-Adding or removing a company requires editing `companies.json`.
+Adding or removing a company can be done either by editing `companies.json` or via the built-in **Blip Auto-Discovery Engine** (persisted in gitignored `data/custom-companies.json`).
 
 ## Backend architecture & resilience
 
@@ -40,11 +40,16 @@ All backend ATS code lives under `backend/src/main/java/io/github/garatech/jobsi
 - **Bounded HTTP transport (`JdkAtsHttpClient`):** Enforces a configurable per-request timeout (`jobsinton.ats.request-timeout-ms=8000`), sends a browser-compatible `User-Agent`, follows normal redirects (`Redirect.NORMAL`), caps streamed response payloads at 12 MiB, and validates every normalized `applyUrl` to require `https://`.
 - **In-memory TTL cache & stampede coalescing:** Caches the aggregated `AtsFeedResponse` for `jobsinton.ats.cache-ttl-seconds=600` (10 minutes) and coalesces concurrent requests onto one in-flight fetch. Passing `?refresh=true` bypasses the cache.
 - **First-Seen persistence & true freshness (`FirstSeenRegistry`):** Persists the earliest local sighting timestamp (`firstSeenAt`) per job ID in `data/ats-seen-jobs.json` (gitignored) and computes `hoursSincePublished` from `min(publishedAt, firstSeenAt)` so recruiter edits to old jobs (`updated_at`) never fake a `< 24h` badge.
+- **Automated ATS Discovery Engine (`AtsDiscoveryService`):**
+  - **Career Page URL Auto-Sniffer (`POST /api/ats/discover/url`):** Accepts any corporate career page URL or direct ATS link, scans embedded HTML (`<script>`, `<iframe>`, `<link rel="alternate" type="application/rss+xml">`, `<a href>`, and redirects) for all 9 ATS signatures, verifies the detected board live, registers it in `CompanyRegistry` (`data/custom-companies.json`), and merges its jobs directly into the active feed cache.
+  - **Batch Company Name / Slug Probe (`POST /api/ats/discover/probe`):** Normalizes company names into candidate slugs and probes all 9 ATS platforms in parallel using Java 21 virtual threads, auto-registering every verified board.
 
 ### Backend REST endpoints
 
 - `GET /api/ats/jobs` (optional `?refresh=true`): Returns the unified `AtsFeedResponse` (`fetchedAt`, `cached`, `cacheAgeSeconds`, `totalBoards`, `succeededBoards`, `failedBoards`, `boards[]`, `jobs[]`).
-- `GET /api/ats/boards`: Returns the configured `CompanyBoard` registry without making outbound HTTP calls.
+- `GET /api/ats/boards`: Returns the configured `CompanyBoard` registry (pre-seeded + user-discovered custom boards) without making outbound HTTP calls.
+- `POST /api/ats/discover/url`: Inspects a career page URL or direct ATS link (`{"url": "https://...", "companyName": "Optional"}`), verifies detected ATS boards live, persists new boards to `data/custom-companies.json`, and merges their postings into the active feed cache.
+- `POST /api/ats/discover/probe`: Probes a batch of company names or slugs (`{"candidates": ["Company A", "Company B"]}`) across all 9 ATS platforms in parallel.
 - `GET /api/ats/smartrecruiters/{companySlug}/{postingId}`: Fetches full plain-text description and direct `applyUrl` for a SmartRecruiters posting on demand and patches the in-memory feed cache when present.
 
 ## Frontend zero-friction UX & stack presets
@@ -61,11 +66,12 @@ All backend ATS code lives under `backend/src/main/java/io/github/garatech/jobsi
   - `🇪🇺 Spain + EU Remote` (`spain-eu-remote`, **default on launch**): Includes Tier 1 Spain roles plus EU/EMEA/CET remote roles while **strictly blocking Fake US/UK/LATAM/APAC Remote listings** (`US only`, `U.S. only`, `United States`, `Remote - US`, `North America`, `Canada`, `LATAM`, `Latin America`, `Brazil`, `Mexico`, `APAC`, `India`, `UK only`, `United Kingdom only`, `Australia`, `PST`, `EST`, `CST`, `must reside in the US`). Sorts Tier 1 (`Spain`) above Tier 2 (`EU Remote`) when relevance scores tie.
   - `🌍 Global` (`global`): Unfiltered worldwide view (`All Fetched Jobs` switches to `🌍 Global` automatically).
 - **1-Click Job Triage (`frontend/src/pages/LiveJobsBoard.tsx`):** Every job card includes compact `⭐ Save`, `✅ Applied`, and `✕ Dismiss` actions persisted in `localStorage` (`jobsinton.ats-triage-v1`), paired with quick filter pills (`Hide Applied & Dismissed` on by default, `⭐ Saved`, and `View Applied`).
+- **Expandable Auto-Discovery Panel (`➕ Discover / Add Companies`):** Lets users paste any corporate career page URL or batch-probe company names across all 9 ATS platforms directly from the UI.
 - **Freshness highlights:** Badges postings published within 24 hours (`🔥 Posted Xh ago`) and 25–48 hours (`⚡ Posted Xh ago`), displays live board health diagnostics, and links directly to each company's official career application page (`Apply on Company Site ↗`).
 
 ## Offline verification
 
 Automated CI and local verification never depend on live third-party ATS servers:
 
-- **Backend unit & MockMvc tests:** `mvn -B -ntp -f backend/pom.xml test` runs `HtmlTextCleanerTest`, `AtsAdaptersTest`, `JdkAtsHttpClientTest`, `AtsFeedServiceTest`, and `AtsControllerIntegrationTest` using deterministic fixtures and stub transports.
-- **Frontend scoring & Playwright E2E tests:** `npm --prefix frontend run test:e2e` runs `ats-scoring.spec.ts` and `live-ats.spec.ts` (plus all existing desktop/mobile journeys) with deterministic stubbed `/api/ats/jobs` and `/api/ats/smartrecruiters/*` payloads.
+- **Backend unit & MockMvc tests:** `mvn -B -ntp -f backend/pom.xml test` runs `HtmlTextCleanerTest`, `AtsAdaptersTest`, `JdkAtsHttpClientTest`, `AtsFeedServiceTest`, `AtsDiscoveryServiceTest`, and `AtsControllerIntegrationTest` using deterministic fixtures and stub transports.
+- **Frontend scoring & Playwright E2E tests:** `npm --prefix frontend run test:e2e` runs `ats-scoring.spec.ts` and `live-ats.spec.ts` (plus all existing desktop/mobile journeys) with deterministic stubbed `/api/ats/jobs`, `/api/ats/discover/*`, and `/api/ats/smartrecruiters/*` payloads.

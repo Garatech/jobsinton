@@ -348,6 +348,12 @@ dialog .actions { flex-direction:column; align-items:stretch; }
 .board-row-top strong { font-size:13px; }
 .board-row-meta { margin:0; font-size:11px; color:var(--muted); overflow-wrap:anywhere; }
 
+.ats-discovery-panel { background:#f3f6ed; border:1px solid #cdd9c3; border-radius:16px; padding:18px 20px; margin-bottom:16px; }
+.ats-discovery-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px; }
+.ats-discovery-form label { display:block; font-size:12px; font-weight:700; color:var(--ink); margin-bottom:6px; }
+.ats-discovery-results { margin-top:14px; padding-top:12px; border-top:1px solid #d5e0cc; }
+.ats-discovery-summary { margin:0 0 10px; font-size:13px; font-weight:600; color:var(--green); }
+
 .ats-presets-panel { background:#eaf0e1; border:1px solid #d1ddc8; border-radius:16px; padding:20px; margin-bottom:18px; }
 .ats-presets-head { display:flex; flex-wrap:wrap; align-items:baseline; justify-content:space-between; gap:8px 16px; margin-bottom:14px; }
 .ats-presets-head .eyebrow { margin:0; color:#566c47; }

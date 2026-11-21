@@ -122,6 +122,15 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
   const [hideAppliedDismissed, setHideAppliedDismissed] = useState<boolean>(true);
   const [viewTriageFilter, setViewTriageFilter] = useState<'none' | 'saved' | 'applied'>('none');
 
+  // Auto-Discovery panel state
+  const [showDiscovery, setShowDiscovery] = useState(false);
+  const [discoverUrlInput, setDiscoverUrlInput] = useState('');
+  const [discoverCompanyName, setDiscoverCompanyName] = useState('');
+  const [probeSlugsInput, setProbeSlugsInput] = useState('');
+  const [discoveryBusy, setDiscoveryBusy] = useState(false);
+  const [discoveryResult, setDiscoveryResult] = useState<AtsDiscoveryResponse | null>(null);
+  const [discoveryError, setDiscoveryError] = useState('');
+
   const loadFeed = useCallback((refresh: boolean, signal?: AbortSignal) => {
     setState((current) => ({
       kind: 'loading',
@@ -181,6 +190,55 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
       return next;
     });
   }, []);
+
+  async function handleDiscoverByUrl(event: FormEvent) {
+    event.preventDefault();
+    const cleaned = discoverUrlInput.trim();
+    if (!cleaned) {
+      setDiscoveryError('Enter a career page or ATS URL.');
+      return;
+    }
+    setDiscoveryBusy(true);
+    setDiscoveryError('');
+    setDiscoveryResult(null);
+    try {
+      const res = await discoverAtsFromUrl(cleaned, discoverCompanyName);
+      setDiscoveryResult(res);
+      if (res.discovered.length > 0) {
+        loadFeed(false);
+      }
+    } catch (error) {
+      setDiscoveryError(error instanceof Error ? error.message : 'Could not inspect that career page URL.');
+    } finally {
+      setDiscoveryBusy(false);
+    }
+  }
+
+  async function handleProbeCompanies(event: FormEvent) {
+    event.preventDefault();
+    const candidates = probeSlugsInput
+      .split(/[,;\n]+/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+    if (candidates.length === 0) {
+      setDiscoveryError('Enter at least one company name or slug.');
+      return;
+    }
+    setDiscoveryBusy(true);
+    setDiscoveryError('');
+    setDiscoveryResult(null);
+    try {
+      const res = await probeAtsCompanies(candidates);
+      setDiscoveryResult(res);
+      if (res.discovered.length > 0) {
+        loadFeed(false);
+      }
+    } catch (error) {
+      setDiscoveryError(error instanceof Error ? error.message : 'Could not probe company names across ATS platforms.');
+    } finally {
+      setDiscoveryBusy(false);
+    }
+  }
 
   const presetCounts = useMemo(() => {
     const counts: Record<StackPresetId, number> = {
@@ -390,6 +448,14 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
         </div>
 
         <div className="ats-status-actions">
+          <button
+            type="button"
+            className="text-button"
+            aria-expanded={showDiscovery}
+            onClick={() => setShowDiscovery((open) => !open)}
+          >
+            {t(showDiscovery ? 'Hide Auto-Discovery' : '➕ Discover / Add Companies')}
+          </button>
           {activeFeed && (
             <button
               type="button"
@@ -416,6 +482,83 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
         <p className="notice notice-error ats-error-banner" role="alert">
           {t(state.message)}
         </p>
+      )}
+
+      {showDiscovery && (
+        <div className="ats-discovery-panel" aria-label={t('ATS Auto-Discovery Engine')}>
+          <div className="ats-presets-head">
+            <p className="eyebrow">{t('BLIP AUTO-DISCOVERY ENGINE')}</p>
+            <p className="ats-preset-desc">
+              {t('Paste any corporate career URL or probe company names across all 9 public ATS platforms.')}
+            </p>
+          </div>
+          <div className="ats-discovery-grid">
+            <form className="ats-discovery-form" onSubmit={handleDiscoverByUrl}>
+              <label htmlFor="ats-discover-url-input">{t('Career Page URL Auto-Sniffer')}</label>
+              <div className="ats-custom-form">
+                <input
+                  id="ats-discover-url-input"
+                  type="text"
+                  placeholder={t('https://careers.company.es or direct ATS link')}
+                  value={discoverUrlInput}
+                  onChange={(e) => setDiscoverUrlInput(e.target.value)}
+                />
+                <input
+                  type="text"
+                  aria-label={t('Optional company name')}
+                  placeholder={t('Company name (optional)')}
+                  value={discoverCompanyName}
+                  onChange={(e) => setDiscoverCompanyName(e.target.value)}
+                />
+                <button type="submit" className="secondary-button" disabled={discoveryBusy}>
+                  {t(discoveryBusy ? 'Scanning…' : 'Detect & Add ATS')}
+                </button>
+              </div>
+            </form>
+
+            <form className="ats-discovery-form" onSubmit={handleProbeCompanies}>
+              <label htmlFor="ats-probe-slugs-input">{t('Batch Company Name / Slug Probe (9 ATS)')}</label>
+              <div className="ats-custom-form">
+                <input
+                  id="ats-probe-slugs-input"
+                  type="text"
+                  placeholder={t('e.g. Paradigma Digital, SpotLab, Invopop')}
+                  value={probeSlugsInput}
+                  onChange={(e) => setProbeSlugsInput(e.target.value)}
+                />
+                <button type="submit" className="secondary-button" disabled={discoveryBusy}>
+                  {t(discoveryBusy ? 'Probing…' : 'Probe 9 ATS Platforms')}
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {discoveryError && (
+            <p className="field-error" role="alert">{t(discoveryError)}</p>
+          )}
+
+          {discoveryResult && (
+            <div className="ats-discovery-results" role="status" aria-live="polite">
+              <p className="ats-discovery-summary">{discoveryResult.message}</p>
+              {discoveryResult.discovered.length > 0 && (
+                <ul className="ats-boards-grid">
+                  {discoveryResult.discovered.map((item) => (
+                    <li key={`${item.provider}:${item.slug}`} className="board-ok">
+                      <div className="board-row-top">
+                        <strong>{item.name}</strong>
+                        <span className={'ats-provider-badge ats-' + item.provider}>{item.providerLabel}</span>
+                      </div>
+                      <p className="board-row-meta">
+                        {item.jobCount} {t(item.jobCount === 1 ? 'job' : 'jobs')} · {item.slug}
+                        {item.newlyRegistered ? ` · ${t('Added to registry')}` : ` · ${t('Already registered')}`}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </div>
       )}
 
       {showBoards && activeFeed && (

@@ -14,13 +14,13 @@ The browser calls `/api/status`, `/api/matching/*`, and `/api/ats/*` on its own 
 | --- | --- |
 | `backend/.../JobSintonApplication.java` | Start Spring Boot |
 | `backend/.../system/SystemStatusController.java` | Own the public service-status contract |
-| `backend/.../providers/ats/` | Multi-ATS direct provider engine: 5 public ATS adapters (Greenhouse, Lever, SmartRecruiters, Workable, Ashby), 22-company registry, parallel fault-isolated feed service with TTL cache, and `/api/ats/*` REST API |
-| `backend/src/main/resources/ats/companies.json` | Pre-seeded registry of public company ATS boards |
+| `backend/.../providers/ats/` | Multi-ATS direct provider & auto-discovery engine: 9 public ATS adapters (Personio, Teamtailor, Recruitee, Factorial HR, Greenhouse, Lever, SmartRecruiters, Workable, Ashby), 222-company Spain/EU registry + `data/custom-companies.json`, `FirstSeenRegistry` (`data/ats-seen-jobs.json`), bounded virtual-thread feed service with TTL cache, and `/api/ats/*` REST API |
+| `backend/src/main/resources/ats/companies.json` | Pre-seeded registry of 222 public company ATS boards focused on Madrid, Spain, and EU Remote |
 | `backend/.../matching/` | Pure Java matching domain, immutable facts, validation and versioned explanations |
 | `backend/.../matching/api/` | Bounded matching endpoint, saved-profile validation and fictional catalog adapter |
-| `frontend/src/api/ats.ts` | Live ATS feed client, runtime validation, short TTL cache, and SmartRecruiters on-demand detail hydration |
-| `frontend/src/ats/` | Developer stack presets (`All Tech`, `Track A · SAP`, `Track B · Full Stack`, `Custom Profile`) and token-boundary keyword scoring & freshness helpers |
-| `frontend/src/pages/LiveJobsBoard.tsx` | Zero-friction live ATS feed UI with board health bar, quick toggles, preset pills, and direct company apply links |
+| `frontend/src/api/ats.ts` | Live ATS feed & auto-discovery client, runtime validation, TTL cache, and SmartRecruiters on-demand detail hydration |
+| `frontend/src/ats/` | Developer stack presets (`All Tech`, `Track A · SAP`, `Track B · Full Stack`, `Custom Profile`), 3-Tier Spain/EU Geo Filter, Anti-Fake-Remote Blocker, Junior/Seniority signals, and token-boundary keyword scoring |
+| `frontend/src/pages/LiveJobsBoard.tsx` | Zero-friction live ATS feed UI with board health bar, Blip Auto-Discovery panel, 3-tier geo filter, 1-click job triage (`⭐ Save`, `✅ Applied`, `✕ Dismiss`), preset pills, and direct company apply links |
 | `frontend/src/api/matching.ts` | Matching requests and complete response validation |
 | `frontend/src/matching/Comparison.tsx` | Saved-profile comparison lifecycle and Current panel |
 | `frontend/src/api/status.ts` | HTTP request and runtime validation of external JSON |

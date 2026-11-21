@@ -4,6 +4,12 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Blip ATS Auto-Discovery Engine (Career Page URL Sniffer & 9-ATS Batch Slug Probe)
+
+- Added `AtsDiscoveryService` (`POST /api/ats/discover/url` and `POST /api/ats/discover/probe`) supporting automatic detection of embedded Personio, Teamtailor, Recruitee, Factorial HR, Greenhouse, Lever, SmartRecruiters, Workable, and Ashby boards from any corporate career page HTML or direct ATS URL, plus parallel virtual-thread slug probing across all 9 ATS platforms.
+- Extended `CompanyRegistry` to persist newly discovered boards in `data/custom-companies.json` (gitignored) and extended `AtsFeedService` (`mergeDiscoveredBoard`) to merge newly discovered postings directly into the active feed cache without re-fetching all 222+ boards.
+- Added the expandable **`➕ Discover / Add Companies`** panel in `frontend/src/pages/LiveJobsBoard.tsx` with bilingual EN/ES support, unit tests (`AtsDiscoveryServiceTest`), integration tests (`AtsControllerIntegrationTest`), and Playwright E2E coverage (`live-ats.spec.ts`).
+
 ### Added — 3-Tier Spain/EU Geographical Filter, Anti-Fake-Remote Blocker, Seniority Scoring & 1-Click Job Triage
 
 - Replaced the single geographical toggle with a **3-Tier Smart Geographical Filter** (`🇪🇸 Spain Only`, `🇪🇺 Spain + EU Remote` active by default on launch, and `🌍 Global`) in `frontend/src/ats/scoring.ts` and `frontend/src/pages/LiveJobsBoard.tsx`.

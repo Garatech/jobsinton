@@ -24,8 +24,11 @@ public class AtsConfiguration {
     }
 
     @Bean
-    CompanyRegistry companyRegistry() {
-        return CompanyRegistry.loadDefault();
+    CompanyRegistry companyRegistry(
+            @Value("${jobsinton.ats.custom-companies-file:data/custom-companies.json}") String customFile
+    ) {
+        Path customPath = customFile == null || customFile.isBlank() ? null : Path.of(customFile.strip());
+        return CompanyRegistry.loadFromClasspath(CompanyRegistry.DEFAULT_RESOURCE, customPath);
     }
 
     @Bean
@@ -113,5 +116,10 @@ public class AtsConfiguration {
                 firstSeenRegistry,
                 maxConcurrency
         );
+    }
+
+    @Bean
+    AtsDiscoveryService atsDiscoveryService(AtsHttpClient http, AtsFeedService feedService) {
+        return new AtsDiscoveryService(http, feedService);
     }
 }
