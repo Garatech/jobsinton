@@ -4,6 +4,13 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — 3-Tier Spain/EU Geographical Filter, Anti-Fake-Remote Blocker, Seniority Scoring & 1-Click Job Triage
+
+- Replaced the single geographical toggle with a **3-Tier Smart Geographical Filter** (`🇪🇸 Spain Only`, `🇪🇺 Spain + EU Remote` active by default on launch, and `🌍 Global`) in `frontend/src/ats/scoring.ts` and `frontend/src/pages/LiveJobsBoard.tsx`.
+- Added a strict **Anti-"Fake Remote" Blocker** under `🇪🇺 Spain + EU Remote` that excludes non-EU remote roles (`US only`, `U.S. only`, `United States`, `Remote - US`, `North America`, `Canada`, `LATAM`, `Brazil`, `Mexico`, `APAC`, `India`, `UK only`, `Australia`, `PST`/`EST`/`CST`, `must reside in the US`) and sorts Tier 1 (`Spain`) above Tier 2 (`EU Remote`) on relevance ties.
+- Added **Junior/Entry Affinity Boost** (`🎯 Junior / Entry Fit`, `+20` to `+30` pts) and **Senior/Staff Penalty** (`⚠️ Senior/Staff`, `-25` pts) to rank entry-level and mid-level opportunities higher for junior developers.
+- Added browser-persisted **1-Click Job Triage** (`⭐ Save`, `✅ Applied`, `✕ Dismiss` stored under `jobsinton.ats-triage-v1`) with `Hide Applied & Dismissed` (enabled by default), `⭐ Saved`, and `View Applied` quick filters.
+
 ### Added — Teamtailor, Factorial HR & 222-company Spain/EU seed catalog
 
 - Added `TeamtailorAdapter` (`teamtailor`) supporting public RSS `/jobs.rss` feeds with `xmlns:tt="http://teamtailor.com/rss"` namespace (`<tt:remoteStatus>`, `<tt:locations>`, `<tt:department>`) and custom corporate career domains (`empleo.civitatis.com`, `careers.pccomponentes.com`, etc.).
