@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import {
+  discoverAtsFromUrl,
   fetchAtsFeed,
   fetchSmartRecruitersDetail,
   getCachedAtsFeed,
+  probeAtsCompanies,
+  type AtsDiscoveryResponse,
   type AtsFeedResponse,
   type AtsJob,
   type AtsProviderId,
