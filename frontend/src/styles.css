@@ -431,8 +431,10 @@ dialog .actions { flex-direction:column; align-items:stretch; }
 .ats-desc-toggle { min-height:34px; padding:4px 0; font-size:12px; font-weight:650; }
 .ats-full-desc { margin-top:10px; padding:14px 16px; border-radius:10px; background:#f7f8f4; border:1px solid var(--line); }
 .ats-desc-text { margin:0; font-size:13px; line-height:1.65; color:#2b403a; white-space:pre-line; max-height:420px; overflow:auto; }
-.ats-card-actions { display:flex; flex-direction:column; align-items:flex-end; flex-shrink:0; gap:8px; }
+.ats-card-actions { display:flex; flex-direction:column; align-items:flex-end; flex-shrink:0; gap:10px; max-width:100%; }
 .ats-apply-btn { white-space:nowrap; }
+.ats-triage-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:6px; max-width:100%; }
+.ats-triage-actions .ats-toggle-pill { min-height:32px; padding:4px 10px; font-size:11px; }
 
 .ats-load-more { display:flex; justify-content:center; margin-top:24px; }
 .ats-empty-actions { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; }

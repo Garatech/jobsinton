@@ -378,5 +378,17 @@ export const spanish: Readonly<Record<string, string>> = {
   "Could not load live ATS jobs.": "No se han podido cargar las ofertas ATS en directo.",
   "The live ATS feed response could not be verified.": "No se ha podido verificar la respuesta del feed ATS.",
   "Could not load the full job description from SmartRecruiters.": "No se ha podido cargar la descripción completa desde SmartRecruiters.",
-  "Could not load full description.": "No se ha podido cargar la descripción completa."
+  "Could not load full description.": "No se ha podido cargar la descripción completa.",
+  "🇪🇸 Spain Only": "🇪🇸 Solo España",
+  "🇪🇺 Spain + EU Remote": "🇪🇺 España + Remoto UE",
+  "🌍 Global": "🌍 Global",
+  "🎯 Junior / Entry Fit": "🎯 Apta Junior / Entry",
+  "⚠️ Senior/Staff": "⚠️ Senior/Staff",
+  "Job triage": "Triaje de oferta",
+  "⭐ Save": "⭐ Guardar",
+  "⭐ Saved": "⭐ Guardadas",
+  "✅ Applied": "✅ Aplicada",
+  "✕ Dismiss": "✕ Descartar",
+  "Hide Applied & Dismissed": "Ocultar aplicadas y descartadas",
+  "View Applied": "Ver aplicadas"
 };

@@ -9,7 +9,7 @@ const MOCK_FEED = {
   failedBoards: 1,
   boards: [
     { companySlug: 'cabify', companyName: 'Cabify', provider: 'greenhouse', providerLabel: 'Greenhouse', ok: true, jobCount: 1, durationMs: 145, error: null },
-    { companySlug: 'tomtom', companyName: 'TomTom', provider: 'lever', providerLabel: 'Lever', ok: true, jobCount: 1, durationMs: 210, error: null },
+    { companySlug: 'tomtom', companyName: 'TomTom', provider: 'lever', providerLabel: 'Lever', ok: true, jobCount: 2, durationMs: 210, error: null },
     { companySlug: 'Celonis', companyName: 'Celonis', provider: 'smartrecruiters', providerLabel: 'SmartRecruiters', ok: true, jobCount: 1, durationMs: 260, error: null },
     { companySlug: 'mediaradar', companyName: 'MediaRadar', provider: 'workable', providerLabel: 'Workable', ok: true, jobCount: 1, durationMs: 185, error: null },
     { companySlug: 'invopop', companyName: 'Invopop', provider: 'ashby', providerLabel: 'Ashby', ok: true, jobCount: 1, durationMs: 130, error: null },
@@ -81,14 +81,33 @@ const MOCK_FEED = {
       companySlug: 'tomtom',
       companyName: 'TomTom',
       title: 'Backend Software Engineer',
-      location: 'Amsterdam, Netherlands',
-      workplaceType: 'onsite',
+      location: 'Remote - Europe (CET)',
+      workplaceType: 'remote',
       publishedAt: '2026-11-10T12:00:00Z',
       hoursSincePublished: 168,
       description: 'Distributed navigation backend using Java, Kubernetes and Docker.',
       descriptionSnippet: 'Distributed navigation backend using Java, Kubernetes and Docker.',
       applyUrl: 'https://jobs.eu.lever.co/tomtom/lev-1/apply',
       department: 'Maps',
+      compensation: null,
+      hasFullDescription: true,
+    },
+    {
+      id: 'lever:tomtom:lev-us-fake',
+      sourceId: 'lev-us-fake',
+      provider: 'lever',
+      providerLabel: 'Lever',
+      companySlug: 'tomtom',
+      companyName: 'TomTom',
+      title: 'Cloud Java Engineer (Remote - US Only)',
+      location: 'Remote - US Only',
+      workplaceType: 'remote',
+      publishedAt: '2026-11-17T06:00:00Z',
+      hoursSincePublished: 6,
+      description: 'Must reside in the US and work EST/PST hours with Java and Docker.',
+      descriptionSnippet: 'Must reside in the US and work EST/PST hours with Java and Docker.',
+      applyUrl: 'https://jobs.lever.co/tomtom/lev-us-fake/apply',
+      department: 'Cloud',
       compensation: null,
       hasFullDescription: true,
     },
@@ -138,17 +157,25 @@ async function mockAtsApi(page: Page, onJobsRequest?: (url: string) => void) {
   });
 }
 
-test('zero-friction live ATS feed loads immediately with presets, Blip badges, filters, and direct apply links', async ({ page }) => {
+test('zero-friction live ATS feed loads immediately with 3-tier geo filter, presets, Blip badges, triage, and direct apply links', async ({ page }) => {
   const requestedUrls: string[] = [];
   await mockAtsApi(page, (url) => requestedUrls.push(url));
 
   await page.goto('/#opportunities');
 
-  // Defaults straight to Live ATS Boards without needing keys or forms.
+  // Defaults straight to Live ATS Boards with Spain + EU Remote active by default.
   await expect(page.getByRole('button', { name: 'Live ATS Boards', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByText(/5 \/ 6 company boards live/)).toBeVisible();
+  await expect(page.getByRole('button', { name: /🇪🇺 Spain \+ EU Remote/ })).toHaveAttribute('aria-pressed', 'true');
 
-  // Default All Tech preset shows the 4 software/tech roles and excludes the non-tech Sales role.
+  // Default All Tech preset + Spain + EU Remote shows the 4 Spain/EU tech roles and blocks Fake US Remote + non-tech Sales.
+  await expect(page.locator('[data-ats-job]')).toHaveCount(4);
+  await expect(page.locator('[data-ats-job="lever:tomtom:lev-us-fake"]')).toHaveCount(0);
+
+  // Switching to Spain Only narrows to the 3 Spain-based tech roles.
+  await page.getByRole('button', { name: /🇪🇸 Spain Only/ }).click();
+  await expect(page.locator('[data-ats-job]')).toHaveCount(3);
+  await page.getByRole('button', { name: /🇪🇺 Spain \+ EU Remote/ }).click();
   await expect(page.locator('[data-ats-job]')).toHaveCount(4);
 
   // Blip freshness badges and Ashby compensation render clearly.
@@ -161,6 +188,19 @@ test('zero-friction live ATS feed loads immediately with presets, Blip badges, f
   );
   await expect(cabifyCard.getByRole('link', { name: /Apply on Company Site/ })).toHaveAttribute('target', '_blank');
 
+  // Junior role displays Junior/Entry Fit badge.
+  const celonisCard = page.locator('[data-ats-job="smartrecruiters:Celonis:sr-sap"]');
+  await expect(celonisCard).toContainText('🎯 Junior / Entry Fit');
+
+  // 1-Click Job Triage: marking a card as Applied hides it immediately while Hide Applied & Dismissed is active.
+  await cabifyCard.getByRole('button', { name: '✅ Applied', exact: true }).click();
+  await expect(page.locator('[data-ats-job="greenhouse:cabify:101"]')).toHaveCount(0);
+  await page.getByRole('button', { name: /View Applied/ }).click();
+  await expect(page.locator('[data-ats-job="greenhouse:cabify:101"]')).toBeVisible();
+  // Unmark Applied and return to normal feed.
+  await page.locator('[data-ats-job="greenhouse:cabify:101"]').getByRole('button', { name: '✅ Applied', exact: true }).click();
+  await page.getByRole('button', { name: /View Applied/ }).click();
+
   const invopopCard = page.locator('[data-ats-job="ashby:invopop:ash-1"]');
   await expect(invopopCard).toContainText('⚡ Posted 30h ago');
   await expect(invopopCard).toContainText('€45K – €58K');
@@ -172,22 +212,21 @@ test('zero-friction live ATS feed loads immediately with presets, Blip badges, f
   // Switch to Track A (SAP & Enterprise) and hydrate SmartRecruiters description on demand.
   await page.getByRole('button', { name: /Track A · SAP & Enterprise/ }).click();
   await expect(page.locator('[data-ats-job]')).toHaveCount(1);
-  const celonisCard = page.locator('[data-ats-job="smartrecruiters:Celonis:sr-sap"]');
   await celonisCard.getByRole('button', { name: 'Load full description', exact: true }).click();
   await expect(celonisCard).toContainText('SAP S/4HANA clean core development');
   // Newly hydrated keywords immediately highlight on the card.
   await expect(celonisCard.locator('.ats-match-chip', { hasText: 'OData' })).toBeVisible();
   await expect(celonisCard.locator('.ats-match-chip', { hasText: 'RAP' })).toBeVisible();
 
-  // Switch to Track B (Full Stack) and combine Spain / Madrid / Remote + Fresh (< 48h).
+  // Switch to Track B (Full Stack) and combine Spain + EU Remote + Fresh (< 48h).
   await page.getByRole('button', { name: /Track B · Full Stack/ }).click();
   await expect(page.locator('[data-ats-job]')).toHaveCount(3);
   await page.getByRole('button', { name: /Fresh \(< 48h\)/ }).click();
   await expect(page.locator('[data-ats-job]')).toHaveCount(2);
 
-  // Switch to All Fetched Jobs to reveal all 5 postings including Sales.
+  // Switch to All Fetched Jobs to reveal all 6 postings worldwide (including Fake US Remote and Sales).
   await page.getByRole('button', { name: /All Fetched Jobs/ }).click();
-  await expect(page.locator('[data-ats-job]')).toHaveCount(5);
+  await expect(page.locator('[data-ats-job]')).toHaveCount(6);
 
   // Custom Profile tag editing filters cleanly.
   await page.getByRole('button', { name: /Custom Profile/ }).click();
@@ -218,6 +257,7 @@ test('home page renders Live ATS Radar preview, supports ES/EN switch, and fits 
   await page.getByRole('button', { name: 'Español', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Portales ATS en directo', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByText(/portales de empresa activos/)).toBeVisible();
+  await expect(page.getByRole('button', { name: /🇪🇺 España \+ Remoto UE/ })).toBeVisible();
 
   // Verify narrow mobile viewport has zero horizontal overflow.
   await page.setViewportSize({ width: 320, height: 800 });

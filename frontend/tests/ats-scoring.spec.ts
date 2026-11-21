@@ -1,6 +1,17 @@
 import { expect, test } from '@playwright/test';
 import { parseAtsFeed, type AtsJob } from '../src/api/ats';
-import { evaluateAtsJob, formatFreshness, isSpainMadridOrRemote, matchesKeyword, sortScoredJobs } from '../src/ats/scoring';
+import {
+  classifyGeoTier,
+  detectSenioritySignal,
+  evaluateAtsJob,
+  formatFreshness,
+  hasFakeRemoteRestriction,
+  isSpainMadridOrRemote,
+  isSpainOnlyJob,
+  matchesGeoScope,
+  matchesKeyword,
+  sortScoredJobs,
+} from '../src/ats/scoring';
 
 function makeJob(overrides: Partial<AtsJob> = {}): AtsJob {
   return {
@@ -43,17 +54,57 @@ test('matchesKeyword respects token boundaries and avoids false substrings', () 
   expect(matchesKeyword('NodeJS + ReactJS + Postgres', 'PostgreSQL')).toBe(true);
 });
 
-test('detects Spain, Madrid, and Remote roles reliably', () => {
-  expect(isSpainMadridOrRemote(makeJob({ location: 'Madrid, Spain', workplaceType: 'onsite' }))).toBe(true);
-  expect(isSpainMadridOrRemote(makeJob({ location: 'Barcelona', workplaceType: 'hybrid' }))).toBe(true);
-  expect(isSpainMadridOrRemote(makeJob({ location: 'London, UK', workplaceType: 'remote' }))).toBe(true);
-  expect(isSpainMadridOrRemote(makeJob({ location: 'Remote - EMEA', workplaceType: null }))).toBe(true);
-  expect(isSpainMadridOrRemote(makeJob({ location: 'San Francisco, CA', workplaceType: 'onsite' }))).toBe(false);
+test('3-tier geo filter classifies Spain Only, Spain + EU Remote, and blocks Fake US/UK/LATAM Remote', () => {
+  const madridJob = makeJob({ location: 'Madrid, Spain', workplaceType: 'onsite' });
+  const barcelonaHybrid = makeJob({ location: 'Barcelona', workplaceType: 'hybrid' });
+  const euRemoteJob = makeJob({ location: 'Remote - Europe (CET)', workplaceType: 'remote' });
+  const fakeUsRemote = makeJob({
+    location: 'Remote - US Only',
+    workplaceType: 'remote',
+    description: 'Must reside in the US and work EST/PST hours.',
+  });
+  const fakeUkRemote = makeJob({
+    location: 'London, United Kingdom (UK only)',
+    workplaceType: 'remote',
+  });
+  const sfOnsite = makeJob({ location: 'San Francisco, CA', workplaceType: 'onsite' });
+
+  expect(isSpainOnlyJob(madridJob)).toBe(true);
+  expect(isSpainOnlyJob(barcelonaHybrid)).toBe(true);
+  expect(isSpainOnlyJob(euRemoteJob)).toBe(false);
+
+  expect(hasFakeRemoteRestriction(fakeUsRemote)).toBe(true);
+  expect(hasFakeRemoteRestriction(fakeUkRemote)).toBe(true);
+  expect(hasFakeRemoteRestriction(euRemoteJob)).toBe(false);
+
+  expect(classifyGeoTier(madridJob).geoTier).toBe('spain');
+  expect(classifyGeoTier(euRemoteJob).geoTier).toBe('eu-remote');
+  expect(classifyGeoTier(fakeUsRemote).geoTier).toBe('global');
+  expect(classifyGeoTier(fakeUsRemote).isFakeRemoteBlocked).toBe(true);
+  expect(classifyGeoTier(sfOnsite).geoTier).toBe('global');
+
+  const scoredMadrid = evaluateAtsJob(madridJob, 'all-tech', []);
+  const scoredEuRemote = evaluateAtsJob(euRemoteJob, 'all-tech', []);
+  const scoredFakeUs = evaluateAtsJob(fakeUsRemote, 'all-tech', []);
+
+  expect(matchesGeoScope(scoredMadrid, 'spain-only')).toBe(true);
+  expect(matchesGeoScope(scoredEuRemote, 'spain-only')).toBe(false);
+  expect(matchesGeoScope(scoredMadrid, 'spain-eu-remote')).toBe(true);
+  expect(matchesGeoScope(scoredEuRemote, 'spain-eu-remote')).toBe(true);
+  expect(matchesGeoScope(scoredFakeUs, 'spain-eu-remote')).toBe(false);
+  expect(matchesGeoScope(scoredFakeUs, 'global')).toBe(true);
+  expect(isSpainMadridOrRemote(euRemoteJob)).toBe(true);
+  expect(isSpainMadridOrRemote(fakeUsRemote)).toBe(false);
 });
 
-test('ranks matched fresh roles above stale non-matches and formats Blip freshness badges', () => {
+test('ranks matched fresh & junior roles above senior or stale roles and formats Blip freshness badges', () => {
   const hotFullstack = evaluateAtsJob(
-    makeJob({ id: 'a', title: 'Full Stack Java & Angular Developer', hoursSincePublished: 6 }),
+    makeJob({ id: 'a', title: 'Junior Full Stack Java & Angular Developer', hoursSincePublished: 6 }),
+    'fullstack',
+    [],
+  );
+  const seniorRole = evaluateAtsJob(
+    makeJob({ id: 's', title: 'Staff Principal Java Architect', hoursSincePublished: 6 }),
     'fullstack',
     [],
   );
@@ -68,6 +119,12 @@ test('ranks matched fresh roles above stale non-matches and formats Blip freshne
     [],
   );
 
+  expect(detectSenioritySignal(hotFullstack.job).signal).toBe('junior');
+  expect(detectSenioritySignal(seniorRole.job).signal).toBe('senior-warning');
+  expect(hotFullstack.senioritySignal).toBe('junior');
+  expect(seniorRole.senioritySignal).toBe('senior-warning');
+  expect(hotFullstack.score).toBeGreaterThan(seniorRole.score);
+
   expect(hotFullstack.isMatch).toBe(true);
   expect(hotFullstack.isFresh24h).toBe(true);
   expect(hotFullstack.matchedKeywords).toContain('Java');
@@ -78,8 +135,8 @@ test('ranks matched fresh roles above stale non-matches and formats Blip freshne
   expect(sapRole.isFresh48h).toBe(true);
   expect(sapRole.matchedKeywords).toEqual(expect.arrayContaining(['SAP', 'ABAP', 'RAP', 'S/4HANA', 'OData', 'Fiori', 'BTP']));
 
-  const ranked = sortScoredJobs([olderDescOnly, hotFullstack], 'relevance');
-  expect(ranked.map((item) => item.job.id)).toEqual(['a', 'b']);
+  const ranked = sortScoredJobs([olderDescOnly, seniorRole, hotFullstack], 'relevance');
+  expect(ranked.map((item) => item.job.id)).toEqual(['a', 's', 'b']);
 
   expect(formatFreshness(0, null, 'en')).toEqual({ tier: 'hot', text: '🔥 Just posted' });
   expect(formatFreshness(6, null, 'en')).toEqual({ tier: 'hot', text: '🔥 Posted 6h ago' });
@@ -87,31 +144,45 @@ test('ranks matched fresh roles above stale non-matches and formats Blip freshne
   expect(formatFreshness(6, null, 'es')).toEqual({ tier: 'hot', text: '🔥 Hace 6h' });
 });
 
-test('parseAtsFeed validates structure and strips unsafe non-https applyUrls', () => {
+test('parseAtsFeed validates structure across all 9 ATS providers and strips unsafe non-https applyUrls', () => {
   const parsed = parseAtsFeed({
     fetchedAt: '2026-11-17T12:00:00Z',
     cached: false,
     cacheAgeSeconds: 0,
-    totalBoards: 1,
-    succeededBoards: 1,
+    totalBoards: 2,
+    succeededBoards: 2,
     failedBoards: 0,
-    boards: [{
-      companySlug: 'cabify',
-      companyName: 'Cabify',
-      provider: 'greenhouse',
-      providerLabel: 'Greenhouse',
-      ok: true,
-      jobCount: 1,
-      durationMs: 120,
-      error: null,
-    }],
+    boards: [
+      {
+        companySlug: 'cabify',
+        companyName: 'Cabify',
+        provider: 'greenhouse',
+        providerLabel: 'Greenhouse',
+        ok: true,
+        jobCount: 1,
+        durationMs: 120,
+        error: null,
+      },
+      {
+        companySlug: 'paradigmadigital',
+        companyName: 'Paradigma Digital',
+        provider: 'personio',
+        providerLabel: 'Personio',
+        ok: true,
+        jobCount: 1,
+        durationMs: 95,
+        error: null,
+      },
+    ],
     jobs: [
       makeJob(),
+      makeJob({ id: 'personio:paradigmadigital:99', provider: 'personio', providerLabel: 'Personio' }),
       makeJob({ id: 'bad', applyUrl: 'javascript:alert(1)' }),
     ],
   });
-  expect(parsed.jobs).toHaveLength(1);
+  expect(parsed.jobs).toHaveLength(2);
   expect(parsed.jobs[0].id).toBe('greenhouse:cabify:1');
+  expect(parsed.jobs[1].provider).toBe('personio');
   expect(() => parseAtsFeed(null)).toThrow();
   expect(() => parseAtsFeed({ jobs: [] })).toThrow();
 });
