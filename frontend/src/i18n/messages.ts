@@ -394,7 +394,7 @@ export const spanish: Readonly<Record<string, string>> = {
   "Hide Auto-Discovery": "Ocultar autodescubrimiento",
   "➕ Discover / Add Companies": "➕ Descubrir / Añadir empresas",
   "ATS Auto-Discovery Engine": "Motor de autodescubrimiento ATS",
-  "BLIP AUTO-DISCOVERY ENGINE": "MOTOR DE AUTODESCUBRIMIENTO BLIP",
+  "ATS AUTO-DISCOVERY ENGINE": "MOTOR DE AUTODESCUBRIMIENTO ATS",
   "Paste any corporate career URL or probe company names across all 9 public ATS platforms.": "Pega cualquier URL de empleo corporativa o sondea nombres de empresas en las 9 plataformas ATS públicas.",
   "Career Page URL Auto-Sniffer": "Auto-detector por URL de empleo",
   "https://careers.company.es or direct ATS link": "https://empleo.empresa.es o enlace ATS directo",

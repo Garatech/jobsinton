@@ -4,7 +4,7 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
-### Added — Blip ATS Auto-Discovery Engine (Career Page URL Sniffer & 9-ATS Batch Slug Probe)
+### Added — ATS Auto-Discovery Engine (Career Page URL Sniffer & 9-ATS Batch Slug Probe)
 
 - Added `AtsDiscoveryService` (`POST /api/ats/discover/url` and `POST /api/ats/discover/probe`) supporting automatic detection of embedded Personio, Teamtailor, Recruitee, Factorial HR, Greenhouse, Lever, SmartRecruiters, Workable, and Ashby boards from any corporate career page HTML or direct ATS URL, plus parallel virtual-thread slug probing across all 9 ATS platforms.
 - Extended `CompanyRegistry` to persist newly discovered boards in `data/custom-companies.json` (gitignored) and extended `AtsFeedService` (`mergeDiscoveredBoard`) to merge newly discovered postings directly into the active feed cache without re-fetching all 222+ boards.
@@ -40,7 +40,7 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 - Replaced the aggregator-based live job path with a zero-configuration **Multi-ATS Direct Provider Engine** querying 5 unauthenticated public ATS JSON APIs (**Greenhouse**, **Lever Global & EU**, **SmartRecruiters**, **Workable v1 & v3**, and **Ashby**) across **22 pre-seeded company boards** (`backend/src/main/resources/ats/companies.json`).
 - Added Java 21 virtual-thread parallel fetching with board-level fault isolation, 8-second per-request timeouts, 12 MiB payload cap, `https://`-only URL validation, HTML entity/tag cleaning, deduplication, newest-first sorting, 5-minute TTL caching with stampede coalescing, and on-demand SmartRecruiters detail hydration (`GET /api/ats/jobs`, `GET /api/ats/boards`, `GET /api/ats/smartrecruiters/{companySlug}/{postingId}`).
-- Added a zero-friction **Live ATS Boards** experience as the default view on `#opportunities` plus **Live ATS Radar** on `#home`, complete with developer stack presets (`All Tech / Software Roles`, `Track A · SAP & Enterprise`, `Track B · Full Stack (Java / JS)`, `Custom Profile`), token-boundary skill matching, one-click quick filters (`My Profile Matches`, `Fresh (< 48h)`, `Spain / Madrid / Remote`, `All Fetched Jobs`), Blip freshness badges (`🔥 <= 24h`, `⚡ 25–48h`), board health diagnostics, Force Refresh, and direct `Apply on Company Site` links.
+- Added a zero-friction **Live ATS Boards** experience as the default view on `#opportunities` plus **Live ATS Radar** on `#home`, complete with developer stack presets (`All Tech / Software Roles`, `Track A · SAP & Enterprise`, `Track B · Full Stack (Java / JS)`, `Custom Profile`), token-boundary skill matching, one-click quick filters (`My Profile Matches`, `Fresh (< 48h)`, `Spain / Madrid / Remote`, `All Fetched Jobs`), first-48h freshness badges (`🔥 <= 24h`, `⚡ 25–48h`), board health diagnostics, Force Refresh, and direct `Apply on Company Site` links.
 - Added offline backend unit/MockMvc tests and deterministic Playwright E2E + scoring tests in English and Spanish; documented the architecture in [ATS_PROVIDERS.md](docs/ATS_PROVIDERS.md).
 
 ### Removed — Deprecated Adzuna integration

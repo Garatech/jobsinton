@@ -97,7 +97,7 @@ test('3-tier geo filter classifies Spain Only, Spain + EU Remote, and blocks Fak
   expect(isSpainMadridOrRemote(fakeUsRemote)).toBe(false);
 });
 
-test('ranks matched fresh & junior roles above senior or stale roles and formats Blip freshness badges', () => {
+test('ranks matched fresh & junior roles above senior or stale roles and formats first-48h freshness badges', () => {
   const hotFullstack = evaluateAtsJob(
     makeJob({ id: 'a', title: 'Junior Full Stack Java & Angular Developer', hoursSincePublished: 6 }),
     'fullstack',

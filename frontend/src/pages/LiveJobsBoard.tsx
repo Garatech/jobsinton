@@ -490,7 +490,7 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
       {showDiscovery && (
         <div className="ats-discovery-panel" aria-label={t('ATS Auto-Discovery Engine')}>
           <div className="ats-presets-head">
-            <p className="eyebrow">{t('BLIP AUTO-DISCOVERY ENGINE')}</p>
+            <p className="eyebrow">{t('ATS AUTO-DISCOVERY ENGINE')}</p>
             <p className="ats-preset-desc">
               {t('Paste any corporate career URL or probe company names across all 9 public ATS platforms.')}
             </p>

@@ -179,7 +179,7 @@ async function mockAtsApi(page: Page, onJobsRequest?: (url: string) => void) {
   });
 }
 
-test('zero-friction live ATS feed loads immediately with 3-tier geo filter, presets, Blip badges, triage, auto-discovery, and direct apply links', async ({ page }) => {
+test('zero-friction live ATS feed loads immediately with 3-tier geo filter, presets, freshness badges, triage, auto-discovery, and direct apply links', async ({ page }) => {
   const requestedUrls: string[] = [];
   await mockAtsApi(page, (url) => requestedUrls.push(url));
 
@@ -200,7 +200,7 @@ test('zero-friction live ATS feed loads immediately with 3-tier geo filter, pres
   await page.getByRole('button', { name: /🇪🇺 Spain \+ EU Remote/ }).click();
   await expect(page.locator('[data-ats-job]')).toHaveCount(4);
 
-  // Blip freshness badges and Ashby compensation render clearly.
+  // First-48h freshness badges and Ashby compensation render clearly.
   const cabifyCard = page.locator('[data-ats-job="greenhouse:cabify:101"]');
   await expect(cabifyCard).toContainText('🔥 Posted 4h ago');
   await expect(cabifyCard).toContainText('Greenhouse');

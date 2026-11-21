@@ -18,7 +18,7 @@ Match scores will express compatibility with a profile, not the likelihood of re
 
 JobSinton runs out of the box with **zero API keys or `.env` configuration**. The Java 21 / Spring Boot backend aggregates live openings in parallel from **22 pre-seeded company boards across 5 public ATS JSON APIs** (Greenhouse, Lever, SmartRecruiters, Workable, and Ashby), normalizes publication timestamps and plain-text descriptions, and serves them with a 5-minute TTL cache and board-level fault isolation.
 
-The approved Current React interface opens directly onto live ATS postings with **Live ATS Radar** on Home, stack presets (`All Tech`, `Track A · SAP`, `Track B · Full Stack`, `Custom Profile`), one-click freshness (`< 48h`) and Spain/Madrid/Remote filters, Blip-style recency badges, and direct links to each company's official career application page. The fictional `Sample catalog`, browser-local profile and shortlist, and deterministic Java matching/compatibility engine remain integrated alongside live ATS boards. Accounts and server-side persistence remain planned.
+The approved Current React interface opens directly onto live ATS postings with **Live ATS Radar** on Home, stack presets (`All Tech`, `Track A · SAP`, `Track B · Full Stack`, `Custom Profile`), one-click freshness (`< 48h`) and Spain/Madrid/Remote filters, first-48h recency badges, and direct links to each company's official career application page. The fictional `Sample catalog`, browser-local profile and shortlist, and deterministic Java matching/compatibility engine remain integrated alongside live ATS boards. Accounts and server-side persistence remain planned.
 
 Stack: **Java 21 · Spring Boot · React · TypeScript**.
 
