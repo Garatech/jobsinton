@@ -27,7 +27,8 @@ import static org.assertj.core.api.Assertions.assertThat;
         properties = {
                 "jobsinton.ats.cache-ttl-seconds=300",
                 "jobsinton.ats.smartrecruiters-detail-cap=0",
-                "jobsinton.ats.seen-jobs-file="
+                "jobsinton.ats.seen-jobs-file=",
+                "jobsinton.ats.custom-companies-file="
         }
 )
 @Import(AtsControllerIntegrationTest.OfflineAtsConfig.class)
@@ -82,6 +83,13 @@ class AtsControllerIntegrationTest {
                                 "jobAd":{"sections":{"jobDescription":{"text":"<p>SAP S/4HANA, ABAP OO, RAP and OData v4.</p>"}}}}
                                 """);
                     }
+                    if (url.equals("https://novatech.recruitee.com/api/offers/")) {
+                        return reply(200, """
+                                {"offers":[{"id":901,"title":"Junior React & Node.js Engineer","published_at":"2026-11-17T10:00:00Z",
+                                "city":"Madrid","country_code":"ES","remote":true,"description":"<p>React, Node.js, TypeScript.</p>",
+                                "careers_apply_url":"https://novatech.recruitee.com/o/junior-react/c/new"}]}
+                                """);
+                    }
                     return reply(404, "");
                 }
 
@@ -99,6 +107,14 @@ class AtsControllerIntegrationTest {
 
     private HttpResponse<String> get(String path) throws Exception {
         var req = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path)).GET().build();
+        return client.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+    }
+
+    private HttpResponse<String> postJson(String path, String body) throws Exception {
+        var req = HttpRequest.newBuilder(URI.create("http://127.0.0.1:" + port + path))
+                .header("Content-Type", "application/json")
+                .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
+                .build();
         return client.send(req, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
     }
 
@@ -136,8 +152,23 @@ class AtsControllerIntegrationTest {
         assertThat(cachedFeed.path("cached").asBoolean()).isTrue();
         assertThat(cachedFeed.path("jobs").get(1).path("hasFullDescription").asBoolean()).isTrue();
 
+        // Discover a new board via URL sniffer and verify it merges into the active feed.
+        var discoverRes = postJson("/api/ats/discover/url", """
+                {"url":"https://novatech.recruitee.com","companyName":"NovaTech"}
+                """);
+        assertThat(discoverRes.statusCode()).isEqualTo(200);
+        JsonNode discovered = json.readTree(discoverRes.body());
+        assertThat(discovered.path("totalAdded").asInt()).isEqualTo(1);
+        assertThat(discovered.path("totalJobsFound").asInt()).isEqualTo(1);
+
+        var feedAfterDiscover = json.readTree(get("/api/ats/jobs").body());
+        assertThat(feedAfterDiscover.path("totalBoards").asInt()).isEqualTo(3);
+        assertThat(feedAfterDiscover.path("jobs")).hasSize(3);
+
         // Reject unregistered SmartRecruiters slug and malformed posting IDs.
         assertThat(get("/api/ats/smartrecruiters/unregistered-company/sr-42").statusCode()).isEqualTo(404);
         assertThat(get("/api/ats/smartrecruiters/Celonis/bad$id").statusCode()).isEqualTo(400);
+        assertThat(postJson("/api/ats/discover/url", "{\"url\":\"\"}").statusCode()).isEqualTo(400);
+        assertThat(postJson("/api/ats/discover/probe", "{\"candidates\":[]}").statusCode()).isEqualTo(400);
     }
 }

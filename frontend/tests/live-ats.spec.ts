@@ -155,9 +155,31 @@ async function mockAtsApi(page: Page, onJobsRequest?: (url: string) => void) {
       }),
     });
   });
+  await page.route('**/api/ats/discover/url', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json; charset=utf-8',
+      body: JSON.stringify({
+        discovered: [
+          {
+            slug: 'paradigmadigital',
+            name: 'Paradigma Digital',
+            provider: 'personio',
+            providerLabel: 'Personio',
+            apiEndpoint: 'https://paradigmadigital.jobs.personio.com/xml?language=es',
+            jobCount: 8,
+            newlyRegistered: true,
+          },
+        ],
+        totalAdded: 1,
+        totalJobsFound: 8,
+        message: 'Detected 1 public ATS board(s) with 8 open role(s).',
+      }),
+    });
+  });
 }
 
-test('zero-friction live ATS feed loads immediately with 3-tier geo filter, presets, Blip badges, triage, and direct apply links', async ({ page }) => {
+test('zero-friction live ATS feed loads immediately with 3-tier geo filter, presets, Blip badges, triage, auto-discovery, and direct apply links', async ({ page }) => {
   const requestedUrls: string[] = [];
   await mockAtsApi(page, (url) => requestedUrls.push(url));
 
@@ -208,6 +230,13 @@ test('zero-friction live ATS feed loads immediately with 3-tier geo filter, pres
   // Inspect board health diagnostics drawer showing partial upstream timeout.
   await page.getByRole('button', { name: /Board status/ }).click();
   await expect(page.getByText('Timed out after 8000ms')).toBeVisible();
+
+  // Open Auto-Discovery panel and detect an embedded Personio board from a corporate career URL.
+  await page.getByRole('button', { name: /➕ Discover \/ Add Companies/ }).click();
+  await page.getByLabel('Career Page URL Auto-Sniffer').fill('https://www.paradigmadigital.com/empleo/');
+  await page.getByRole('button', { name: 'Detect & Add ATS', exact: true }).click();
+  await expect(page.getByText('Detected 1 public ATS board(s) with 8 open role(s).')).toBeVisible();
+  await expect(page.locator('.ats-discovery-results')).toContainText('Paradigma Digital');
 
   // Switch to Track A (SAP & Enterprise) and hydrate SmartRecruiters description on demand.
   await page.getByRole('button', { name: /Track A · SAP & Enterprise/ }).click();

@@ -60,6 +60,23 @@ export interface SmartRecruitersDetail {
   hasFullDescription: boolean;
 }
 
+export interface DiscoveredBoardResult {
+  slug: string;
+  name: string;
+  provider: AtsProviderId;
+  providerLabel: string;
+  apiEndpoint: string | null;
+  jobCount: number;
+  newlyRegistered: boolean;
+}
+
+export interface AtsDiscoveryResponse {
+  discovered: DiscoveredBoardResult[];
+  totalAdded: number;
+  totalJobsFound: number;
+  message: string;
+}
+
 const VALID_PROVIDERS = new Set<AtsProviderId>([
   'greenhouse',
   'lever',
@@ -342,4 +359,74 @@ export async function fetchSmartRecruitersDetail(
     window.clearTimeout(timer);
     signal?.removeEventListener('abort', onExternalAbort);
   }
+}
+
+export function parseAtsDiscoveryResponse(payload: unknown): AtsDiscoveryResponse {
+  if (!isRecord(payload)
+    || !Array.isArray(payload.discovered)
+    || typeof payload.totalAdded !== 'number'
+    || typeof payload.totalJobsFound !== 'number') {
+    throw new Error('Could not verify ATS discovery response.');
+  }
+  const discovered: DiscoveredBoardResult[] = payload.discovered.map((item) => {
+    if (!isRecord(item)
+      || typeof item.slug !== 'string'
+      || typeof item.name !== 'string'
+      || typeof item.providerLabel !== 'string'
+      || typeof item.jobCount !== 'number') {
+      throw new Error('Malformed discovered ATS board entry.');
+    }
+    return {
+      slug: item.slug,
+      name: item.name,
+      provider: parseProvider(item.provider),
+      providerLabel: item.providerLabel,
+      apiEndpoint: optionalString(item.apiEndpoint),
+      jobCount: item.jobCount,
+      newlyRegistered: Boolean(item.newlyRegistered),
+    };
+  });
+  return {
+    discovered,
+    totalAdded: payload.totalAdded,
+    totalJobsFound: payload.totalJobsFound,
+    message: typeof payload.message === 'string' ? payload.message : '',
+  };
+}
+
+export async function discoverAtsFromUrl(
+  url: string,
+  companyName?: string,
+): Promise<AtsDiscoveryResponse> {
+  const response = await fetch('/api/ats/discover/url', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ url: url.trim(), companyName: companyName?.trim() || null }),
+  });
+  const data: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    if (isRecord(data) && typeof data.message === 'string') {
+      throw new Error(data.message);
+    }
+    throw new Error('Could not inspect that career page URL.');
+  }
+  clearAtsClientCache();
+  return parseAtsDiscoveryResponse(data);
+}
+
+export async function probeAtsCompanies(candidates: string[]): Promise<AtsDiscoveryResponse> {
+  const response = await fetch('/api/ats/discover/probe', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify({ candidates }),
+  });
+  const data: unknown = await response.json().catch(() => null);
+  if (!response.ok) {
+    if (isRecord(data) && typeof data.message === 'string') {
+      throw new Error(data.message);
+    }
+    throw new Error('Could not probe company names across ATS platforms.');
+  }
+  clearAtsClientCache();
+  return parseAtsDiscoveryResponse(data);
 }
