@@ -30,7 +30,7 @@ JobSinton fetches live openings directly from public company Applicant Tracking 
 - **Greenhouse (32):** BVNK, Affirm Spain, Thoughtworks Spain, Celonis Madrid Hub, Ebury Madrid, Fever, Okta Spain, Grafana Labs Spain, Netlify Spain, Scopely Spain, Appinio Madrid, Nuvolar, Mozilla Spain, Cabify, Clarity AI, Devo, CARTO, Tinybird, Job&Talent, RavenPack, Flywire, Glovo, Typeform, Wallbox, TravelPerk, Paack, Belvo, Freepik Company, Datadog Madrid Hub, Stripe Spain, Elastic Spain, Speechify
 - **Lever (20):** Westernacher Consulting Spain, Prima Tech Hub Madrid, TomTom Madrid, OLX Group Spain, Finom, Creatio Madrid, XTB Madrid, CoinsPaid, Everseen Spain, Quadcode, Diabolocom Spain, Dun & Bradstreet, Spotahome, Lingokids, Capchase Madrid, Fintonic, Preply Barcelona, Qonto Spain, Spendesk, Stuart
 
-Adding or removing a company can be done either by editing `companies.json` or via the built-in **Blip Auto-Discovery Engine** (persisted in gitignored `data/custom-companies.json`).
+Adding or removing a company can be done either by editing `companies.json` or via the built-in **ATS Auto-Discovery Engine** (persisted in gitignored `data/custom-companies.json`).
 
 ## Backend architecture & resilience
 

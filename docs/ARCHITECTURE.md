@@ -20,7 +20,7 @@ The browser calls `/api/status`, `/api/matching/*`, and `/api/ats/*` on its own 
 | `backend/.../matching/api/` | Bounded matching endpoint, saved-profile validation and fictional catalog adapter |
 | `frontend/src/api/ats.ts` | Live ATS feed & auto-discovery client, runtime validation, TTL cache, and SmartRecruiters on-demand detail hydration |
 | `frontend/src/ats/` | Developer stack presets (`All Tech`, `Track A · SAP`, `Track B · Full Stack`, `Custom Profile`), 3-Tier Spain/EU Geo Filter, Anti-Fake-Remote Blocker, Junior/Seniority signals, and token-boundary keyword scoring |
-| `frontend/src/pages/LiveJobsBoard.tsx` | Zero-friction live ATS feed UI with board health bar, Blip Auto-Discovery panel, 3-tier geo filter, 1-click job triage (`⭐ Save`, `✅ Applied`, `✕ Dismiss`), preset pills, and direct company apply links |
+| `frontend/src/pages/LiveJobsBoard.tsx` | Zero-friction live ATS feed UI with board health bar, ATS Auto-Discovery panel, 3-tier geo filter, 1-click job triage (`⭐ Save`, `✅ Applied`, `✕ Dismiss`), preset pills, and direct company apply links |
 | `frontend/src/api/matching.ts` | Matching requests and complete response validation |
 | `frontend/src/matching/Comparison.tsx` | Saved-profile comparison lifecycle and Current panel |
 | `frontend/src/api/status.ts` | HTTP request and runtime validation of external JSON |

@@ -16,7 +16,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Automated ATS Discovery Engine ("Blip Auto-Sniffer & Batch Slug Probe").
+ * Automated ATS Discovery Engine ("Career URL Auto-Sniffer & Batch Slug Probe").
  *
  * <p>Supports two complementary discovery mechanisms across all 9 ATS platforms:
  * <ol>
