@@ -97,22 +97,36 @@ const SPAIN_ONLY_PATTERNS = [
 
 const FAKE_REMOTE_BLOCK_PATTERNS = [
   /\bu\.?s\.?\s+only\b/i,
+  /\bu\.?s\.?a\.?\b/i,
   /\bunited states\b/i,
-  /\bremote\s*[-–(/]+\s*u\.?s\.?\b/i,
+  /\bremote\s*[-–(/,:|]+\s*(?:u\.?s\.?a?\.?|canada|ca|uk|u\.?k\.?|apac|latam|india|brazil|mexico|australia)\b/i,
   /\bnorth america\b/i,
   /\bcanada(?:\s+only)?\b/i,
+  // Canadian cities, provinces & ", CA" country/state code (e.g. "Toronto, CA, Remote" or "San Francisco, CA")
+  /\b(?:toronto|vancouver|montreal|montréal|ottawa|calgary|edmonton|waterloo|winnipeg|quebec|québec|halifax|ontario|british columbia|alberta)\b/i,
+  /,\s*(?:CA|ON|BC|QC|AB)(?:\b|,|\s|-)/,
+  // US 2-letter state codes after comma (e.g. "Austin, TX", "New York, NY", "Seattle, WA", "Boston, MA")
+  /,\s*(?:AL|AK|AZ|AR|CA|CO|CT|DE|FL|GA|HI|ID|IL|IN|IA|KS|KY|LA|ME|MD|MA|MI|MN|MS|MO|MT|NE|NV|NH|NJ|NM|NY|NC|ND|OH|OK|OR|PA|RI|SC|SD|TN|TX|UT|VT|VA|WA|WV|WI|WY|DC)(?:\b|,|\s|-)/,
+  // Major US tech hub cities
+  /\b(?:san francisco|new york|nyc|seattle|austin|boston|chicago|los angeles|denver|atlanta|miami|dallas|houston|silicon valley|palo alto|mountain view|menlo park|cupertino|redmond|washington,?\s*d\.?c\.?)\b/i,
   /\blatam\b/i,
   /\blatin america\b/i,
   /\bbrazil\b/i,
   /\bmexico\b/i,
+  /\bargentina\b/i,
+  /\bcolombia\b/i,
+  /\bchile\b/i,
   /\bapac\b/i,
   /\bindia\b/i,
+  /\bsingapore\b/i,
+  /\bjapan\b/i,
   /\bu\.?k\.?\s+only\b/i,
   /\bunited kingdom\s+only\b/i,
   /\baustralia\b/i,
-  /\b(?:pst|est|cst)\b/i,
-  /\bmust reside in the u\.?s\.?\b/i,
-  /\bauthorized to work in the u\.?s\.?\b/i,
+  /\bnew zealand\b/i,
+  /\b(?:pst|pdt|est|edt|cst|cdt|mst|mdt)\b/i,
+  /\bmust reside in (?:the )?(?:u\.?s\.?|united states|canada|uk|united kingdom)\b/i,
+  /\bauthorized to work in (?:the )?(?:u\.?s\.?|united states|canada)\b/i,
 ];
 
 const EU_REMOTE_PATTERNS = [
@@ -122,13 +136,14 @@ const EU_REMOTE_PATTERNS = [
   /\bemea\b/i,
   /\bcet\b/i,
   /\bcest\b/i,
-  /\butc\s*\+\s*1\b/i,
+  /\butc\s*\+\s*[12]\b/i,
   /\banywhere\b/i,
   /\bworldwide\b/i,
   /\bdistributed\b/i,
   /\bremote\b/i,
   /\bremoto\b/i,
   /\bteletrabajo\b/i,
+  /\b(?:germany|deutschland|berlin|munich|münchen|france|paris|portugal|lisbon|lisboa|porto|italy|italia|milan|milano|netherlands|amsterdam|ireland|dublin|poland|warsaw|krakow|austria|vienna|sweden|stockholm|belgium|brussels|denmark|copenhagen|finland|helsinki)\b/i,
 ];
 
 const JUNIOR_FRIENDLY_PATTERNS = [
@@ -201,8 +216,8 @@ export function hasFakeRemoteRestriction(job: Pick<AtsJob, 'location' | 'title' 
   if (FAKE_REMOTE_BLOCK_PATTERNS.some((pattern) => pattern.test(locationAndTitle))) {
     return true;
   }
-  const descHead = (job.description ?? '').slice(0, 600);
-  if (/\b(?:u\.?s\.?\s+only|united states only|must reside in the u\.?s\.?|uk only|united kingdom only|canada only)\b/i.test(descHead)) {
+  const descHead = (job.description ?? '').slice(0, 800);
+  if (/\b(?:u\.?s\.?\s+only|united states only|must reside in (?:the )?(?:u\.?s\.?|united states|canada)|authorized to work in (?:the )?(?:u\.?s\.?|united states|canada)|uk only|united kingdom only|canada only|north america only)\b/i.test(descHead)) {
     return true;
   }
   return false;

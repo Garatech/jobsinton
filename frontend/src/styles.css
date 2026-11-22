@@ -402,8 +402,11 @@ dialog .actions { flex-direction:column; align-items:stretch; }
 .ats-results-meta p { margin:0; font-size:13px; color:var(--ink); font-weight:600; }
 
 .ats-job-list { gap:14px; }
-.ats-card { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; padding:22px; border-radius:14px; overflow-wrap:anywhere; }
+.ats-card { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; padding:22px; border-radius:14px; overflow-wrap:anywhere; transition:opacity .22s ease, transform .22s ease, background-color .22s ease, border-color .22s ease; }
 .ats-card-hot { border-color:#a5bf86; box-shadow:0 2px 12px #173e350d; }
+.ats-card-exiting { opacity:0; transform:translateX(18px) scale(.985); pointer-events:none; }
+.ats-card-exiting-applied { background:#e6f4ea; border-color:#537037; }
+.ats-card-exiting-dismissed { background:#f8ecec; border-color:#cfa8a8; }
 .ats-card-body { flex:1; min-width:0; }
 .ats-card-header { display:flex; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:8px; }
 .ats-company { font-size:13px; font-weight:700; color:var(--ink); }

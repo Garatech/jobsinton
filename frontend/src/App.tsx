@@ -6,6 +6,14 @@ import { useRoute } from './navigation';
 import { usePageFade } from './usePageFade';
 import { Companies, CompanyDetail } from './pages/Companies';
 import { Home } from './pages/Home';
+import {
+  countSavedAtsJobs,
+  loadTriageMap,
+  SavedAtsJobsSection,
+  saveTriageMap,
+  TRIAGE_CHANGE_EVENT,
+  TRIAGE_STORAGE_KEY,
+} from './pages/LiveJobsBoard';
 import { OpportunityDetail } from './pages/Opportunity';
 import { Search } from './pages/Search';
 import { Status } from './pages/Status';
@@ -23,6 +31,7 @@ export function App() {
   const main = useRef<HTMLElement>(null);
   const [initial] = useState(loadSaved);
   const [saved, setSaved] = useState(initial.ids);
+  const [atsSavedCount, setAtsSavedCount] = useState(() => countSavedAtsJobs(loadTriageMap()));
   const [storageError, setStorageError] = useState(initial.error);
   const [message, setMessage] = useState('');
   const [profile, setProfile] = useState<ProfessionalProfile | null>(() => {
@@ -37,11 +46,22 @@ export function App() {
   }, [message]);
   useEffect(() => {
     function refresh(event: StorageEvent) {
-      if (event.key !== SAVED_STORAGE_KEY && event.key !== null) return;
-      const next = loadSaved(); setSaved(next.ids); setStorageError(next.error);
+      if (event.key === SAVED_STORAGE_KEY || event.key === null) {
+        const next = loadSaved(); setSaved(next.ids); setStorageError(next.error);
+      }
+      if (event.key === TRIAGE_STORAGE_KEY || event.key === null) {
+        setAtsSavedCount(countSavedAtsJobs(loadTriageMap()));
+      }
+    }
+    function refreshAtsTriage() {
+      setAtsSavedCount(countSavedAtsJobs(loadTriageMap()));
     }
     window.addEventListener('storage', refresh);
-    return () => window.removeEventListener('storage', refresh);
+    window.addEventListener(TRIAGE_CHANGE_EVENT, refreshAtsTriage);
+    return () => {
+      window.removeEventListener('storage', refresh);
+      window.removeEventListener(TRIAGE_CHANGE_EVENT, refreshAtsTriage);
+    };
   }, []);
   const job = route.page === 'opportunities' && route.id ? findOpportunity(route.id) : undefined;
   const company = route.page === 'companies' && route.id ? findCompany(route.id) : undefined;
@@ -74,16 +94,26 @@ export function App() {
   function clearShortlist() {
     if (!window.confirm(t('Clear all saved opportunities from this browser? Your profile will be kept.'))) return;
     if (!clearSaved()) { setMessage(''); setStorageError('The shortlist could not be cleared. Allow browser storage and try again.'); return; }
+    if (atsSavedCount > 0) {
+      const currentTriage = loadTriageMap();
+      const cleanedTriage: typeof currentTriage = {};
+      for (const [k, v] of Object.entries(currentTriage)) {
+        if (v !== 'saved') cleanedTriage[k] = v;
+      }
+      saveTriageMap(cleanedTriage);
+      setAtsSavedCount(0);
+    }
     setSaved([]); setStorageError(''); setMessage('Your shortlist is clear.');
     window.requestAnimationFrame(() => document.querySelector<HTMLElement>('.empty-state a')?.focus());
   }
+  const totalSavedCount = saved.length + atsSavedCount;
   const actions = { saved, onToggle: toggle };
   return <>
     <a className="skip-link" href="#main" onClick={event => { event.preventDefault(); document.getElementById('main')?.focus(); }}>{t("Skip to content")}</a>
     <div className="page-shell"><header className="site-header">
       <a className="brand" href="#home" aria-label={t("JobSinton home")}><span className="brand-mark" aria-hidden="true">js</span><span>JobSinton<span className="brand-dot">.</span></span></a>
       <nav className="site-nav" aria-label={t("Main navigation")}>{nav.map(([page, label]) => <a href={'#' + page} key={page} aria-current={route.page === page ? 'page' : undefined}>
-        {t(label)}{page === 'saved' && <span className="saved-count">{saved.length}</span>}
+        {t(label)}{page === 'saved' && <span className="saved-count">{totalSavedCount}</span>}
       </a>)}</nav>
       <LanguageSwitch />
     </header>
@@ -97,10 +127,13 @@ export function App() {
       {company && <CompanyDetail key={company.id} company={company} {...actions} />}
       {valid && route.page === 'saved' && <>
         <PageHeading eyebrow="YOUR SHORTLIST" title="Worth coming back to." description="A little space for your next move." />
-        <div className="section-heading saved-toolbar"><p role="status">{saved.length} {t(saved.length === 1 ? 'saved opportunity' : 'saved opportunities')}</p><div className="actions">
-          <a className="text-link" href="#opportunities">{t("Keep exploring")} <span aria-hidden="true">↗</span></a>{(saved.length > 0 || storageError) && <button className="text-button" type="button" onClick={clearShortlist}>{t("Clear shortlist")}</button>}
+        <div className="section-heading saved-toolbar"><p role="status">{totalSavedCount} {t(totalSavedCount === 1 ? 'saved opportunity' : 'saved opportunities')}</p><div className="actions">
+          <a className="text-link" href="#opportunities">{t("Keep exploring")} <span aria-hidden="true">↗</span></a>{(totalSavedCount > 0 || storageError) && <button className="text-button" type="button" onClick={clearShortlist}>{t("Clear shortlist")}</button>}
         </div></div>
-        {saved.length ? <JobList jobs={opportunities.filter(j => saved.includes(j.id))} className="saved-jobs" {...actions} /> :
+        {totalSavedCount > 0 ? <>
+          <SavedAtsJobsSection profile={profile} />
+          {saved.length > 0 && <JobList jobs={opportunities.filter(j => saved.includes(j.id))} className="saved-jobs" {...actions} />}
+        </> :
           <EmptyState title="A clear space for your next move." description="Save an opportunity while you explore. It will be waiting here."><a className="button primary" href="#opportunities">{t("Explore opportunities")}</a></EmptyState>}
       </>}
       {/* Keep the editor mounted so a local draft survives ordinary navigation. */}

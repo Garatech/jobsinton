@@ -411,5 +411,9 @@ export const spanish: Readonly<Record<string, string>> = {
   "Enter a career page or ATS URL.": "Introduce una URL de página de empleo o ATS.",
   "Enter at least one company name or slug.": "Introduce al menos un nombre o slug de empresa.",
   "Could not inspect that career page URL.": "No se ha podido inspeccionar esa URL de empleo.",
-  "Could not probe company names across ATS platforms.": "No se han podido sondear los nombres de empresa en las plataformas ATS."
+  "Could not probe company names across ATS platforms.": "No se han podido sondear los nombres de empresa en las plataformas ATS.",
+  "OPTION 1 · DIRECT URL": "OPCIÓN 1 · URL DIRECTA",
+  "Inspects any company career page HTML or direct ATS link to detect embedded boards automatically.": "Inspecciona el HTML de cualquier web de empleo corporativa o enlace ATS directo para detectar su portal automáticamente.",
+  "OPTION 2 · BY COMPANY NAME": "OPCIÓN 2 · POR NOMBRE DE EMPRESA",
+  "Enter 1–12 company names separated by commas to test their slugs across all 9 ATS platforms.": "Introduce de 1 a 12 nombres de empresas separados por comas para sondear sus slugs en las 9 plataformas ATS."
 };

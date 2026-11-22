@@ -63,6 +63,14 @@ test('3-tier geo filter classifies Spain Only, Spain + EU Remote, and blocks Fak
     workplaceType: 'remote',
     description: 'Must reside in the US and work EST/PST hours.',
   });
+  const fakeCanadaRemote = makeJob({
+    location: 'Toronto, CA, Remote',
+    workplaceType: 'remote',
+  });
+  const fakeTxRemote = makeJob({
+    location: 'Austin, TX, Remote',
+    workplaceType: 'remote',
+  });
   const fakeUkRemote = makeJob({
     location: 'London, United Kingdom (UK only)',
     workplaceType: 'remote',
@@ -74,6 +82,8 @@ test('3-tier geo filter classifies Spain Only, Spain + EU Remote, and blocks Fak
   expect(isSpainOnlyJob(euRemoteJob)).toBe(false);
 
   expect(hasFakeRemoteRestriction(fakeUsRemote)).toBe(true);
+  expect(hasFakeRemoteRestriction(fakeCanadaRemote)).toBe(true);
+  expect(hasFakeRemoteRestriction(fakeTxRemote)).toBe(true);
   expect(hasFakeRemoteRestriction(fakeUkRemote)).toBe(true);
   expect(hasFakeRemoteRestriction(euRemoteJob)).toBe(false);
 
@@ -81,20 +91,25 @@ test('3-tier geo filter classifies Spain Only, Spain + EU Remote, and blocks Fak
   expect(classifyGeoTier(euRemoteJob).geoTier).toBe('eu-remote');
   expect(classifyGeoTier(fakeUsRemote).geoTier).toBe('global');
   expect(classifyGeoTier(fakeUsRemote).isFakeRemoteBlocked).toBe(true);
+  expect(classifyGeoTier(fakeCanadaRemote).geoTier).toBe('global');
+  expect(classifyGeoTier(fakeCanadaRemote).isFakeRemoteBlocked).toBe(true);
   expect(classifyGeoTier(sfOnsite).geoTier).toBe('global');
 
   const scoredMadrid = evaluateAtsJob(madridJob, 'all-tech', []);
   const scoredEuRemote = evaluateAtsJob(euRemoteJob, 'all-tech', []);
   const scoredFakeUs = evaluateAtsJob(fakeUsRemote, 'all-tech', []);
+  const scoredFakeCanada = evaluateAtsJob(fakeCanadaRemote, 'all-tech', []);
 
   expect(matchesGeoScope(scoredMadrid, 'spain-only')).toBe(true);
   expect(matchesGeoScope(scoredEuRemote, 'spain-only')).toBe(false);
   expect(matchesGeoScope(scoredMadrid, 'spain-eu-remote')).toBe(true);
   expect(matchesGeoScope(scoredEuRemote, 'spain-eu-remote')).toBe(true);
   expect(matchesGeoScope(scoredFakeUs, 'spain-eu-remote')).toBe(false);
+  expect(matchesGeoScope(scoredFakeCanada, 'spain-eu-remote')).toBe(false);
   expect(matchesGeoScope(scoredFakeUs, 'global')).toBe(true);
   expect(isSpainMadridOrRemote(euRemoteJob)).toBe(true);
   expect(isSpainMadridOrRemote(fakeUsRemote)).toBe(false);
+  expect(isSpainMadridOrRemote(fakeCanadaRemote)).toBe(false);
 });
 
 test('ranks matched fresh & junior roles above senior or stale roles and formats first-48h freshness badges', () => {

@@ -214,7 +214,17 @@ test('zero-friction live ATS feed loads immediately with 3-tier geo filter, pres
   const celonisCard = page.locator('[data-ats-job="smartrecruiters:Celonis:sr-sap"]');
   await expect(celonisCard).toContainText('🎯 Junior / Entry Fit');
 
-  // 1-Click Job Triage: marking a card as Applied hides it immediately while Hide Applied & Dismissed is active.
+  // 1-Click Job Triage: clicking ⭐ Save increments the main navigation bar Saved counter and displays on #saved.
+  await expect(page.locator('.saved-count')).toHaveText('0');
+  await cabifyCard.getByRole('button', { name: '⭐ Save', exact: true }).click();
+  await expect(page.locator('.saved-count')).toHaveText('1');
+  await page.locator('.site-nav a[href="#saved"]').click();
+  await expect(page.locator('[data-ats-job="greenhouse:cabify:101"]')).toBeVisible();
+  await page.locator('.site-nav a[href="#opportunities"]').click();
+  await cabifyCard.getByRole('button', { name: '⭐ Save', exact: true }).click();
+  await expect(page.locator('.saved-count')).toHaveText('0');
+
+  // Marking a card as Applied smoothly animates and hides it while Hide Applied & Dismissed is active.
   await cabifyCard.getByRole('button', { name: '✅ Applied', exact: true }).click();
   await expect(page.locator('[data-ats-job="greenhouse:cabify:101"]')).toHaveCount(0);
   await page.getByRole('button', { name: /View Applied/ }).click();

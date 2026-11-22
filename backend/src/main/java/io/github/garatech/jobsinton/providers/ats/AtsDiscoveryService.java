@@ -545,19 +545,57 @@ public final class AtsDiscoveryService {
         String normalized = Normalizer.normalize(rawName.strip(), Normalizer.Form.NFD)
                 .replaceAll("\\p{M}+", "")
                 .toLowerCase(Locale.ROOT)
-                .replaceAll("(?i)(?:^|\\s+)(?:s\\.?l\\.?u\\.?|s\\.?l\\.?|s\\.?a\\.?|gmbh|inc\\.?|ltd\\.?|corp\\.?)(?=\\s|$)", " ")
+                .replaceAll("(?i)(?:^|\\s+)(?:s\\.?l\\.?u\\.?|s\\.?l\\.?|s\\.?a\\.?|gmbh|inc\\.?|ltd\\.?|corp\\.?|spain|espana|iberia|group|consulting|technologies|technology|digital|solutions)(?=\\s|$)", " ")
                 .strip();
+        if (normalized.isEmpty()) {
+            normalized = Normalizer.normalize(rawName.strip(), Normalizer.Form.NFD)
+                    .replaceAll("\\p{M}+", "")
+                    .toLowerCase(Locale.ROOT)
+                    .strip();
+        }
         String hyphenated = normalized.replaceAll("[^a-z0-9]+", "-").replaceAll("^-+|-+$", "");
         String compact = normalized.replaceAll("[^a-z0-9]+", "");
 
+        // Also keep full compact/hyphenated forms before stripping suffix words like "digital"/"consulting"
+        String fullCleaned = Normalizer.normalize(rawName.strip(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("(?i)(?:^|\\s+)(?:s\\.?l\\.?u\\.?|s\\.?l\\.?|s\\.?a\\.?|gmbh|inc\\.?|ltd\\.?|corp\\.?)(?=\\s|$)", " ")
+                .strip();
+        String fullCompact = fullCleaned.replaceAll("[^a-z0-9]+", "");
+        String fullHyphenated = fullCleaned.replaceAll("[^a-z0-9]+", "-").replaceAll("^-+|-+$", "");
+
         Set<String> slugs = new LinkedHashSet<>();
-        if (compact.length() >= 2) {
-            slugs.add(compact);
-        }
-        if (hyphenated.length() >= 2) {
-            slugs.add(hyphenated);
-        }
+        if (fullCompact.length() >= 2) slugs.add(fullCompact);
+        if (fullHyphenated.length() >= 2) slugs.add(fullHyphenated);
+        if (compact.length() >= 2) slugs.add(compact);
+        if (hyphenated.length() >= 2) slugs.add(hyphenated);
         return slugs;
+    }
+
+    private static String normalizeAlnum(String value) {
+        if (value == null || value.isBlank()) {
+            return "";
+        }
+        return Normalizer.normalize(value.strip(), Normalizer.Form.NFD)
+                .replaceAll("\\p{M}+", "")
+                .toLowerCase(Locale.ROOT)
+                .replaceAll("[^a-z0-9]+", "");
+    }
+
+    private static String defaultEndpointForBoard(CompanyBoard board) {
+        String slug = board.slug();
+        return switch (board.providerType()) {
+            case PERSONIO -> "https://" + slug + ".jobs.personio.com/xml?language=es";
+            case TEAMTAILOR -> "https://" + (board.host() != null ? board.host() : slug + ".teamtailor.com") + "/jobs.rss";
+            case RECRUITEE -> "https://" + slug + ".recruitee.com/api/offers/";
+            case FACTORIAL -> "https://" + slug + ".factorialhr.es";
+            case GREENHOUSE -> "https://boards-api.greenhouse.io/v1/boards/" + slug + "/jobs?content=true";
+            case LEVER -> "https://api.eu.lever.co/v0/postings/" + slug + "?mode=json";
+            case SMARTRECRUITERS -> "https://api.smartrecruiters.com/v1/companies/" + slug + "/postings?limit=100";
+            case WORKABLE -> "https://apply.workable.com/api/v1/widget/accounts/" + slug + "?details=true";
+            case ASHBY -> "https://api.ashbyhq.com/posting-api/job-board/" + slug + "?includeCompensation=true";
+        };
     }
 
     private static boolean isReservedPathToken(String slug) {
