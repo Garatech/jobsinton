@@ -1212,16 +1212,15 @@ export function SavedAtsJobsSection({ profile }: { profile: ProfessionalProfile 
   }, [feed, savedAtsIds, customTags]);
 
   const handleTriageToggle = useCallback((jobId: string, targetStatus: JobTriageStatus) => {
-    setTriageMap((current) => {
-      const next = { ...current };
-      if (next[jobId] === targetStatus) {
-        delete next[jobId];
-      } else {
-        next[jobId] = targetStatus;
-      }
-      saveTriageMap(next);
-      return next;
-    });
+    const current = loadTriageMap();
+    const next = { ...current };
+    if (next[jobId] === targetStatus) {
+      delete next[jobId];
+    } else {
+      next[jobId] = targetStatus;
+    }
+    saveTriageMap(next);
+    setTriageMap(next);
   }, []);
 
   const handleJobHydrated = useCallback((updatedJob: AtsJob) => {
