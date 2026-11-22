@@ -49,11 +49,13 @@ const WORKPLACE_LABELS: Record<'remote' | 'hybrid' | 'onsite', string> = {
 
 const PAGE_BATCH = 40;
 export const TRIAGE_STORAGE_KEY = 'jobsinton.ats-triage-v1';
+export const TRIAGE_CHANGE_EVENT = 'jobsinton:triage-change';
+const EXIT_ANIMATION_MS = 230;
 
 export type JobTriageStatus = 'saved' | 'applied' | 'dismissed';
-type TriageMap = Record<string, JobTriageStatus>;
+export type TriageMap = Record<string, JobTriageStatus>;
 
-function loadTriageMap(): TriageMap {
+export function loadTriageMap(): TriageMap {
   try {
     const raw = window.localStorage.getItem(TRIAGE_STORAGE_KEY);
     if (!raw) return {};
@@ -71,12 +73,21 @@ function loadTriageMap(): TriageMap {
   }
 }
 
-function saveTriageMap(map: TriageMap): void {
+export function saveTriageMap(map: TriageMap): void {
   try {
     window.localStorage.setItem(TRIAGE_STORAGE_KEY, JSON.stringify(map));
+    window.dispatchEvent(new CustomEvent(TRIAGE_CHANGE_EVENT));
   } catch {
     // Ignore storage quota / privacy mode errors.
   }
+}
+
+export function countSavedAtsJobs(map: TriageMap): number {
+  let count = 0;
+  for (const status of Object.values(map)) {
+    if (status === 'saved') count++;
+  }
+  return count;
 }
 
 function parseInitialGeoScope(params: URLSearchParams): GeoScope {
@@ -120,10 +131,16 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
   const [visibleLimit, setVisibleLimit] = useState(PAGE_BATCH);
   const [showBoards, setShowBoards] = useState(false);
 
-  // Triage state (Saved / Applied / Dismissed)
+  // Triage state (Saved / Applied / Dismissed) + smooth exit animation state
   const [triageMap, setTriageMap] = useState<TriageMap>(() => loadTriageMap());
+  const [exitingJobs, setExitingJobs] = useState<Record<string, 'applied' | 'dismissed'>>({});
   const [hideAppliedDismissed, setHideAppliedDismissed] = useState<boolean>(true);
-  const [viewTriageFilter, setViewTriageFilter] = useState<'none' | 'saved' | 'applied'>('none');
+  const [viewTriageFilter, setViewTriageFilter] = useState<'none' | 'saved' | 'applied'>(() => {
+    const f = initialParams.get('filter');
+    if (f === 'saved') return 'saved';
+    if (f === 'applied') return 'applied';
+    return 'none';
+  });
 
   // Auto-Discovery panel state
   const [showDiscovery, setShowDiscovery] = useState(false);
@@ -133,6 +150,23 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
   const [discoveryBusy, setDiscoveryBusy] = useState(false);
   const [discoveryResult, setDiscoveryResult] = useState<AtsDiscoveryResponse | null>(null);
   const [discoveryError, setDiscoveryError] = useState('');
+
+  useEffect(() => {
+    function syncTriage() {
+      setTriageMap(loadTriageMap());
+    }
+    function onStorage(event: StorageEvent) {
+      if (event.key === TRIAGE_STORAGE_KEY || event.key === null) {
+        syncTriage();
+      }
+    }
+    window.addEventListener(TRIAGE_CHANGE_EVENT, syncTriage);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener(TRIAGE_CHANGE_EVENT, syncTriage);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
 
   const loadFeed = useCallback((refresh: boolean, signal?: AbortSignal) => {
     setState((current) => ({
@@ -181,7 +215,7 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
     });
   }, []);
 
-  const handleTriageToggle = useCallback((jobId: string, targetStatus: JobTriageStatus) => {
+  const commitTriageStatus = useCallback((jobId: string, targetStatus: JobTriageStatus) => {
     setTriageMap((current) => {
       const next = { ...current };
       if (next[jobId] === targetStatus) {
@@ -193,6 +227,33 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
       return next;
     });
   }, []);
+
+  const handleTriageToggle = useCallback(
+    (jobId: string, targetStatus: JobTriageStatus) => {
+      const currentStatus = triageMap[jobId];
+      const willHideCard =
+        hideAppliedDismissed &&
+        viewTriageFilter === 'none' &&
+        (targetStatus === 'applied' || targetStatus === 'dismissed') &&
+        currentStatus !== targetStatus;
+
+      if (willHideCard) {
+        setExitingJobs((prev) => ({ ...prev, [jobId]: targetStatus }));
+        window.setTimeout(() => {
+          commitTriageStatus(jobId, targetStatus);
+          setExitingJobs((prev) => {
+            const copy = { ...prev };
+            delete copy[jobId];
+            return copy;
+          });
+        }, EXIT_ANIMATION_MS);
+        return;
+      }
+
+      commitTriageStatus(jobId, targetStatus);
+    },
+    [triageMap, hideAppliedDismissed, viewTriageFilter, commitTriageStatus],
+  );
 
   async function handleDiscoverByUrl(event: FormEvent) {
     event.preventDefault();
