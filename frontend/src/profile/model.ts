@@ -6,6 +6,14 @@ export const ROLES = {
   sap: 'SAP developer',
   data: 'Data engineer',
   platform: 'Platform engineer',
+  'data-analyst': 'Data analyst',
+  python: 'Python developer',
+  'ai-ml': 'AI / ML engineer',
+  'cloud-devops': 'Cloud & DevOps engineer',
+  qa: 'QA & test automation',
+  cybersecurity: 'Cybersecurity specialist',
+  mobile: 'Mobile developer',
+  'erp-crm': 'ERP / CRM consultant',
 } as const;
 
 export const WORK_MODES = {

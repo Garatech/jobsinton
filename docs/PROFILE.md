@@ -6,7 +6,7 @@ The first profile increment provides an editable professional profile and a summ
 
 | Field | Rule |
 | --- | --- |
-| Target role | Backend, frontend, full stack, SAP, data or platform |
+| Target role | Backend, frontend, full stack, SAP, data engineer, platform, data analyst, Python developer, AI / ML engineer, Cloud & DevOps, QA & test automation, cybersecurity, mobile developer, or ERP / CRM consultant |
 | Technologies | 1–20 unique entries, each 1–40 characters after whitespace normalization |
 | Relevant experience | Whole years from 0 to 60; zero is valid |
 | Country of residence | Required text, 1–80 characters after normalization |

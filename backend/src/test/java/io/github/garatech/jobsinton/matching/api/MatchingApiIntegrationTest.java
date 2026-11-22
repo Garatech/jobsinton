@@ -127,6 +127,17 @@ class MatchingApiIntegrationTest {
         }
     }
 
+    @Test
+    void acceptsExpandedMultiDisciplineProfileRoles() throws Exception {
+        for (String roleKey : java.util.List.of(
+                "data-analyst", "python", "ai-ml", "cloud-devops", "qa", "cybersecurity", "mobile", "erp-crm"
+        )) {
+            String expandedProfile = PROFILE.replace("\"role\":\"backend\"", "\"role\":\"" + roleKey + "\"");
+            var response = post(body("backend-java", expandedProfile));
+            assertThat(response.statusCode()).as("role=%s", roleKey).isEqualTo(200);
+        }
+    }
+
     private static String body(String id, String profile) {
         return "{\"opportunityId\":\"" + id + "\",\"profile\":" + profile + "}";
     }

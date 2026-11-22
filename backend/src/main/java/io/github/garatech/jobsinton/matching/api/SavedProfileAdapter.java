@@ -17,9 +17,22 @@ final class SavedProfileAdapter {
     private SavedProfileAdapter() {}
     private static final Set<String> FIELDS = Set.of(
             "role", "technologies", "experienceYears", "country", "city", "workMode", "maxOnsiteDays");
-    private static final Map<String, Role> ROLES = Map.of(
-            "backend", Role.BACKEND, "frontend", Role.FRONTEND, "full-stack", Role.FULL_STACK,
-            "sap", Role.SAP, "data", Role.DATA, "platform", Role.PLATFORM);
+    private static final Map<String, Role> ROLES = Map.ofEntries(
+            Map.entry("backend", Role.BACKEND),
+            Map.entry("frontend", Role.FRONTEND),
+            Map.entry("full-stack", Role.FULL_STACK),
+            Map.entry("sap", Role.SAP),
+            Map.entry("data", Role.DATA),
+            Map.entry("platform", Role.PLATFORM),
+            Map.entry("data-analyst", Role.DATA),
+            Map.entry("python", Role.BACKEND),
+            Map.entry("ai-ml", Role.DATA),
+            Map.entry("cloud-devops", Role.PLATFORM),
+            Map.entry("qa", Role.BACKEND),
+            Map.entry("cybersecurity", Role.PLATFORM),
+            Map.entry("mobile", Role.FRONTEND),
+            Map.entry("erp-crm", Role.SAP)
+    );
     private static final Map<String, WorkMode> MODES = Map.of(
             "remote", WorkMode.REMOTE, "hybrid", WorkMode.HYBRID, "onsite", WorkMode.ONSITE);
     private static final Map<String, String> COUNTRIES = Map.ofEntries(
