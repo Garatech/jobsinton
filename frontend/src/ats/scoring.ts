@@ -129,21 +129,44 @@ const FAKE_REMOTE_BLOCK_PATTERNS = [
   /\bauthorized to work in (?:the )?(?:u\.?s\.?|united states|canada)\b/i,
 ];
 
-const EU_REMOTE_PATTERNS = [
+const EU_COUNTRY_AND_CITY_PATTERNS = [
   /\beurope\b/i,
   /\beuropean union\b/i,
   /\beu\b/i,
-  /\bemea\b/i,
   /\bcet\b/i,
   /\bcest\b/i,
+  /\bdach\b/i,
+  /\bnordics\b/i,
+  /\bbenelux\b/i,
   /\butc\s*\+\s*[12]\b/i,
+  /\b(?:germany|deutschland|berlin|munich|münchen|hamburg|frankfurt|stuttgart|cologne|köln|düsseldorf|leipzig|dresden|karlsruhe|nuremberg|nürnberg|walldorf)\b/i,
+  /\b(?:france|paris|lyon|toulouse|nantes|bordeaux|lille|marseille|nice|sophia antipolis|grenoble|rennes|strasbourg|montpellier)\b/i,
+  /\b(?:portugal|lisbon|lisboa|porto|braga|coimbra|aveiro|faro)\b/i,
+  /\b(?:italy|italia|milan|milano|rome|roma|turin|torino|bologna|florence|firenze|naples|napoli|padua|padova|genoa|verona)\b/i,
+  /\b(?:netherlands|holland|amsterdam|rotterdam|utrecht|eindhoven|the hague|den haag|delft|groningen)\b/i,
+  /\b(?:ireland|dublin|cork|galway|limerick)\b/i,
+  /\b(?:poland|polska|warsaw|warszawa|krakow|kraków|cracow|wroclaw|wrocław|gdansk|gdańsk|poznan|poznań|katowice|lodz)\b/i,
+  /\b(?:sweden|sverige|stockholm|gothenburg|göteborg|malmö|malmo|uppsala|lund)\b/i,
+  /\b(?:austria|österreich|vienna|wien|graz|linz|salzburg|innsbruck)\b/i,
+  /\b(?:belgium|brussels|bruxelles|antwerp|ghent|leuven)\b/i,
+  /\b(?:switzerland|schweiz|suisse|zurich|zürich|geneva|genève|basel|lausanne|bern|zug)\b/i,
+  /\b(?:denmark|copenhagen|københavn|aarhus|odense)\b/i,
+  /\b(?:finland|helsinki|espoo|tampere|oulu|turku)\b/i,
+  /\b(?:norway|oslo|bergen|trondheim|stavanger)\b/i,
+  /\b(?:czech|czechia|prague|praha|brno)\b/i,
+  /\b(?:romania|bucharest|bucurești|cluj|timisoara|iasi)\b/i,
+  /\b(?:hungary|budapest|debrecen|greece|athens|thessaloniki|bulgaria|sofia|croatia|zagreb|estonia|tallinn|lithuania|vilnius|latvia|riga|slovenia|ljubljana|slovakia|bratislava|luxembourg|malta|cyprus|nicosia|limassol)\b/i,
+];
+
+const EU_REMOTE_PATTERNS = [
+  ...EU_COUNTRY_AND_CITY_PATTERNS,
+  /\bemea\b/i,
   /\banywhere\b/i,
   /\bworldwide\b/i,
   /\bdistributed\b/i,
   /\bremote\b/i,
   /\bremoto\b/i,
   /\bteletrabajo\b/i,
-  /\b(?:germany|deutschland|berlin|munich|münchen|france|paris|portugal|lisbon|lisboa|porto|italy|italia|milan|milano|netherlands|amsterdam|ireland|dublin|poland|warsaw|krakow|austria|vienna|sweden|stockholm|belgium|brussels|denmark|copenhagen|finland|helsinki)\b/i,
 ];
 
 const JUNIOR_FRIENDLY_PATTERNS = [
@@ -248,10 +271,12 @@ export function classifyGeoTier(
 
   const loc = job.location ?? '';
   const titleText = job.title ?? '';
+  const combined = `${loc} ${titleText}`;
   const isRemoteFlag = job.workplaceType === 'remote'
-    || /\b(?:remote|remoto|teletrabajo|anywhere|worldwide)\b/i.test(`${loc} ${titleText}`);
+    || /\b(?:remote|remoto|teletrabajo|anywhere|worldwide)\b/i.test(combined);
+  const isEuropeanHub = EU_COUNTRY_AND_CITY_PATTERNS.some((p) => p.test(combined));
 
-  if (isRemoteFlag && (loc.trim() === '' || EU_REMOTE_PATTERNS.some((p) => p.test(`${loc} ${titleText}`)))) {
+  if (isEuropeanHub || (isRemoteFlag && (loc.trim() === '' || EU_REMOTE_PATTERNS.some((p) => p.test(combined))))) {
     return {
       geoTier: 'eu-remote',
       isSpainOnly: false,

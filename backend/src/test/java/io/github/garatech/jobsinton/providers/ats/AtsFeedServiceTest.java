@@ -16,7 +16,7 @@ class AtsFeedServiceTest {
     @Test
     void loadsDefaultRegistryAcrossAllNineAtsProviders() {
         CompanyRegistry registry = CompanyRegistry.loadDefault();
-        assertThat(registry.boards()).hasSize(222);
+        assertThat(registry.boards()).hasSize(293);
         assertThat(registry.boards()).extracting(CompanyBoard::providerType)
                 .containsOnly(
                         AtsProviderType.GREENHOUSE,
@@ -147,5 +147,62 @@ class AtsFeedServiceTest {
         assertThat(feed.jobs()).hasSize(1);
         assertThat(feed.jobs().getFirst().hoursSincePublished()).isEqualTo(120L);
         assertThat(feed.jobs().getFirst().firstSeenAt()).isEqualTo("2026-11-13T12:00:00Z");
+    }
+
+    @Test
+    void purgesNonEuropeanPostingsAtIngestionWhilePreservingSpainEuropeAndEuRemote() {
+        Instant fixedNow = Instant.parse("2026-11-18T12:00:00Z");
+        Clock clock = Clock.fixed(fixedNow, ZoneOffset.UTC);
+        CompanyBoard board = new CompanyBoard("datadog", "Datadog", "greenhouse", null, "Madrid");
+        CompanyRegistry registry = new CompanyRegistry(List.of(board));
+
+        AtsProviderAdapter gh = new AtsProviderAdapter() {
+            @Override
+            public AtsProviderType type() {
+                return AtsProviderType.GREENHOUSE;
+            }
+
+            @Override
+            public List<RawAtsJob> fetch(CompanyBoard b) {
+                return List.of(
+                        new RawAtsJob("es-1", AtsProviderType.GREENHOUSE, "datadog", "Datadog",
+                                "Python Data Engineer", "Madrid, Spain", "hybrid",
+                                Instant.parse("2026-11-18T10:00:00Z"), "Python, SQL, Spark", "https://example.com/es-1",
+                                "Data", null, true),
+                        new RawAtsJob("eu-1", AtsProviderType.GREENHOUSE, "datadog", "Datadog",
+                                "Backend Software Engineer", "Berlin, Germany", "hybrid",
+                                Instant.parse("2026-11-18T09:00:00Z"), "Go, Java, Kubernetes", "https://example.com/eu-1",
+                                "Eng", null, true),
+                        new RawAtsJob("eu-rem", AtsProviderType.GREENHOUSE, "datadog", "Datadog",
+                                "AI Engineer", "Remote - Europe (CET)", "remote",
+                                Instant.parse("2026-11-18T08:00:00Z"), "Python, LLM", "https://example.com/eu-rem",
+                                "AI", null, true),
+                        new RawAtsJob("us-sf", AtsProviderType.GREENHOUSE, "datadog", "Datadog",
+                                "Staff Engineer", "San Francisco, CA", "onsite",
+                                Instant.parse("2026-11-18T11:00:00Z"), "Go", "https://example.com/us-sf",
+                                "Eng", null, true),
+                        new RawAtsJob("ca-tor", AtsProviderType.GREENHOUSE, "datadog", "Datadog",
+                                "Frontend Developer", "Toronto, CA, Remote", "remote",
+                                Instant.parse("2026-11-18T11:00:00Z"), "React", "https://example.com/ca-tor",
+                                "Eng", null, true),
+                        new RawAtsJob("us-rem", AtsProviderType.GREENHOUSE, "datadog", "Datadog",
+                                "Cloud Engineer", "Remote - US Only", "remote",
+                                Instant.parse("2026-11-18T11:00:00Z"), "Must reside in the United States.", "https://example.com/us-rem",
+                                "Eng", null, true),
+                        new RawAtsJob("in-blr", AtsProviderType.GREENHOUSE, "datadog", "Datadog",
+                                "QA Automation Engineer", "Bengaluru, India", "onsite",
+                                Instant.parse("2026-11-18T11:00:00Z"), "Selenium", "https://example.com/in-blr",
+                                "QA", null, true)
+                );
+            }
+        };
+
+        AtsFeedService service = new AtsFeedService(
+                registry, List.of(gh), new SmartRecruitersAdapter(null, 0), clock, Duration.ofMinutes(5)
+        );
+        AtsFeedResponse feed = service.getFeed(false);
+        assertThat(feed.jobs()).extracting(AtsJob::sourceId)
+                .containsExactly("es-1", "eu-1", "eu-rem");
+        assertThat(feed.boards().getFirst().jobCount()).isEqualTo(3);
     }
 }

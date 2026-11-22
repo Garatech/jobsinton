@@ -14,8 +14,8 @@ The browser calls `/api/status`, `/api/matching/*`, and `/api/ats/*` on its own 
 | --- | --- |
 | `backend/.../JobSintonApplication.java` | Start Spring Boot |
 | `backend/.../system/SystemStatusController.java` | Own the public service-status contract |
-| `backend/.../providers/ats/` | Multi-ATS direct provider & auto-discovery engine: 9 public ATS adapters (Personio, Teamtailor, Recruitee, Factorial HR, Greenhouse, Lever, SmartRecruiters, Workable, Ashby), 222-company Spain/EU registry + `data/custom-companies.json`, `FirstSeenRegistry` (`data/ats-seen-jobs.json`), bounded virtual-thread feed service with TTL cache, and `/api/ats/*` REST API |
-| `backend/src/main/resources/ats/companies.json` | Pre-seeded registry of 222 public company ATS boards focused on Madrid, Spain, and EU Remote |
+| `backend/.../providers/ats/` | Multi-ATS direct provider & auto-discovery engine: 9 public ATS adapters (Personio, Teamtailor, Recruitee, Factorial HR, Greenhouse, Lever, SmartRecruiters, Workable, Ashby), Europe-eligibility ingestion filter, 293-company Spain/EU registry + `data/custom-companies.json`, `FirstSeenRegistry` (`data/ats-seen-jobs.json`), bounded virtual-thread feed service with TTL cache, and `/api/ats/*` REST API |
+| `backend/src/main/resources/ats/companies.json` | Pre-seeded registry of 293 public company ATS boards focused on Madrid, Spain, European tech hubs, and EU Remote |
 | `backend/.../matching/` | Pure Java matching domain, immutable facts, validation and versioned explanations |
 | `backend/.../matching/api/` | Bounded matching endpoint, saved-profile validation and fictional catalog adapter |
 | `frontend/src/api/ats.ts` | Live ATS feed & auto-discovery client, runtime validation, TTL cache, and SmartRecruiters on-demand detail hydration |

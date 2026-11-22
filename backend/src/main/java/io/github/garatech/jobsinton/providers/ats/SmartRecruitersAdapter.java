@@ -40,10 +40,13 @@ public final class SmartRecruitersAdapter implements AtsProviderAdapter {
         return AtsProviderType.SMARTRECRUITERS;
     }
 
+    private static final int PAGE_SIZE = 100;
+    private static final int MAX_PAGES = 3;
+
     @Override
     public List<RawAtsJob> fetch(CompanyBoard board) {
         String slug = AtsSupport.encodePathSegment(board.slug());
-        URI listUri = URI.create(BASE_URL + slug + "/postings?limit=100");
+        URI listUri = URI.create(BASE_URL + slug + "/postings?limit=" + PAGE_SIZE);
         var reply = http.get(listUri);
         if (reply.status() != 200) {
             throw new AtsFetchException("HTTP " + reply.status() + " from SmartRecruiters");
@@ -60,6 +63,27 @@ public final class SmartRecruitersAdapter implements AtsProviderAdapter {
                 if (job != null) {
                     listed.add(job);
                 }
+            }
+            int lastPageCount = content.size();
+            for (int page = 1; page < MAX_PAGES && lastPageCount == PAGE_SIZE; page++) {
+                int offset = page * PAGE_SIZE;
+                URI nextUri = URI.create(BASE_URL + slug + "/postings?limit=" + PAGE_SIZE + "&offset=" + offset);
+                var nextReply = http.get(nextUri);
+                if (nextReply.status() != 200 || nextReply.body() == null) {
+                    break;
+                }
+                JsonNode nextRoot = json.readTree(nextReply.body());
+                JsonNode nextContent = nextRoot == null ? null : nextRoot.path("content");
+                if (nextContent == null || !nextContent.isArray() || nextContent.isEmpty()) {
+                    break;
+                }
+                for (JsonNode item : nextContent) {
+                    RawAtsJob job = mapListItem(board, item);
+                    if (job != null) {
+                        listed.add(job);
+                    }
+                }
+                lastPageCount = nextContent.size();
             }
             return enrichTopCandidates(board, listed);
         } catch (JacksonException e) {
@@ -250,7 +274,7 @@ public final class SmartRecruitersAdapter implements AtsProviderAdapter {
         String lowerLoc = loc.toLowerCase(Locale.ROOT);
         if (AtsSupport.isSpainOrEuLocation(loc)) {
             score += 100;
-            if (lowerLoc.contains("madrid")) {
+            if (lowerLoc.contains("madrid") || lowerLoc.contains("spain") || lowerLoc.contains("españa")) {
                 score += 20;
             }
         } else if (AtsSupport.isNonEuFakeRemote(loc)) {
@@ -266,7 +290,10 @@ public final class SmartRecruitersAdapter implements AtsProviderAdapter {
                 || title.contains("node") || title.contains("typescript") || title.contains("software")
                 || title.contains("developer") || title.contains("engineer") || title.contains("backend")
                 || title.contains("frontend") || title.contains("desarrollador") || title.contains("programador")
-                || title.contains("consultor")) {
+                || title.contains("consultor") || title.contains("python") || title.contains("data")
+                || title.contains("analyst") || title.contains("analista") || title.contains("cloud")
+                || title.contains("devops") || title.contains("ai") || title.contains("machine learning")
+                || title.contains("cyber") || title.contains("security") || title.contains("qa")) {
             score += 35;
         }
         return score;

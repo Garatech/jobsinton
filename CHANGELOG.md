@@ -4,6 +4,13 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Europe-Eligibility Ingestion Filter, SmartRecruiters Multi-Page Pagination & 293-Company Spain/Europe Seed Catalog
+
+- Added `AtsSupport.isEuropeEligibleJob` in `AtsFeedService` to discard non-European (US, Canada, LATAM, APAC, India, Australia) job postings at ingestion unless the role includes a Spanish/European location or offers European/EMEA/CET/Worldwide remote eligibility.
+- Added bounded multi-page pagination (up to 3 pages / 300 postings per board) in `SmartRecruitersAdapter` when a board returns a full 100-item page, and expanded `COUNTRY_NAMES` ISO country code resolution in `AtsSupport`.
+- Expanded `classifyGeoTier` in `frontend/src/ats/scoring.ts` so hybrid and on-site European tech hub roles (Germany, France, Portugal, Netherlands, Ireland, Italy, Poland, Sweden, Austria, Belgium, Switzerland, Denmark, Finland, Norway, Czechia, Romania, etc.) classify into Tier 2 (`🇪🇺 Spain + EU Remote`) while Tier 1 (`🇪🇸 Spain Only`) continues to rank first.
+- Expanded `backend/src/main/resources/ats/companies.json` from 222 to **293 verified public company boards** (+71 new Spanish and European tech boards across Personio, Teamtailor, Recruitee, SmartRecruiters, Workable, Ashby, Greenhouse, and Lever EU).
+
 ### Added — ATS Auto-Discovery Engine (Career Page URL Sniffer & 9-ATS Batch Slug Probe)
 
 - Added `AtsDiscoveryService` (`POST /api/ats/discover/url` and `POST /api/ats/discover/probe`) supporting automatic detection of embedded Personio, Teamtailor, Recruitee, Factorial HR, Greenhouse, Lever, SmartRecruiters, Workable, and Ashby boards from any corporate career page HTML or direct ATS URL, plus parallel virtual-thread slug probing across all 9 ATS platforms.

@@ -122,7 +122,9 @@ public final class AtsFeedService {
             return;
         }
         Instant now = clock.instant();
-        List<RawAtsJob> safeJobs = jobs != null ? jobs : List.of();
+        List<RawAtsJob> safeJobs = jobs != null
+                ? jobs.stream().filter(AtsSupport::isEuropeEligibleJob).toList()
+                : List.of();
         firstSeenRegistry.recordBatch(safeJobs, now);
 
         AtsProviderType type = board.providerType();
@@ -349,7 +351,9 @@ public final class AtsFeedService {
             );
         }
         try {
-            List<RawAtsJob> jobs = adapter.fetch(board);
+            List<RawAtsJob> jobs = adapter.fetch(board).stream()
+                    .filter(AtsSupport::isEuropeEligibleJob)
+                    .toList();
             long elapsedMs = Duration.ofNanos(System.nanoTime() - startNanos).toMillis();
             return new BoardOutcome(
                     new BoardStatus(board.slug(), board.name(), type.id(), type.displayName(), true, jobs.size(), elapsedMs, null),
