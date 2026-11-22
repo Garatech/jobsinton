@@ -291,12 +291,18 @@ test('home page renders Live ATS Radar preview, supports ES/EN switch, and fits 
   await page.locator('.home-preset-shortcuts a', { hasText: 'SAP, ERP & Enterprise CRM' }).click();
   await expect(page.getByRole('button', { name: /SAP, ERP & Enterprise CRM/ })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('[data-ats-job="smartrecruiters:Celonis:sr-sap"]')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Python, Data & Analytics/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /AI & Machine Learning/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Cloud, DevOps & Systems/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /QA Automation & Cybersecurity/ })).toBeVisible();
 
   // Switch language to Spanish in place.
   await page.getByRole('button', { name: 'Español', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Portales ATS en directo', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByText(/portales de empresa activos/)).toBeVisible();
   await expect(page.getByRole('button', { name: /🇪🇺 España \+ Remoto UE/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Python, Datos y Analítica/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Desarrollo de Software y Web/ })).toBeVisible();
 
   // Verify narrow mobile viewport has zero horizontal overflow.
   await page.setViewportSize({ width: 320, height: 800 });

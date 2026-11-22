@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
-import { emptyDraft, parseSavedProfile, technologyError, validateProfile, type ProfileDraft } from '../src/profile/model';
+import { presetForProfileRole } from '../src/ats/presets';
+import { emptyDraft, parseSavedProfile, ROLES, technologyError, validateProfile, type ProfileDraft } from '../src/profile/model';
 
 const valid: ProfileDraft = {
   role: 'backend', technologies: ['Java'], experienceYears: '0',
@@ -61,3 +62,31 @@ test('saved data requires the known version, shape, and valid values', () => {
     JSON.stringify({ ...envelope, profile: { ...result.profile, technologies: [null] } }),
   ]) expect(parseSavedProfile(raw)).toBeNull();
 });
+
+test('validates all 14 multi-discipline profile roles and maps each to its ATS stack preset', () => {
+  const expectedTrackByRole: Record<keyof typeof ROLES, string> = {
+    backend: 'fullstack',
+    frontend: 'fullstack',
+    'full-stack': 'fullstack',
+    mobile: 'fullstack',
+    data: 'python-data',
+    'data-analyst': 'python-data',
+    python: 'python-data',
+    'ai-ml': 'ai-ml',
+    platform: 'cloud-devops',
+    'cloud-devops': 'cloud-devops',
+    qa: 'qa-cyber',
+    cybersecurity: 'qa-cyber',
+    sap: 'sap',
+    'erp-crm': 'sap',
+  };
+
+  for (const roleKey of Object.keys(ROLES) as (keyof typeof ROLES)[]) {
+    const validated = validateProfile({ ...valid, role: roleKey, technologies: ['Python', 'SQL'] });
+    expect(validated.ok).toBe(true);
+    if (!validated.ok) continue;
+    expect(parseSavedProfile(JSON.stringify({ version: 1, profile: validated.profile }))).toEqual(validated.profile);
+    expect(presetForProfileRole(roleKey)).toBe(expectedTrackByRole[roleKey]);
+  }
+});
+

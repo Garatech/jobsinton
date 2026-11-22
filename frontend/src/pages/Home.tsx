@@ -7,7 +7,23 @@ import { ROLES, WORK_MODES, type ProfessionalProfile } from '../profile/model';
 import { JobList, type SavedActions } from '../ui';
 
 export function profileSearch(profile: ProfessionalProfile): string {
-  const role = { backend: 'Backend', frontend: 'Frontend', 'full-stack': 'Full stack', sap: 'SAP', data: 'Data', platform: 'Platform' }[profile.role];
+  const roleMap: Record<ProfessionalProfile['role'], string> = {
+    backend: 'Backend',
+    frontend: 'Frontend',
+    'full-stack': 'Full stack',
+    sap: 'SAP',
+    data: 'Data',
+    platform: 'Platform',
+    'data-analyst': 'Data',
+    python: 'Backend',
+    'ai-ml': 'Data',
+    'cloud-devops': 'Platform',
+    qa: 'Backend',
+    cybersecurity: 'Platform',
+    mobile: 'Frontend',
+    'erp-crm': 'SAP',
+  };
+  const role = roleMap[profile.role];
   return '#opportunities?' + new URLSearchParams({ source: 'sample', role, mode: WORK_MODES[profile.workMode] }).toString();
 }
 

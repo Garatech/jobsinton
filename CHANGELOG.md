@@ -4,6 +4,11 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Expanded 14-Role Professional Profile Taxonomy & Backend Adapter Alignment
+
+- Expanded `ROLES` (`frontend/src/profile/model.ts`), Spanish translations (`frontend/src/i18n/messages.ts`), `profileSearch` (`frontend/src/pages/Home.tsx`), and `SavedProfileAdapter` (`backend/.../matching/api/SavedProfileAdapter.java`) from 6 to **14 developer and tech roles**: `Backend developer`, `Frontend developer`, `Full stack developer`, `SAP developer`, `Data engineer`, `Platform engineer`, `Data analyst`, `Python developer`, `AI / ML engineer`, `Cloud & DevOps engineer`, `QA & test automation`, `Cybersecurity specialist`, `Mobile developer`, and `ERP / CRM consultant`.
+- Added `presetForProfileRole` (`frontend/src/ats/presets.ts`) mapping each of the 14 profile roles to its corresponding multi-discipline ATS stack preset, with automated unit and integration coverage in `profile-model.spec.ts`, `live-ats.spec.ts`, and `MatchingApiIntegrationTest.java`.
+
 ### Added — Multi-Discipline Developer Stack Tracks & Bilingual Tech Keyword Scoring
 
 - Expanded `STACK_PRESETS` (`frontend/src/ats/presets.ts`) from two CV-hardcoded presets to **8 multi-discipline developer tracks**: `All Tech / Software Roles`, `Software & Web Development`, `Python, Data & Analytics`, `AI & Machine Learning`, `Cloud, DevOps & Systems`, `QA Automation & Cybersecurity`, `SAP, ERP & Enterprise CRM`, and `Custom Profile`.

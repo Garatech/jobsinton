@@ -143,6 +143,33 @@ export function parsePresetId(raw: string | null): StackPresetId {
   return 'all-tech';
 }
 
+export function presetForProfileRole(role: ProfessionalProfile['role']): StackPresetId {
+  switch (role) {
+    case 'backend':
+    case 'frontend':
+    case 'full-stack':
+    case 'mobile':
+      return 'fullstack';
+    case 'data':
+    case 'data-analyst':
+    case 'python':
+      return 'python-data';
+    case 'ai-ml':
+      return 'ai-ml';
+    case 'platform':
+    case 'cloud-devops':
+      return 'cloud-devops';
+    case 'qa':
+    case 'cybersecurity':
+      return 'qa-cyber';
+    case 'sap':
+    case 'erp-crm':
+      return 'sap';
+    default:
+      return 'all-tech';
+  }
+}
+
 export function loadCustomTags(profile: ProfessionalProfile | null): string[] {
   try {
     const raw = window.localStorage.getItem(CUSTOM_STACK_STORAGE_KEY);
