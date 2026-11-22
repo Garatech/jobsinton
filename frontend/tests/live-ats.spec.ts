@@ -248,8 +248,8 @@ test('zero-friction live ATS feed loads immediately with 3-tier geo filter, pres
   await expect(page.getByText('Detected 1 public ATS board(s) with 8 open role(s).')).toBeVisible();
   await expect(page.locator('.ats-discovery-results')).toContainText('Paradigma Digital');
 
-  // Switch to Track A (SAP & Enterprise) and hydrate SmartRecruiters description on demand.
-  await page.getByRole('button', { name: /Track A · SAP & Enterprise/ }).click();
+  // Switch to SAP, ERP & Enterprise CRM and hydrate SmartRecruiters description on demand.
+  await page.getByRole('button', { name: /SAP, ERP & Enterprise CRM/ }).click();
   await expect(page.locator('[data-ats-job]')).toHaveCount(1);
   await celonisCard.getByRole('button', { name: 'Load full description', exact: true }).click();
   await expect(celonisCard).toContainText('SAP S/4HANA clean core development');
@@ -257,8 +257,8 @@ test('zero-friction live ATS feed loads immediately with 3-tier geo filter, pres
   await expect(celonisCard.locator('.ats-match-chip', { hasText: 'OData' })).toBeVisible();
   await expect(celonisCard.locator('.ats-match-chip', { hasText: 'RAP' })).toBeVisible();
 
-  // Switch to Track B (Full Stack) and combine Spain + EU Remote + Fresh (< 48h).
-  await page.getByRole('button', { name: /Track B · Full Stack/ }).click();
+  // Switch to Software & Web Development and combine Spain + EU Remote + Fresh (< 48h).
+  await page.getByRole('button', { name: /Software & Web Development/ }).click();
   await expect(page.locator('[data-ats-job]')).toHaveCount(3);
   await page.getByRole('button', { name: /Fresh \(< 48h\)/ }).click();
   await expect(page.locator('[data-ats-job]')).toHaveCount(2);
@@ -287,9 +287,9 @@ test('home page renders Live ATS Radar preview, supports ES/EN switch, and fits 
   await expect(page.getByRole('heading', { name: 'Fresh directly from company career pages.' })).toBeVisible();
   await expect(page.locator('.ats-preview-card')).toHaveCount(4);
 
-  // Shortcut pill jumps straight into Track A · SAP on Opportunities.
-  await page.locator('.home-preset-shortcuts a', { hasText: 'Track A · SAP & Enterprise' }).click();
-  await expect(page.getByRole('button', { name: /Track A · SAP & Enterprise/ })).toHaveAttribute('aria-pressed', 'true');
+  // Shortcut pill jumps straight into SAP, ERP & Enterprise CRM on Opportunities.
+  await page.locator('.home-preset-shortcuts a', { hasText: 'SAP, ERP & Enterprise CRM' }).click();
+  await expect(page.getByRole('button', { name: /SAP, ERP & Enterprise CRM/ })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.locator('[data-ats-job="smartrecruiters:Celonis:sr-sap"]')).toBeVisible();
 
   // Switch language to Spanish in place.

@@ -211,3 +211,62 @@ test('parseAtsFeed validates structure across all 9 ATS providers and strips uns
   expect(() => parseAtsFeed(null)).toThrow();
   expect(() => parseAtsFeed({ jobs: [] })).toThrow();
 });
+
+test('multi-discipline developer tracks match Python/Data, AI/ML, Cloud/DevOps, QA/Cybersecurity, and ERP roles with EN/ES aliases', () => {
+  const dataJob = makeJob({
+    id: 'personio:synvert:1',
+    title: 'Analista de Datos (Python & Power BI)',
+    description: 'Build ETL data pipelines with SQL, Pandas, Airflow, dbt, and Databricks.',
+  });
+  const aiJob = makeJob({
+    id: 'ashby:n8n:1',
+    title: 'Junior AI Engineer (GenAI & LLMs)',
+    description: 'Develop agentic AI workflows with PyTorch, LangGraph, RAG and Hugging Face.',
+  });
+  const cloudJob = makeJob({
+    id: 'greenhouse:nebius:1',
+    title: 'Ingeniero de Sistemas Cloud & DevOps',
+    description: 'Manage Kubernetes (K8s), Terraform, AWS, Linux and GitHub Actions CI/CD.',
+  });
+  const cyberQaJob = makeJob({
+    id: 'smartrecruiters:checkpoint:1',
+    title: 'Analista de Ciberseguridad & QA Automation',
+    description: 'Playwright automated testing, SIEM, SOC operations and pentesting.',
+  });
+  const erpJob = makeJob({
+    id: 'teamtailor:logicalis:1',
+    title: 'Consultor SAP FI/CO & Salesforce / Dynamics 365',
+    description: 'Enterprise ERP and CRM transformation with SAP HANA, Business Central and ServiceNow.',
+  });
+
+  const scoredData = evaluateAtsJob(dataJob, 'python-data', []);
+  expect(scoredData.isMatch).toBe(true);
+  expect(scoredData.matchedKeywords).toEqual(
+    expect.arrayContaining(['Python', 'Data Analyst', 'Power BI', 'SQL', 'Pandas', 'Airflow', 'dbt', 'Databricks', 'ETL']),
+  );
+
+  const scoredAi = evaluateAtsJob(aiJob, 'ai-ml', []);
+  expect(scoredAi.isMatch).toBe(true);
+  expect(scoredAi.matchedKeywords).toEqual(
+    expect.arrayContaining(['AI Engineer', 'Generative AI', 'LLM', 'PyTorch', 'LangChain', 'RAG', 'Hugging Face']),
+  );
+
+  const scoredCloud = evaluateAtsJob(cloudJob, 'cloud-devops', []);
+  expect(scoredCloud.isMatch).toBe(true);
+  expect(scoredCloud.matchedKeywords).toEqual(
+    expect.arrayContaining(['AWS', 'Kubernetes', 'Terraform', 'CI/CD', 'Linux', 'DevOps', 'Systems Engineer']),
+  );
+
+  const scoredCyberQa = evaluateAtsJob(cyberQaJob, 'qa-cyber', []);
+  expect(scoredCyberQa.isMatch).toBe(true);
+  expect(scoredCyberQa.matchedKeywords).toEqual(
+    expect.arrayContaining(['QA', 'Test Automation', 'Playwright', 'Cybersecurity', 'SOC', 'SIEM', 'Pentesting']),
+  );
+
+  const scoredErp = evaluateAtsJob(erpJob, 'sap', []);
+  expect(scoredErp.isMatch).toBe(true);
+  expect(scoredErp.matchedKeywords).toEqual(
+    expect.arrayContaining(['SAP', 'SAP HANA', 'FI/CO', 'Salesforce', 'Dynamics 365', 'ServiceNow', 'ERP']),
+  );
+});
+

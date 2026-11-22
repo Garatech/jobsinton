@@ -306,14 +306,22 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
   const presetCounts = useMemo(() => {
     const counts: Record<StackPresetId, number> = {
       'all-tech': 0,
-      sap: 0,
       fullstack: 0,
+      'python-data': 0,
+      'ai-ml': 0,
+      'cloud-devops': 0,
+      'qa-cyber': 0,
+      sap: 0,
       custom: 0,
     };
     for (const job of allJobs) {
       if (evaluateAtsJob(job, 'all-tech', customTags).isMatch) counts['all-tech']++;
-      if (evaluateAtsJob(job, 'sap', customTags).isMatch) counts.sap++;
       if (evaluateAtsJob(job, 'fullstack', customTags).isMatch) counts.fullstack++;
+      if (evaluateAtsJob(job, 'python-data', customTags).isMatch) counts['python-data']++;
+      if (evaluateAtsJob(job, 'ai-ml', customTags).isMatch) counts['ai-ml']++;
+      if (evaluateAtsJob(job, 'cloud-devops', customTags).isMatch) counts['cloud-devops']++;
+      if (evaluateAtsJob(job, 'qa-cyber', customTags).isMatch) counts['qa-cyber']++;
+      if (evaluateAtsJob(job, 'sap', customTags).isMatch) counts.sap++;
       if (evaluateAtsJob(job, 'custom', customTags).isMatch) counts.custom++;
     }
     return counts;
@@ -680,7 +688,7 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
           })}
         </div>
 
-        {(preset === 'sap' || preset === 'fullstack') && (
+        {preset !== 'all-tech' && preset !== 'custom' && (
           <ul className="ats-active-keywords" aria-label={t('Active preset keywords')}>
             {activePresetMeta.keywords.map((kw) => (
               <li key={kw}>{kw}</li>

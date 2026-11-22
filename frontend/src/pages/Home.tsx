@@ -64,8 +64,12 @@ export function Home({ profile, ...actions }: SavedActions & { profile: Professi
 
       <div className="home-preset-shortcuts" role="group" aria-label={t('Quick stack tracks')}>
         <a className="home-shortcut-pill" href="#opportunities?preset=all-tech">{t('All Tech / Software Roles')}</a>
-        <a className="home-shortcut-pill" href="#opportunities?preset=sap">{t('Track A · SAP & Enterprise')}</a>
-        <a className="home-shortcut-pill" href="#opportunities?preset=fullstack">{t('Track B · Full Stack (Java / JS)')}</a>
+        <a className="home-shortcut-pill" href="#opportunities?preset=fullstack">{t('Software & Web Development')}</a>
+        <a className="home-shortcut-pill" href="#opportunities?preset=python-data">{t('Python, Data & Analytics')}</a>
+        <a className="home-shortcut-pill" href="#opportunities?preset=ai-ml">{t('AI & Machine Learning')}</a>
+        <a className="home-shortcut-pill" href="#opportunities?preset=cloud-devops">{t('Cloud, DevOps & Systems')}</a>
+        <a className="home-shortcut-pill" href="#opportunities?preset=qa-cyber">{t('QA Automation & Cybersecurity')}</a>
+        <a className="home-shortcut-pill" href="#opportunities?preset=sap">{t('SAP, ERP & Enterprise CRM')}</a>
         <a className="home-shortcut-pill" href="#opportunities?filter=fresh">{t('Fresh (< 48h)')}</a>
       </div>
 
@@ -128,7 +132,7 @@ export function Home({ profile, ...actions }: SavedActions & { profile: Professi
     <section className="section" aria-labelledby="latest-title"><div className="section-heading"><div><p className="eyebrow">{t("ROOM TO EXPLORE")}</p><h2 id="latest-title">{t("A few possibilities.")}</h2></div><a className="text-link" href="#opportunities?source=sample">{t("Browse the sample catalog")} <span aria-hidden="true">↗</span></a></div><JobList jobs={opportunities.slice(0, 3)} {...actions} /></section>
     <section className="direction"><div className="section-heading"><h2>{t("Built around what matters to you.")}</h2></div><div className="feature-grid">
       <article><span className="feature-number">{t("01 / DIRECT ATS SPEED")}</span><h3>{t("First-48h visibility")}</h3><p>{t("Query Greenhouse, Lever, SmartRecruiters, Workable, and Ashby directly without aggregator lag.")}</p></article>
-      <article><span className="feature-number">{t("02 / CLEAR REASONS")}</span><h3>{t("Understand the fit")}</h3><p>{t("Highlight your exact stack keywords across SAP, Full Stack, or custom developer profiles.")}</p></article>
+      <article><span className="feature-number">{t("02 / CLEAR REASONS")}</span><h3>{t("Understand the fit")}</h3><p>{t("Highlight your exact stack keywords across Software, Python & Data, AI, Cloud, SAP/ERP, or custom profiles.")}</p></article>
       <article><span className="feature-number">{t("03 / DIRECT APPLY")}</span><h3>{t("Official company portals")}</h3><p>{t("Jump straight to the company’s official application form with zero intermediaries.")}</p></article>
     </div></section>
   </>;
