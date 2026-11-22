@@ -216,16 +216,15 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
   }, []);
 
   const commitTriageStatus = useCallback((jobId: string, targetStatus: JobTriageStatus) => {
-    setTriageMap((current) => {
-      const next = { ...current };
-      if (next[jobId] === targetStatus) {
-        delete next[jobId];
-      } else {
-        next[jobId] = targetStatus;
-      }
-      saveTriageMap(next);
-      return next;
-    });
+    const current = loadTriageMap();
+    const next = { ...current };
+    if (next[jobId] === targetStatus) {
+      delete next[jobId];
+    } else {
+      next[jobId] = targetStatus;
+    }
+    saveTriageMap(next);
+    setTriageMap(next);
   }, []);
 
   const handleTriageToggle = useCallback(
