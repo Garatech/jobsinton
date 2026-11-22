@@ -75,20 +75,26 @@ test('3-tier geo filter classifies Spain Only, Spain + EU Remote, and blocks Fak
     location: 'London, United Kingdom (UK only)',
     workplaceType: 'remote',
   });
+  const berlinHybrid = makeJob({ location: 'Berlin, Germany', workplaceType: 'hybrid' });
+  const lisbonOnsite = makeJob({ location: 'Lisbon, Portugal', workplaceType: 'onsite' });
   const sfOnsite = makeJob({ location: 'San Francisco, CA', workplaceType: 'onsite' });
 
   expect(isSpainOnlyJob(madridJob)).toBe(true);
   expect(isSpainOnlyJob(barcelonaHybrid)).toBe(true);
   expect(isSpainOnlyJob(euRemoteJob)).toBe(false);
+  expect(isSpainOnlyJob(berlinHybrid)).toBe(false);
 
   expect(hasFakeRemoteRestriction(fakeUsRemote)).toBe(true);
   expect(hasFakeRemoteRestriction(fakeCanadaRemote)).toBe(true);
   expect(hasFakeRemoteRestriction(fakeTxRemote)).toBe(true);
   expect(hasFakeRemoteRestriction(fakeUkRemote)).toBe(true);
   expect(hasFakeRemoteRestriction(euRemoteJob)).toBe(false);
+  expect(hasFakeRemoteRestriction(berlinHybrid)).toBe(false);
 
   expect(classifyGeoTier(madridJob).geoTier).toBe('spain');
   expect(classifyGeoTier(euRemoteJob).geoTier).toBe('eu-remote');
+  expect(classifyGeoTier(berlinHybrid).geoTier).toBe('eu-remote');
+  expect(classifyGeoTier(lisbonOnsite).geoTier).toBe('eu-remote');
   expect(classifyGeoTier(fakeUsRemote).geoTier).toBe('global');
   expect(classifyGeoTier(fakeUsRemote).isFakeRemoteBlocked).toBe(true);
   expect(classifyGeoTier(fakeCanadaRemote).geoTier).toBe('global');
@@ -97,17 +103,21 @@ test('3-tier geo filter classifies Spain Only, Spain + EU Remote, and blocks Fak
 
   const scoredMadrid = evaluateAtsJob(madridJob, 'all-tech', []);
   const scoredEuRemote = evaluateAtsJob(euRemoteJob, 'all-tech', []);
+  const scoredBerlin = evaluateAtsJob(berlinHybrid, 'all-tech', []);
   const scoredFakeUs = evaluateAtsJob(fakeUsRemote, 'all-tech', []);
   const scoredFakeCanada = evaluateAtsJob(fakeCanadaRemote, 'all-tech', []);
 
   expect(matchesGeoScope(scoredMadrid, 'spain-only')).toBe(true);
   expect(matchesGeoScope(scoredEuRemote, 'spain-only')).toBe(false);
+  expect(matchesGeoScope(scoredBerlin, 'spain-only')).toBe(false);
   expect(matchesGeoScope(scoredMadrid, 'spain-eu-remote')).toBe(true);
   expect(matchesGeoScope(scoredEuRemote, 'spain-eu-remote')).toBe(true);
+  expect(matchesGeoScope(scoredBerlin, 'spain-eu-remote')).toBe(true);
   expect(matchesGeoScope(scoredFakeUs, 'spain-eu-remote')).toBe(false);
   expect(matchesGeoScope(scoredFakeCanada, 'spain-eu-remote')).toBe(false);
   expect(matchesGeoScope(scoredFakeUs, 'global')).toBe(true);
   expect(isSpainMadridOrRemote(euRemoteJob)).toBe(true);
+  expect(isSpainMadridOrRemote(berlinHybrid)).toBe(true);
   expect(isSpainMadridOrRemote(fakeUsRemote)).toBe(false);
   expect(isSpainMadridOrRemote(fakeCanadaRemote)).toBe(false);
 });
