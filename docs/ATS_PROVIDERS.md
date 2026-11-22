@@ -56,11 +56,15 @@ All backend ATS code lives under `backend/src/main/java/io/github/garatech/jobsi
 ## Frontend zero-friction UX & stack presets
 
 - **Instant load on launch:** Vite proxies `/api/ats` to `http://127.0.0.1:8080`. The Home page (`#home`) previews the freshest live ATS postings in **Live ATS Radar**, and Opportunities (`#opportunities`) defaults directly to **Live ATS Boards** (while keeping the fictional `Sample catalog` accessible via toggle or `?source=sample`).
-- **Developer stack presets (`frontend/src/ats/presets.ts`):**
-  - `All Tech / Software Roles`
-  - `Track A · SAP & Enterprise` (`SAP`, `ABAP`, `S/4HANA`, `RAP`, `CAP`, `OData`, `Fiori`, `BTP` — with alias matching for `ABAP OO`, `OData v4`, `SAPUI5`, `SAP HANA`)
-  - `Track B · Full Stack (Java / JS)` (`Java`, `Spring Boot`, `Angular`, `Node.js`, `React`, `TypeScript`, `PostgreSQL`, `Docker`)
-  - `Custom Profile` (editable skill tags persisted in browser `localStorage`, plus one-click sync from the saved Professional Profile)
+- **Multi-discipline developer stack presets (`frontend/src/ats/presets.ts`):**
+  - `All Tech / Software Roles` (`all-tech`)
+  - `Software & Web Development` (`fullstack`: `Java`, `Spring Boot`, `JavaScript`, `TypeScript`, `React`, `Angular`, `Vue.js`, `Node.js`, `Next.js`, `C#`, `.NET`, `PHP`, `Kotlin`, `Swift`, `Flutter`, `PostgreSQL`, `MySQL`, `MongoDB`, `REST`, `GraphQL`, `Docker`)
+  - `Python, Data & Analytics` (`python-data`: `Python`, `Data Analyst`, `Data Engineer`, `Data Scientist`, `Business Intelligence`, `SQL`, `Power BI`, `Tableau`, `Looker`, `Pandas`, `Django`, `FastAPI`, `Flask`, `Spark`, `PySpark`, `Databricks`, `Snowflake`, `BigQuery`, `Airflow`, `dbt`, `Kafka`, `ETL`)
+  - `AI & Machine Learning` (`ai-ml`: `AI Engineer`, `Machine Learning`, `Generative AI`, `LLM`, `NLP`, `Computer Vision`, `Deep Learning`, `PyTorch`, `TensorFlow`, `Scikit-learn`, `LangChain`, `RAG`, `MLOps`, `Data Science`, `OpenAI`, `Hugging Face`)
+  - `Cloud, DevOps & Systems` (`cloud-devops`: `AWS`, `Azure`, `GCP`, `Docker`, `Kubernetes`, `Terraform`, `Ansible`, `CI/CD`, `Jenkins`, `GitLab CI`, `GitHub Actions`, `Linux`, `DevOps`, `SRE`, `Platform Engineer`, `Systems Engineer`, `SysAdmin`, `Cloud Engineer`, `Prometheus`, `Grafana`)
+  - `QA Automation & Cybersecurity` (`qa-cyber`: `QA`, `Test Automation`, `SDET`, `Playwright`, `Cypress`, `Selenium`, `JUnit`, `Postman`, `Cybersecurity`, `Security Engineer`, `SOC`, `SIEM`, `Pentesting`, `AppSec`, `DevSecOps`, `ISO 27001`)
+  - `SAP, ERP & Enterprise CRM` (`sap`: `SAP`, `ABAP`, `S/4HANA`, `RAP`, `CAP`, `OData`, `Fiori`, `BTP`, `SAP HANA`, `FI/CO`, `SuccessFactors`, `Salesforce`, `Dynamics 365`, `ServiceNow`, `ERP`)
+  - `Custom Profile` (`custom`: editable skill tags persisted in browser `localStorage`, plus one-click sync from the saved Professional Profile)
 - **Token-boundary keyword matching & Junior/Seniority scoring (`frontend/src/ats/scoring.ts`):** Matches technical terms cleanly without false substring hits (for example, `Java` does not match `JavaScript`, `RAP` does not match `bootstrap`, `CAP` does not match `capacity`, `SAP` does not match `asap`), boosts Junior / Graduate / Entry-level postings (`🎯 Junior / Entry Fit`, `+20` to `+30` pts), and penalizes Senior / Staff / Principal / Architect roles (`⚠️ Senior/Staff`, `-25` pts).
 - **3-Tier Geographical Filter & Anti-"Fake Remote" Blocker (`frontend/src/ats/scoring.ts`):**
   - `🇪🇸 Spain Only` (`spain-only`): Madrid, Barcelona, Valencia, Málaga, Sevilla, Bilbao, Zaragoza, Spain, España, Iberia.

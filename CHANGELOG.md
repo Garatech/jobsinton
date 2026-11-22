@@ -4,6 +4,12 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Multi-Discipline Developer Stack Tracks & Bilingual Tech Keyword Scoring
+
+- Expanded `STACK_PRESETS` (`frontend/src/ats/presets.ts`) from two CV-hardcoded presets to **8 multi-discipline developer tracks**: `All Tech / Software Roles`, `Software & Web Development`, `Python, Data & Analytics`, `AI & Machine Learning`, `Cloud, DevOps & Systems`, `QA Automation & Cybersecurity`, `SAP, ERP & Enterprise CRM`, and `Custom Profile`.
+- Expanded `KEYWORD_ALIASES` and `TECH_TITLE_INDICATORS` (`frontend/src/ats/scoring.ts`) with bilingual (EN/ES) token-boundary matching for Data Analyst (`Analista de Datos`), Data Engineer (`Ingeniero de Datos`), Data Scientist, BI, Power BI, Tableau, Spark, Databricks, Snowflake, Airflow, dbt, AI/LLM/RAG/PyTorch/LangChain, Cloud/DevOps/SRE/SysAdmin (`Ingeniero de Sistemas`), QA Automation (`Playwright`, `Cypress`, `Selenium`), Cybersecurity (`Ciberseguridad`, `SOC`, `SIEM`, `Pentesting`), and SAP functional/technical modules plus Salesforce, Dynamics 365, and ServiceNow.
+- Updated `LiveJobsBoard.tsx`, `Home.tsx`, and Spanish translations (`messages.ts`) to display live match counts, active keyword chips, and home page shortcuts for all 8 tracks.
+
 ### Added — Europe-Eligibility Ingestion Filter, SmartRecruiters Multi-Page Pagination & 293-Company Spain/Europe Seed Catalog
 
 - Added `AtsSupport.isEuropeEligibleJob` in `AtsFeedService` to discard non-European (US, Canada, LATAM, APAC, India, Australia) job postings at ingestion unless the role includes a Spanish/European location or offers European/EMEA/CET/Worldwide remote eligibility.
