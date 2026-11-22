@@ -496,8 +496,14 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
             </p>
           </div>
           <div className="ats-discovery-grid">
-            <form className="ats-discovery-form" onSubmit={handleDiscoverByUrl}>
-              <label htmlFor="ats-discover-url-input">{t('Career Page URL Auto-Sniffer')}</label>
+            <form className="ats-discovery-card ats-discovery-card-url" onSubmit={handleDiscoverByUrl}>
+              <div className="ats-discovery-card-head">
+                <span className="ats-discovery-step">{t('OPTION 1 · DIRECT URL')}</span>
+                <label htmlFor="ats-discover-url-input">{t('Career Page URL Auto-Sniffer')}</label>
+                <p className="ats-discovery-hint">
+                  {t('Inspects any company career page HTML or direct ATS link to detect embedded boards automatically.')}
+                </p>
+              </div>
               <div className="ats-custom-form">
                 <input
                   id="ats-discover-url-input"
@@ -519,8 +525,14 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
               </div>
             </form>
 
-            <form className="ats-discovery-form" onSubmit={handleProbeCompanies}>
-              <label htmlFor="ats-probe-slugs-input">{t('Batch Company Name / Slug Probe (9 ATS)')}</label>
+            <form className="ats-discovery-card ats-discovery-card-probe" onSubmit={handleProbeCompanies}>
+              <div className="ats-discovery-card-head">
+                <span className="ats-discovery-step">{t('OPTION 2 · BY COMPANY NAME')}</span>
+                <label htmlFor="ats-probe-slugs-input">{t('Batch Company Name / Slug Probe (9 ATS)')}</label>
+                <p className="ats-discovery-hint">
+                  {t('Enter 1–12 company names separated by commas to test their slugs across all 9 ATS platforms.')}
+                </p>
+              </div>
               <div className="ats-custom-form">
                 <input
                   id="ats-probe-slugs-input"
@@ -854,6 +866,7 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
               key={scored.job.id}
               scored={scored}
               triageStatus={triageMap[scored.job.id] ?? null}
+              exitingStatus={exitingJobs[scored.job.id] ?? null}
               onTriageToggle={handleTriageToggle}
               onJobHydrated={handleJobHydrated}
             />
@@ -907,11 +920,12 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
 interface LiveJobCardProps {
   scored: ScoredAtsJob;
   triageStatus: JobTriageStatus | null;
+  exitingStatus?: 'applied' | 'dismissed' | null;
   onTriageToggle: (jobId: string, status: JobTriageStatus) => void;
   onJobHydrated: (job: AtsJob) => void;
 }
 
-function LiveJobCard({ scored, triageStatus, onTriageToggle, onJobHydrated }: LiveJobCardProps) {
+export function LiveJobCard({ scored, triageStatus, exitingStatus = null, onTriageToggle, onJobHydrated }: LiveJobCardProps) {
   const { t, language } = useLanguage();
   const { job, matchedKeywords, senioritySignal } = scored;
   const [expanded, setExpanded] = useState(false);
@@ -920,6 +934,7 @@ function LiveJobCard({ scored, triageStatus, onTriageToggle, onJobHydrated }: Li
 
   const freshness = formatFreshness(job.hoursSincePublished, job.publishedAt, language);
   const canHydrate = job.provider === 'smartrecruiters' && !job.hasFullDescription;
+  const effectiveStatus = exitingStatus ?? triageStatus;
 
   async function toggleDescription() {
     if (expanded) {
@@ -947,7 +962,14 @@ function LiveJobCard({ scored, triageStatus, onTriageToggle, onJobHydrated }: Li
   }
 
   return (
-    <article className={'job ats-card' + (scored.isFresh24h ? ' ats-card-hot' : '')} data-ats-job={job.id}>
+    <article
+      className={
+        'job ats-card' +
+        (scored.isFresh24h ? ' ats-card-hot' : '') +
+        (exitingStatus ? ` ats-card-exiting ats-card-exiting-${exitingStatus}` : '')
+      }
+      data-ats-job={job.id}
+    >
       <div className="ats-card-body">
         <div className="ats-card-header">
           <span className="ats-company">{job.companyName}</span>
@@ -1048,24 +1070,24 @@ function LiveJobCard({ scored, triageStatus, onTriageToggle, onJobHydrated }: Li
         <div className="ats-triage-actions" role="group" aria-label={t('Job triage')}>
           <button
             type="button"
-            className={'ats-toggle-pill' + (triageStatus === 'saved' ? ' active' : '')}
-            aria-pressed={triageStatus === 'saved'}
+            className={'ats-toggle-pill' + (effectiveStatus === 'saved' ? ' active' : '')}
+            aria-pressed={effectiveStatus === 'saved'}
             onClick={() => onTriageToggle(job.id, 'saved')}
           >
             {t('⭐ Save')}
           </button>
           <button
             type="button"
-            className={'ats-toggle-pill' + (triageStatus === 'applied' ? ' active' : '')}
-            aria-pressed={triageStatus === 'applied'}
+            className={'ats-toggle-pill' + (effectiveStatus === 'applied' ? ' active' : '')}
+            aria-pressed={effectiveStatus === 'applied'}
             onClick={() => onTriageToggle(job.id, 'applied')}
           >
             {t('✅ Applied')}
           </button>
           <button
             type="button"
-            className={'ats-toggle-pill' + (triageStatus === 'dismissed' ? ' active' : '')}
-            aria-pressed={triageStatus === 'dismissed'}
+            className={'ats-toggle-pill' + (effectiveStatus === 'dismissed' ? ' active' : '')}
+            aria-pressed={effectiveStatus === 'dismissed'}
             onClick={() => onTriageToggle(job.id, 'dismissed')}
           >
             {t('✕ Dismiss')}
@@ -1073,6 +1095,105 @@ function LiveJobCard({ scored, triageStatus, onTriageToggle, onJobHydrated }: Li
         </div>
       </div>
     </article>
+  );
+}
+
+export function SavedAtsJobsSection({ profile }: { profile: ProfessionalProfile | null }) {
+  const { t } = useLanguage();
+  const [triageMap, setTriageMap] = useState<TriageMap>(() => loadTriageMap());
+  const [feed, setFeed] = useState<AtsFeedResponse | null>(() => getCachedAtsFeed());
+  const [loading, setLoading] = useState(false);
+
+  const savedAtsIds = useMemo(
+    () => Object.entries(triageMap).filter(([, status]) => status === 'saved').map(([id]) => id),
+    [triageMap],
+  );
+
+  useEffect(() => {
+    function sync() {
+      setTriageMap(loadTriageMap());
+    }
+    function onStorage(event: StorageEvent) {
+      if (event.key === TRIAGE_STORAGE_KEY || event.key === null) sync();
+    }
+    window.addEventListener(TRIAGE_CHANGE_EVENT, sync);
+    window.addEventListener('storage', onStorage);
+    return () => {
+      window.removeEventListener(TRIAGE_CHANGE_EVENT, sync);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (savedAtsIds.length === 0 || feed) return;
+    const controller = new AbortController();
+    setLoading(true);
+    fetchAtsFeed({ refresh: false, signal: controller.signal })
+      .then((res) => {
+        if (!controller.signal.aborted) setFeed(res);
+      })
+      .catch(() => {
+        // Silent fallback if backend is offline
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
+      });
+    return () => controller.abort();
+  }, [savedAtsIds.length, feed]);
+
+  const customTags = useMemo(() => loadCustomTags(profile), [profile]);
+  const savedAtsJobs = useMemo(() => {
+    if (!feed || savedAtsIds.length === 0) return [];
+    const idSet = new Set(savedAtsIds);
+    return feed.jobs
+      .filter((job) => idSet.has(job.id))
+      .map((job) => evaluateAtsJob(job, 'all-tech', customTags));
+  }, [feed, savedAtsIds, customTags]);
+
+  const handleTriageToggle = useCallback((jobId: string, targetStatus: JobTriageStatus) => {
+    setTriageMap((current) => {
+      const next = { ...current };
+      if (next[jobId] === targetStatus) {
+        delete next[jobId];
+      } else {
+        next[jobId] = targetStatus;
+      }
+      saveTriageMap(next);
+      return next;
+    });
+  }, []);
+
+  const handleJobHydrated = useCallback((updatedJob: AtsJob) => {
+    setFeed((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        jobs: current.jobs.map((job) => (job.id === updatedJob.id ? updatedJob : job)),
+      };
+    });
+  }, []);
+
+  if (savedAtsIds.length === 0) return null;
+
+  return (
+    <div className="saved-ats-section">
+      {loading && !feed && (
+        <p className="muted" role="status">{t('Fetching live postings from public company ATS boards…')}</p>
+      )}
+      {savedAtsJobs.length > 0 && (
+        <div className="jobs ats-job-list">
+          {savedAtsJobs.map((scored) => (
+            <LiveJobCard
+              key={scored.job.id}
+              scored={scored}
+              triageStatus={triageMap[scored.job.id] ?? null}
+              onTriageToggle={handleTriageToggle}
+              onJobHydrated={handleJobHydrated}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
