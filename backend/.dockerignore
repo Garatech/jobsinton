@@ -1,0 +1,7 @@
+target/
+data/
+*.log
+*.iml
+.idea/
+.vscode/
+src/test/

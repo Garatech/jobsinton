@@ -4,6 +4,13 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Minimalist One-Command Dockerization & Operating Instructions (`INSTRUCTIONS.md`)
+
+- Added root `docker-compose.yml` orchestrating the `backend` and `frontend` containers with a persistent `jobsinton-data` volume (`/app/data` for `custom-companies.json` and `ats-seen-jobs.json`) and healthcheck-gated startup exposed on `http://localhost:5173`.
+- Added multi-stage `backend/Dockerfile` (`maven:3.9.9-eclipse-temurin-21-alpine` → non-root `eclipse-temurin:21-jre-alpine`) and `backend/.dockerignore`.
+- Added multi-stage `frontend/Dockerfile` (`node:24-alpine` → `nginx:1.27-alpine`), `frontend/nginx.conf` (serving the production Vite bundle and proxying `/api/*` to `http://backend:8080/api/`), and `frontend/.dockerignore`.
+- Added root `INSTRUCTIONS.md` and updated `README.md` with step-by-step instructions to clone and launch JobSinton on any computer with Docker installed.
+
 ### Added — Expanded 14-Role Professional Profile Taxonomy & Backend Adapter Alignment
 
 - Expanded `ROLES` (`frontend/src/profile/model.ts`), Spanish translations (`frontend/src/i18n/messages.ts`), `profileSearch` (`frontend/src/pages/Home.tsx`), and `SavedProfileAdapter` (`backend/.../matching/api/SavedProfileAdapter.java`) from 6 to **14 developer and tech roles**: `Backend developer`, `Frontend developer`, `Full stack developer`, `SAP developer`, `Data engineer`, `Platform engineer`, `Data analyst`, `Python developer`, `AI / ML engineer`, `Cloud & DevOps engineer`, `QA & test automation`, `Cybersecurity specialist`, `Mobile developer`, and `ERP / CRM consultant`.
