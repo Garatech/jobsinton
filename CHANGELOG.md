@@ -4,6 +4,14 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — ATS Tuning, Junior & Freshness Overhaul, Web/Java Role Recovery & 317-Board Catalog
+
+- Expanded `FULLSTACK_KEYWORDS` (`frontend/src/ats/presets.ts`) and bilingual EN/ES `KEYWORD_ALIASES` (`frontend/src/ats/scoring.ts`) with software and web role/ecosystem descriptors (`Software Engineer`, `Software Developer`, `Backend`, `Frontend`, `Full Stack`, `Web Developer`, `Spring`, `Hibernate`, `Express`, `NestJS`, `HTML/CSS`) so unhydrated listings match immediately by title.
+- Refined `AtsSupport.isEuropeEligibleJob` (`backend/.../providers/ats/AtsSupport.java`) and `hasFakeRemoteRestriction` (`frontend/src/ats/scoring.ts`) with `STRICT_SINGLE_COUNTRY_LOCK_PATTERN` so multi-country remote roles that explicitly include a European country alongside the US (e.g. `Remote - US, UK, Germany`) are preserved, and expanded Spanish tech hub municipality patterns (`Sant Cugat`, `Paterna`, `Sabadell`, `Terrassa`, `Leganés`, `Alcalá de Henares`, `Majadahonda`, `Donostia`, `Vitoria`, `Las Palmas`, etc.).
+- Expanded `JUNIOR_FRIENDLY_PATTERNS` (`frontend/src/ats/scoring.ts`) with bilingual Spanish and European entry/trainee signals (`sin experiencia`, `recién titulado`, `primer empleo`, `trainee`, `prácticas`, `associate`, `working student`, `werkstudent`, `0-2 años`), added title penalties for `Senior`/`Sr.` (`-18`) and `Tech Lead`/`Team Lead`/`Architect` (`-25`), and introduced graduated recency scoring with stale-posting penalties for `> 60d` (`-20`) and `> 90d` (`-45`).
+- Added `📅 Recent (< 30d)` and `🎯 Junior / Entry` quick-filter pills in `frontend/src/pages/LiveJobsBoard.tsx` with Spanish translations (`frontend/src/i18n/messages.ts`).
+- Expanded `backend/src/main/resources/ats/companies.json` from 293 to **317 verified public company boards** (+24 Spanish and European boards across SmartRecruiters, Teamtailor, Recruitee, Personio, Factorial HR, Workable, Ashby, and Greenhouse).
+
 ### Added — Minimalist One-Command Dockerization & Operating Instructions (`INSTRUCTIONS.md`)
 
 - Added root `docker-compose.yml` orchestrating the `backend` and `frontend` containers with a persistent `jobsinton-data` volume (`/app/data` for `custom-companies.json` and `ats-seen-jobs.json`) and healthcheck-gated startup exposed on `http://localhost:5173`.

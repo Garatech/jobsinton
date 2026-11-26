@@ -16,7 +16,7 @@ class AtsFeedServiceTest {
     @Test
     void loadsDefaultRegistryAcrossAllNineAtsProviders() {
         CompanyRegistry registry = CompanyRegistry.loadDefault();
-        assertThat(registry.boards()).hasSize(293);
+        assertThat(registry.boards()).hasSize(317);
         assertThat(registry.boards()).extracting(CompanyBoard::providerType)
                 .containsOnly(
                         AtsProviderType.GREENHOUSE,
@@ -169,6 +169,10 @@ class AtsFeedServiceTest {
                                 "Python Data Engineer", "Madrid, Spain", "hybrid",
                                 Instant.parse("2026-11-18T10:00:00Z"), "Python, SQL, Spark", "https://example.com/es-1",
                                 "Data", null, true),
+                        new RawAtsJob("es-muni", AtsProviderType.GREENHOUSE, "datadog", "Datadog",
+                                "Junior Java Developer", "Sant Cugat, Spain", "hybrid",
+                                Instant.parse("2026-11-18T09:30:00Z"), "Java, Spring Boot", "https://example.com/es-muni",
+                                "Eng", null, true),
                         new RawAtsJob("eu-1", AtsProviderType.GREENHOUSE, "datadog", "Datadog",
                                 "Backend Software Engineer", "Berlin, Germany", "hybrid",
                                 Instant.parse("2026-11-18T09:00:00Z"), "Go, Java, Kubernetes", "https://example.com/eu-1",
@@ -177,6 +181,14 @@ class AtsFeedServiceTest {
                                 "AI Engineer", "Remote - Europe (CET)", "remote",
                                 Instant.parse("2026-11-18T08:00:00Z"), "Python, LLM", "https://example.com/eu-rem",
                                 "AI", null, true),
+                        new RawAtsJob("multi-eu-rem", AtsProviderType.GREENHOUSE, "datadog", "Datadog",
+                                "Full Stack Engineer", "Remote - US, UK, Germany", "remote",
+                                Instant.parse("2026-11-18T07:30:00Z"), "React, Node.js", "https://example.com/multi-eu-rem",
+                                "Eng", null, true),
+                        new RawAtsJob("uk-only-lock", AtsProviderType.GREENHOUSE, "datadog", "Datadog",
+                                "Platform Engineer", "London, United Kingdom (UK only)", "remote",
+                                Instant.parse("2026-11-18T11:00:00Z"), "AWS", "https://example.com/uk-only-lock",
+                                "Eng", null, true),
                         new RawAtsJob("us-sf", AtsProviderType.GREENHOUSE, "datadog", "Datadog",
                                 "Staff Engineer", "San Francisco, CA", "onsite",
                                 Instant.parse("2026-11-18T11:00:00Z"), "Go", "https://example.com/us-sf",
@@ -202,7 +214,7 @@ class AtsFeedServiceTest {
         );
         AtsFeedResponse feed = service.getFeed(false);
         assertThat(feed.jobs()).extracting(AtsJob::sourceId)
-                .containsExactly("es-1", "eu-1", "eu-rem");
-        assertThat(feed.boards().getFirst().jobCount()).isEqualTo(3);
+                .containsExactly("es-1", "es-muni", "eu-1", "eu-rem", "multi-eu-rem");
+        assertThat(feed.boards().getFirst().jobCount()).isEqualTo(5);
     }
 }

@@ -72,10 +72,18 @@ final class AtsSupport {
             Map.entry("za", "South Africa")
     );
 
+    private static final java.util.regex.Pattern STRICT_SINGLE_COUNTRY_LOCK_PATTERN = java.util.regex.Pattern.compile(
+            "\\b(?:u\\.?s\\.?\\s+only|u\\.?s\\.?a\\.?\\s+only|united states only|canada only|north america only"
+                    + "|u\\.?k\\.?\\s+only|united kingdom only|latam only|apac only|india only|australia only"
+                    + "|must reside in (?:the )?(?:u\\.?s\\.?|united states|canada)"
+                    + "|authorized to work in (?:the )?(?:u\\.?s\\.?|united states|canada))\\b",
+            java.util.regex.Pattern.CASE_INSENSITIVE
+    );
+
     private static final java.util.regex.Pattern EXPLICIT_NON_EU_RESIDENCY_LOCK_PATTERN = java.util.regex.Pattern.compile(
             "\\b(?:u\\.?s\\.?\\s+only|u\\.?s\\.?a\\.?\\s+only|united states only|canada only|north america only"
                     + "|u\\.?k\\.?\\s+only|united kingdom only|latam only|apac only|india only|australia only"
-                    + "|remote\\s*[-–(/,:|]+\\s*(?:u\\.?s\\.?a?\\.?|united states|canada|ca|latam|apac|india|brazil|mexico|australia)\\b"
+                    + "|remote\\s*[-–—(/,:|]+\\s*(?:u\\.?s\\.?a?\\.?|united states|canada|ca|latam|apac|india|brazil|mexico|australia)\\b"
                     + "|must reside in (?:the )?(?:u\\.?s\\.?|united states|canada)"
                     + "|authorized to work in (?:the )?(?:u\\.?s\\.?|united states|canada))\\b",
             java.util.regex.Pattern.CASE_INSENSITIVE
@@ -96,10 +104,25 @@ final class AtsSupport {
             java.util.regex.Pattern.CASE_INSENSITIVE
     );
 
+    private static final String SPAIN_MUNICIPALITIES_REGEX =
+            "spain|espa[nñ]a|iberia|madrid|barcelona|valencia|m[aá]laga|sevilla|seville|bilbao|zaragoza"
+                    + "|pozuelo(?:\\s+de\\s+alarc[oó]n)?|las rozas|alcobendas|tres cantos|getafe|boadilla(?:\\s+del\\s+monte)?"
+                    + "|sant?\\s+cugat|paterna|esplugues|cornell[aà]|sabadell|terrassa|legan[eé]s|m[oó]stoles|alcal[aá] de henares|majadahonda"
+                    + "|alicante|coru[nñ]a|vigo|granada|oviedo|valladolid|san sebasti[aá]n|donostia|vitoria|murcia|castell[oó]n"
+                    + "|galicia|asturias|catalonia|catalunya|andalusia|andaluc[ií]a|basque|euskadi"
+                    + "|mallorca|palma|las palmas|tenerife|canarias|pamplona|santander|logro[nñ]o|burgos|salamanca"
+                    + "|c[oó]rdoba|c[aá]diz|gij[oó]n|le[oó]n|lleida|girona|tarragona|elche|santiago de compostela"
+                    + "|marbella|jerez|huelva|almer[ií]a|ja[eé]n|toledo|albacete|badajoz|c[aá]ceres|reus";
+
+    private static final java.util.regex.Pattern SPAIN_LOCATION_PATTERN = java.util.regex.Pattern.compile(
+            "\\b(?:" + SPAIN_MUNICIPALITIES_REGEX + ")\\b",
+            java.util.regex.Pattern.CASE_INSENSITIVE
+    );
+
     private static final java.util.regex.Pattern EUROPE_OR_SPAIN_SIGNAL_PATTERN = java.util.regex.Pattern.compile(
-            "\\b(?:spain|espa[nñ]a|iberia|madrid|barcelona|valencia|m[aá]laga|sevilla|seville|bilbao|zaragoza|pozuelo|las rozas|alcobendas|tres cantos|getafe|boadilla|alicante|coru[nñ]a|vigo|granada|oviedo|valladolid|san sebasti[aá]n|murcia|castell[oó]n|galicia|asturias|catalonia|catalunya|andalusia|andaluc[ií]a|basque|euskadi|mallorca|palma|tenerife|canarias|pamplona|santander|logro[nñ]o|burgos|salamanca|c[oó]rdoba|c[aá]diz|gij[oó]n|le[oó]n|lleida|girona|tarragona|elche|santiago de compostela"
+            "\\b(?:" + SPAIN_MUNICIPALITIES_REGEX
                     + "|europe|european union|eu|emea|cet|cest|dach|nordics|benelux|worldwide|anywhere"
-                    + "|germany|deutschland|berlin|munich|m[üu]nchen|hamburg|frankfurt|stuttgart|cologne|k[öo]ln|d[üu]sseldorf|leipzig|dresden|karlsruhe|nuremberg|n[üu]rnberg|walldorf|bonn|hannover"
+                    + "|germany|deutschland|berlin|munich|m[üu]nchen|hamburg|frankfurt|stuttgart|cologne|k[öo]ln|d[üu]sseldorf|leipzig|dresden|karlsruhe|nuremberg|n[üu]rnberg|walldorf|bonn|hannover|freiburg"
                     + "|france|paris|lyon|toulouse|nantes|bordeaux|lille|marseille|nice|sophia antipolis|grenoble|rennes|strasbourg|montpellier"
                     + "|portugal|lisbon|lisboa|porto|braga|coimbra|aveiro|faro"
                     + "|italy|italia|milan|milano|rome|roma|turin|torino|bologna|florence|firenze|naples|napoli|padua|padova|genoa|verona|bari"
@@ -292,8 +315,8 @@ final class AtsSupport {
      *
      * <ul>
      *   <li>Postings explicitly located in Spain or any European country/city, or tagged {@code Europe}, {@code EU},
-     *       {@code EMEA}, {@code CET}, {@code CEST}, {@code Worldwide}, or {@code Anywhere} (without a US/CA-only lock)
-     *       are always kept.</li>
+     *       {@code EMEA}, {@code CET}, {@code CEST}, {@code Worldwide}, or {@code Anywhere} (without a strict single-country
+     *       non-EU lock) are always kept—including multi-region remote listings such as {@code "Remote - US, UK, Germany"}.</li>
      *   <li>Postings explicitly restricted to North America (US/Canada), LATAM, APAC, India, Australia, or other
      *       non-European regions with no European location option are discarded at ingestion.</li>
      *   <li>Postings with neutral/unlabeled locations or general remote tags without non-EU residency locks are kept.</li>
@@ -305,24 +328,24 @@ final class AtsSupport {
         }
         String loc = job.location() == null ? "" : job.location();
         String title = job.title() == null ? "" : job.title();
+        String dept = job.department() == null ? "" : job.department();
         String locAndTitle = (loc + " " + title).strip();
+        String locationAndDepartment = (loc + " " + title + " " + dept).strip();
         String descHead = job.description() == null
                 ? ""
                 : job.description().substring(0, Math.min(600, job.description().length()));
 
-        boolean hasExplicitNonEuLock = EXPLICIT_NON_EU_RESIDENCY_LOCK_PATTERN.matcher(locAndTitle).find()
-                || EXPLICIT_NON_EU_RESIDENCY_LOCK_PATTERN.matcher(descHead).find();
-
         boolean hasEuropeOrSpainSignal = isSpainOrEuLocation(locAndTitle);
         if (hasEuropeOrSpainSignal) {
-            // If a role is in London/UK and explicitly states "UK only", or says "US only", reject it;
-            // otherwise multi-hub roles that include a European hub (e.g. "Madrid / New York" or "Lisbon / Austin") are eligible.
-            if (hasExplicitNonEuLock && !isSpainLocationOnly(locAndTitle)) {
+            if (!isSpainLocationOnly(locAndTitle)
+                    && STRICT_SINGLE_COUNTRY_LOCK_PATTERN.matcher(locationAndDepartment).find()) {
                 return false;
             }
             return true;
         }
 
+        boolean hasExplicitNonEuLock = EXPLICIT_NON_EU_RESIDENCY_LOCK_PATTERN.matcher(locAndTitle).find()
+                || EXPLICIT_NON_EU_RESIDENCY_LOCK_PATTERN.matcher(descHead).find();
         if (hasExplicitNonEuLock) {
             return false;
         }
@@ -336,11 +359,14 @@ final class AtsSupport {
     }
 
     private static boolean isSpainLocationOnly(String text) {
+        if (text == null || text.isBlank()) {
+            return false;
+        }
         String lower = text.toLowerCase(Locale.ROOT);
-        return lower.contains("spain") || lower.contains("españa") || lower.contains("espana")
-                || lower.contains("madrid") || lower.contains("barcelona") || lower.contains("valencia")
-                || lower.contains("málaga") || lower.contains("malaga") || lower.contains("sevilla")
-                || lower.contains("bilbao") || lower.contains("zaragoza");
+        if (lower.contains("cartagena") && !lower.contains("colombia")) {
+            return true;
+        }
+        return SPAIN_LOCATION_PATTERN.matcher(text).find();
     }
 
     static String countryDisplayName(String raw) {

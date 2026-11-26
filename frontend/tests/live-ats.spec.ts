@@ -262,8 +262,17 @@ test('zero-friction live ATS feed loads immediately with 3-tier geo filter, pres
   await expect(page.locator('[data-ats-job]')).toHaveCount(3);
   await page.getByRole('button', { name: /Fresh \(< 48h\)/ }).click();
   await expect(page.locator('[data-ats-job]')).toHaveCount(2);
+  await page.getByRole('button', { name: /Fresh \(< 48h\)/ }).click();
 
-  // Switch to All Fetched Jobs to reveal all 6 postings worldwide (including Fake US Remote and Sales).
+  // Quick-filter Junior / Entry narrows All Tech to Junior-flagged postings, and Recent (< 30d) is toggleable.
+  await page.getByRole('button', { name: /All Tech \/ Software Roles/ }).click();
+  await page.getByTestId('quick-filter-junior').click();
+  await expect(page.locator('[data-ats-job]')).toHaveCount(1);
+  await expect(page.locator('[data-ats-job="smartrecruiters:Celonis:sr-sap"]')).toBeVisible();
+  await page.getByTestId('quick-filter-recent30d').click();
+  await expect(page.locator('[data-ats-job]')).toHaveCount(1);
+
+  // Switch to All Fetched Jobs to reset quick filters and reveal all 6 postings worldwide (including Fake US Remote and Sales).
   await page.getByRole('button', { name: /All Fetched Jobs/ }).click();
   await expect(page.locator('[data-ats-job]')).toHaveCount(6);
 
@@ -301,6 +310,8 @@ test('home page renders Live ATS Radar preview, supports ES/EN switch, and fits 
   await expect(page.getByRole('button', { name: 'Portales ATS en directo', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await expect(page.getByText(/portales de empresa activos/)).toBeVisible();
   await expect(page.getByRole('button', { name: /🇪🇺 España \+ Remoto UE/ })).toBeVisible();
+  await expect(page.getByTestId('quick-filter-recent30d')).toContainText('📅 Recientes (< 30d)');
+  await expect(page.getByTestId('quick-filter-junior')).toContainText('🎯 Junior / Sin exp.');
   await expect(page.getByRole('button', { name: /Python, Datos y Analítica/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /Desarrollo de Software y Web/ })).toBeVisible();
 
