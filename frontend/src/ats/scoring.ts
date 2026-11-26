@@ -23,6 +23,7 @@ export interface ScoredAtsJob {
   isTechRole: boolean;
   isFresh24h: boolean;
   isFresh48h: boolean;
+  isRecent30d: boolean;
   isSpainOnly: boolean;
   isSpainOrEuRemote: boolean;
   isSpainOrRemote: boolean;
@@ -39,12 +40,23 @@ export interface FreshnessBadge {
 }
 
 const KEYWORD_ALIASES: Readonly<Record<string, readonly string[]>> = {
+  'software engineer': ['software engineer', 'ingeniero de software', 'ingeniera de software', 'swe'],
+  'software developer': ['software developer', 'desarrollador de software', 'desarrolladora de software', 'programador de software', 'programadora de software'],
+  backend: ['backend', 'back-end', 'back end', 'desarrollador backend', 'desarrolladora backend', 'programador backend', 'backend developer', 'backend engineer'],
+  frontend: ['frontend', 'front-end', 'front end', 'desarrollador frontend', 'desarrolladora frontend', 'programador frontend', 'frontend developer', 'frontend engineer'],
+  'full stack': ['full stack', 'full-stack', 'fullstack', 'desarrollador full stack', 'desarrolladora full stack', 'programador full stack', 'full stack developer', 'full stack engineer'],
+  'web developer': ['web developer', 'desarrollador web', 'desarrolladora web', 'programador web', 'programadora web', 'web engineer', 'ingeniero web'],
   java: ['java'],
   'spring boot': ['spring boot', 'springboot'],
+  spring: ['spring', 'spring boot', 'springboot', 'spring framework', 'spring cloud', 'spring data', 'spring security', 'spring mvc'],
+  hibernate: ['hibernate', 'jpa'],
   angular: ['angular'],
   'vue.js': ['vue.js', 'vuejs', 'vue js', 'vue'],
   'node.js': ['node.js', 'nodejs', 'node js', 'node'],
   'next.js': ['next.js', 'nextjs', 'next js'],
+  express: ['express', 'express.js', 'expressjs'],
+  nestjs: ['nestjs', 'nest.js'],
+  'html/css': ['html/css', 'html', 'css', 'html5', 'css3', 'tailwind', 'tailwindcss', 'sass', 'scss'],
   react: ['react', 'react.js', 'reactjs', 'react native'],
   typescript: ['typescript'],
   javascript: ['javascript'],
@@ -160,12 +172,22 @@ const SPAIN_ONLY_PATTERNS = [
   /\bsevilla\b/i,
   /\bbilbao\b/i,
   /\bzaragoza\b/i,
-  /\bpozuelo\b/i,
+  /\bpozuelo(?:\s+de\s+alarc[oó]n)?\b/i,
   /\blas rozas\b/i,
   /\balcobendas\b/i,
   /\btres cantos\b/i,
   /\bgetafe\b/i,
-  /\bboadilla\b/i,
+  /\bboadilla(?:\s+del\s+monte)?\b/i,
+  /\bsant?\s+cugat\b/i,
+  /\bpaterna\b/i,
+  /\besplugues\b/i,
+  /\bcornell[aà]\b/i,
+  /\bsabadell\b/i,
+  /\bterrassa\b/i,
+  /\blegan[eé]s\b/i,
+  /\bm[oó]stoles\b/i,
+  /\balcal[aá]\s+de\s+henares\b/i,
+  /\bmajadahonda\b/i,
   /\bspain\b/i,
   /\bespa[nñ]a\b/i,
   /\biberia\b/i,
@@ -174,6 +196,8 @@ const SPAIN_ONLY_PATTERNS = [
   /\balicante\b/i,
   /\bvalladolid\b/i,
   /\bsan sebasti[aá]n\b/i,
+  /\bdonostia\b/i,
+  /\bvitoria\b/i,
   /\bcoru[nñ]a\b/i,
   /\bvigo\b/i,
   /\bgranada\b/i,
@@ -181,13 +205,31 @@ const SPAIN_ONLY_PATTERNS = [
   /\bmurcia\b/i,
   /\bcartagena\b/i,
   /\bcastell[oó]n\b/i,
+  /\blas palmas\b/i,
+  /\btenerife\b/i,
+  /\bcanarias\b/i,
+  /\bmallorca\b/i,
+  /\bpalma\b/i,
+  /\bmarbella\b/i,
+  /\bjerez\b/i,
+  /\bhuelva\b/i,
+  /\balmer[ií]a\b/i,
+  /\bja[eé]n\b/i,
+  /\btoledo\b/i,
+  /\balbacete\b/i,
+  /\bbadajoz\b/i,
+  /\bc[aá]ceres\b/i,
+  /\breus\b/i,
 ];
+
+const STRICT_SINGLE_COUNTRY_LOCK_PATTERN =
+  /\b(?:u\.?s\.?\s+only|u\.?s\.?a\.?\s+only|united states only|canada only|north america only|u\.?k\.?\s+only|united kingdom only|latam only|apac only|india only|australia only|must reside in (?:the )?(?:u\.?s\.?|united states|canada|uk|united kingdom)|authorized to work in (?:the )?(?:u\.?s\.?|united states|canada))\b/i;
 
 const FAKE_REMOTE_BLOCK_PATTERNS = [
   /\bu\.?s\.?\s+only\b/i,
   /\bu\.?s\.?a\.?\b/i,
   /\bunited states\b/i,
-  /\bremote\s*[-–(/,:|]+\s*(?:u\.?s\.?a?\.?|canada|ca|uk|u\.?k\.?|apac|latam|india|brazil|mexico|australia)\b/i,
+  /\bremote\s*[-–—(/,:|]+\s*(?:u\.?s\.?a?\.?|canada|ca|uk|u\.?k\.?|apac|latam|india|brazil|mexico|australia)\b/i,
   /\bnorth america\b/i,
   /\bcanada(?:\s+only)?\b/i,
   // Canadian cities, provinces & ", CA" country/state code (e.g. "Toronto, CA, Remote" or "San Francisco, CA")
@@ -260,15 +302,39 @@ const EU_REMOTE_PATTERNS = [
 const JUNIOR_FRIENDLY_PATTERNS = [
   /\bjunior\b/i,
   /\bjr\.?\b/i,
+  /\bentry[\s-]+level\b/i,
+  /\bgraduate\b/i,
+  /\bnew grad\b/i,
+  /\bearly[\s-]+career\b/i,
   /\bintern(?:ship)?\b/i,
+  /\btrainee\b/i,
+  /\bapprentice(?:ship)?\b/i,
+  /\bworking student\b/i,
+  /\bwerkstudent(?:in)?\b/i,
   /\bbeca(?:rio|ria)?\b/i,
   /\bpr[aá]cticas\b/i,
-  /\bearly career\b/i,
-  /\bgraduate\b/i,
-  /\bentry[\s-]+level\b/i,
+  /\bsin experiencia\b/i,
+  /\bno experience required\b/i,
+  /\breci[eé]n titulado(?:a|s)?\b/i,
+  /\breci[eé]n graduado(?:a|s)?\b/i,
+  /\bprimer empleo\b/i,
+  /\bj[oó]ven(?:es)? talento(?:s)?\b/i,
+  /\btalent program\b/i,
+  /\bacademy\b/i,
+  /\bbootcamp\b/i,
+  /\bgrado superior\b/i,
+  /\bciclo formativo\b/i,
+  /\bfp\s+(?:grado|superior|inform[aá]tica|dam|daw|asir)\b/i,
+  /\b(?:dam|daw|asir)\b/i,
+  /\bnivel junior\b/i,
+  /\bperfil junior\b/i,
+  /\bprogramador(?:a)? novel\b/i,
+  /\bdesarrollador(?:a)? novel\b/i,
+  /\bassociate (?:software |backend |frontend |full[- ]?stack |web |data |cloud |devops |qa |security |sap |it |systems )?(?:engineer|developer|consultant|analyst|specialist)\b/i,
   /\bengineer\s+i\b/i,
   /\bdeveloper\s+i\b/i,
-  /\b[012]\s*[-–to]+\s*[23]\s*(?:years|a[nñ]os)\b/i,
+  /\b[012]\s*(?:[-–to]+|a)\s*[123]\s*(?:years|a[nñ]os)\b/i,
+  /\bmenos de [23] a[nñ]os\b/i,
   /\b1\+?\s*(?:year|a[nñ]o)\b/i,
   /\b2\+?\s*(?:years|a[nñ]os)\b/i,
 ];
@@ -279,8 +345,18 @@ const SENIOR_STAFF_TITLE_PATTERNS = [
   /\bdirector\b/i,
   /\bhead of\b/i,
   /\bengineering manager\b/i,
-  /\bvp of\b/i,
+  /\bvp(?:\s+of)?\b/i,
+  /\bvice president\b/i,
+  /\btech(?:nical)?\s+lead\b/i,
+  /\bteam\s+lead\b/i,
+  /\bengineering\s+lead\b/i,
+  /\blead\s+(?:software|backend|frontend|full[- ]?stack|web|data|ai|ml|cloud|devops|platform|qa|security|sap|erp|systems|mobile|site reliability)?\s*(?:engineer|developer|architect|scientist|consultant|programador|desarrollador)\b/i,
+  /\barchitect\b/i,
+  /\barquitecto(?:a)?\b/i,
 ];
+
+const SENIOR_TITLE_PATTERN = /\b(?:senior|sr\.?)\b/i;
+const JUNIOR_OR_MID_TITLE_PATTERN = /\b(?:junior|jr\.?|mid)\b/i;
 
 const SENIOR_YEARS_PATTERNS = [
   /\b(?:[89]|1[0-5])\+?\s*(?:years|a[nñ]os)\b/i,
@@ -324,11 +400,20 @@ export function isSpainOnlyJob(job: Pick<AtsJob, 'location' | 'title' | 'descrip
 
 export function hasFakeRemoteRestriction(job: Pick<AtsJob, 'location' | 'title' | 'description'>): boolean {
   const locationAndTitle = `${job.location ?? ''} ${job.title ?? ''}`;
-  if (FAKE_REMOTE_BLOCK_PATTERNS.some((pattern) => pattern.test(locationAndTitle))) {
+  const descHead = (job.description ?? '').slice(0, 800);
+  const hasStrictSingleCountryLock =
+    STRICT_SINGLE_COUNTRY_LOCK_PATTERN.test(locationAndTitle)
+    || STRICT_SINGLE_COUNTRY_LOCK_PATTERN.test(descHead);
+
+  if (hasStrictSingleCountryLock) {
     return true;
   }
-  const descHead = (job.description ?? '').slice(0, 800);
-  if (/\b(?:u\.?s\.?\s+only|united states only|must reside in (?:the )?(?:u\.?s\.?|united states|canada)|authorized to work in (?:the )?(?:u\.?s\.?|united states|canada)|uk only|united kingdom only|canada only|north america only)\b/i.test(descHead)) {
+  // Multi-country remote postings that explicitly include a European country/hub alongside the US
+  // (e.g. "Remote - US, UK, Germany") remain eligible for EU Remote unless single-country locked.
+  if (EU_COUNTRY_AND_CITY_PATTERNS.some((pattern) => pattern.test(locationAndTitle))) {
+    return false;
+  }
+  if (FAKE_REMOTE_BLOCK_PATTERNS.some((pattern) => pattern.test(locationAndTitle))) {
     return true;
   }
   return false;
@@ -404,8 +489,13 @@ export function detectSenioritySignal(job: Pick<AtsJob, 'title' | 'description'>
 } {
   const title = job.title ?? '';
   const desc = (job.description ?? '').slice(0, 1200);
-  if (SENIOR_STAFF_TITLE_PATTERNS.some((p) => p.test(title))
-    || SENIOR_YEARS_PATTERNS.some((p) => p.test(`${title} ${desc}`))) {
+  if (SENIOR_STAFF_TITLE_PATTERNS.some((p) => p.test(title))) {
+    return { signal: 'senior-warning', delta: -25 };
+  }
+  if (SENIOR_TITLE_PATTERN.test(title) && !JUNIOR_OR_MID_TITLE_PATTERN.test(title)) {
+    return { signal: 'senior-warning', delta: -18 };
+  }
+  if (SENIOR_YEARS_PATTERNS.some((p) => p.test(`${title} ${desc}`)) && !JUNIOR_FRIENDLY_PATTERNS.some((p) => p.test(title))) {
     return { signal: 'senior-warning', delta: -25 };
   }
   if (JUNIOR_FRIENDLY_PATTERNS.some((p) => p.test(title))) {
@@ -475,14 +565,21 @@ export function evaluateAtsJob(
   const hours = job.hoursSincePublished;
   const isFresh24h = hours !== null && hours <= 24;
   const isFresh48h = hours !== null && hours <= 48;
+  const isRecent30d = hours !== null && hours <= 24 * 30;
   const geo = classifyGeoTier(job);
   const seniority = detectSenioritySignal(job);
 
   let score = titleMatches.length * 25 + (matchedKeywords.length - titleMatches.length) * 10;
   if (techRole) score += 8;
-  if (isFresh24h) score += 20;
-  else if (isFresh48h) score += 12;
-  else if (hours !== null && hours <= 168) score += 5;
+  if (hours !== null) {
+    if (hours <= 24) score += 28;
+    else if (hours <= 48) score += 20;
+    else if (hours <= 24 * 7) score += 14;
+    else if (hours <= 24 * 14) score += 8;
+    else if (hours <= 24 * 30) score += 3;
+    else if (hours > 24 * 90) score -= 45;
+    else if (hours > 24 * 60) score -= 20;
+  }
 
   if (geo.isSpainOnly) {
     score += /\bmadrid\b/i.test(job.location ?? '') ? 25 : 18;
@@ -504,6 +601,7 @@ export function evaluateAtsJob(
     isTechRole: techRole,
     isFresh24h,
     isFresh48h,
+    isRecent30d,
     isSpainOnly: geo.isSpainOnly,
     isSpainOrEuRemote: geo.isSpainOrEuRemote,
     isSpainOrRemote: geo.isSpainOrEuRemote,

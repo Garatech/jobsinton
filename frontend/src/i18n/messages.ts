@@ -405,6 +405,8 @@ export const spanish: Readonly<Record<string, string>> = {
   "🇪🇺 Spain + EU Remote": "🇪🇺 España + Remoto UE",
   "🌍 Global": "🌍 Global",
   "🎯 Junior / Entry Fit": "🎯 Apta Junior / Entry",
+  "🎯 Junior / Entry": "🎯 Junior / Sin exp.",
+  "📅 Recent (< 30d)": "📅 Recientes (< 30d)",
   "⚠️ Senior/Staff": "⚠️ Senior/Staff",
   "Job triage": "Triaje de oferta",
   "⭐ Save": "⭐ Guardar",

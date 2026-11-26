@@ -21,9 +21,10 @@ export interface StackPreset {
 export const CUSTOM_STACK_STORAGE_KEY = 'jobsinton.ats-custom-stack';
 
 export const FULLSTACK_KEYWORDS = [
-  'Java', 'Spring Boot', 'JavaScript', 'TypeScript', 'React', 'Angular', 'Vue.js', 'Node.js',
-  'Next.js', 'C#', '.NET', 'PHP', 'Kotlin', 'Swift', 'Flutter', 'PostgreSQL', 'MySQL',
-  'MongoDB', 'REST', 'GraphQL', 'Docker',
+  'Software Engineer', 'Software Developer', 'Backend', 'Frontend', 'Full Stack', 'Web Developer',
+  'Java', 'Spring Boot', 'Spring', 'Hibernate', 'JavaScript', 'TypeScript', 'React', 'Angular',
+  'Vue.js', 'Node.js', 'Next.js', 'Express', 'NestJS', 'HTML/CSS', 'C#', '.NET', 'PHP', 'Kotlin',
+  'Swift', 'Flutter', 'PostgreSQL', 'MySQL', 'MongoDB', 'REST', 'GraphQL', 'Docker',
 ] as const;
 
 export const PYTHON_DATA_KEYWORDS = [

@@ -125,6 +125,8 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
   const [geoScope, setGeoScope] = useState<GeoScope>(() => parseInitialGeoScope(initialParams));
   const [onlyMatches, setOnlyMatches] = useState<boolean>(() => initialParams.get('filter') !== 'all');
   const [onlyFresh, setOnlyFresh] = useState<boolean>(() => initialParams.get('filter') === 'fresh');
+  const [onlyRecent30d, setOnlyRecent30d] = useState<boolean>(() => initialParams.get('filter') === 'recent30d');
+  const [onlyJunior, setOnlyJunior] = useState<boolean>(() => initialParams.get('filter') === 'junior');
   const [providerFilter, setProviderFilter] = useState<AtsProviderId | 'all'>('all');
   const [searchText, setSearchText] = useState('');
   const [sortMode, setSortMode] = useState<'relevance' | 'newest'>('relevance');
@@ -335,6 +337,8 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
   const quickCounts = useMemo(() => {
     let matches = 0;
     let fresh = 0;
+    let recent30dCount = 0;
+    let juniorCount = 0;
     let spainOnly = 0;
     let spainEuRemote = 0;
     let savedCount = 0;
@@ -354,6 +358,8 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
     for (const item of evaluatedAll) {
       if (item.isMatch) matches++;
       if (item.isFresh48h) fresh++;
+      if (item.isRecent30d) recent30dCount++;
+      if (item.senioritySignal === 'junior') juniorCount++;
       if (item.isSpainOnly) spainOnly++;
       if (item.isSpainOrEuRemote) spainEuRemote++;
       byProvider[item.job.provider] = (byProvider[item.job.provider] ?? 0) + 1;
@@ -365,6 +371,8 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
     return {
       matches,
       fresh,
+      recent30dCount,
+      juniorCount,
       spainOnly,
       spainEuRemote,
       savedCount,
@@ -390,6 +398,8 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
       if (!matchesGeoScope(item, geoScope)) return false;
       if (onlyMatches && !item.isMatch) return false;
       if (onlyFresh && !item.isFresh48h) return false;
+      if (onlyRecent30d && !item.isRecent30d) return false;
+      if (onlyJunior && item.senioritySignal !== 'junior') return false;
       if (providerFilter !== 'all' && item.job.provider !== providerFilter) return false;
       if (terms.length > 0) {
         const haystack = [
@@ -414,12 +424,14 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
     geoScope,
     onlyMatches,
     onlyFresh,
+    onlyRecent30d,
+    onlyJunior,
     providerFilter,
     searchText,
     sortMode,
   ]);
 
-  const showingAllFetched = !onlyMatches && !onlyFresh && geoScope === 'global'
+  const showingAllFetched = !onlyMatches && !onlyFresh && !onlyRecent30d && !onlyJunior && geoScope === 'global'
     && viewTriageFilter === 'none' && providerFilter === 'all' && searchText.trim() === '';
 
   function selectPreset(next: StackPresetId) {
@@ -432,6 +444,8 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
   function showAllFetched() {
     setOnlyMatches(false);
     setOnlyFresh(false);
+    setOnlyRecent30d(false);
+    setOnlyJunior(false);
     setGeoScope('global');
     setViewTriageFilter('none');
     setHideAppliedDismissed(false);
@@ -760,6 +774,28 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
         >
           <span>{t('Fresh (< 48h)')}</span>
           {activeFeed && <span className="pill-count">{quickCounts.fresh}</span>}
+        </button>
+
+        <button
+          type="button"
+          data-testid="quick-filter-recent30d"
+          className={'ats-toggle-pill' + (onlyRecent30d && viewTriageFilter === 'none' ? ' active' : '')}
+          aria-pressed={onlyRecent30d && viewTriageFilter === 'none'}
+          onClick={() => { setViewTriageFilter('none'); setOnlyRecent30d((v) => !v); setVisibleLimit(PAGE_BATCH); }}
+        >
+          <span>{t('📅 Recent (< 30d)')}</span>
+          {activeFeed && <span className="pill-count">{quickCounts.recent30dCount}</span>}
+        </button>
+
+        <button
+          type="button"
+          data-testid="quick-filter-junior"
+          className={'ats-toggle-pill' + (onlyJunior && viewTriageFilter === 'none' ? ' active' : '')}
+          aria-pressed={onlyJunior && viewTriageFilter === 'none'}
+          onClick={() => { setViewTriageFilter('none'); setOnlyJunior((v) => !v); setVisibleLimit(PAGE_BATCH); }}
+        >
+          <span>{t('🎯 Junior / Entry')}</span>
+          {activeFeed && <span className="pill-count">{quickCounts.juniorCount}</span>}
         </button>
 
         {/* 3-Tier Geographical Selector */}

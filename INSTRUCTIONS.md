@@ -59,7 +59,7 @@ Run these commands from the repository root (`jobsinton/`):
 JobSinton keeps your job search progress persistent across restarts without requiring an external database:
 
 1. **Backend Docker Volume (`jobsinton-data` mounted at `/app/data`):**
-   - `data/custom-companies.json`: Stores every company board you add via **`➕ Discover / Add Companies`** (Career Page URL Auto-Sniffer or 9-ATS Batch Company Name Probe) alongside the 293 pre-seeded Spain & Europe company boards.
+   - `data/custom-companies.json`: Stores every company board you add via **`➕ Discover / Add Companies`** (Career Page URL Auto-Sniffer or 9-ATS Batch Company Name Probe) alongside the 317 pre-seeded Spain & Europe company boards.
    - `data/ats-seen-jobs.json`: Stores the earliest timestamp each job ID was seen (`firstSeenAt`) so recruiter edits to older listings never fake a `< 24h` (`🔥`) or `< 48h` (`⚡`) freshness badge.
    - This volume survives `docker compose down` and `docker compose up --build -d`.
 

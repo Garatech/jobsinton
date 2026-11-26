@@ -270,3 +270,94 @@ test('multi-discipline developer tracks match Python/Data, AI/ML, Cloud/DevOps, 
   );
 });
 
+test('Phase 5A: detects Spanish & European junior/entry signals, penalizes Senior/Lead/Architect & +100d zombie postings, and matches unhydrated Web/Java titles', () => {
+  // 1. Spanish & European Junior / Entry signals (sin experiencia, grado superior, DAM/DAW/ASIR, recién titulado, trainee)
+  const spainFpJunior = evaluateAtsJob(
+    makeJob({
+      id: 'factorial:mvst:jr-1',
+      title: 'Desarrollador Web Full Stack',
+      location: 'Sant Cugat, Spain',
+      description: 'Buscamos recién titulado de Ciclo Formativo de Grado Superior (DAM, DAW o ASIR) sin experiencia previa.',
+      hoursSincePublished: 12,
+    }),
+    'fullstack',
+    [],
+  );
+  expect(spainFpJunior.isSpainOnly).toBe(true);
+  expect(spainFpJunior.senioritySignal).toBe('junior');
+  expect(detectSenioritySignal(spainFpJunior.job)).toEqual({ signal: 'junior', delta: 20 });
+  expect(spainFpJunior.isMatch).toBe(true);
+  expect(spainFpJunior.matchedKeywords).toEqual(expect.arrayContaining(['Full Stack', 'Web Developer']));
+
+  const associateTrainee = detectSenioritySignal(
+    makeJob({ title: 'Associate Software Developer / Trainee', description: '' }),
+  );
+  expect(associateTrainee).toEqual({ signal: 'junior', delta: 30 });
+
+  // 2. Senior (-18) and Tech Lead / Architect (-25) title penalties
+  expect(detectSenioritySignal(makeJob({ title: 'Senior Backend Java Developer', description: '' }))).toEqual({
+    signal: 'senior-warning',
+    delta: -18,
+  });
+  expect(detectSenioritySignal(makeJob({ title: 'Tech Lead & Solutions Architect', description: '' }))).toEqual({
+    signal: 'senior-warning',
+    delta: -25,
+  });
+
+  // 3. Stale ("zombie") +100 days ago penalty (-45) sinks old postings below recent ones
+  const recentBackend = evaluateAtsJob(
+    makeJob({
+      id: 'recent-20d',
+      title: 'Desarrollador Backend',
+      description: '',
+      hoursSincePublished: 24 * 20, // 20 days ago
+    }),
+    'fullstack',
+    [],
+  );
+  const zombie120d = evaluateAtsJob(
+    makeJob({
+      id: 'zombie-120d',
+      title: 'Desarrollador Backend',
+      description: 'Java, Spring, Hibernate, PostgreSQL',
+      hoursSincePublished: 24 * 120, // 120 days ago (+100d)
+    }),
+    'fullstack',
+    [],
+  );
+  expect(recentBackend.isRecent30d).toBe(true);
+  expect(zombie120d.isRecent30d).toBe(false);
+  expect(recentBackend.score).toBeGreaterThan(zombie120d.score);
+
+  // 4. Unhydrated Web / Frontend / Backend / Software titles match fullstack, while Junior SAP ABAP Developer does not
+  const unhydratedFrontend = evaluateAtsJob(
+    makeJob({ title: 'Programador Frontend', description: '', hasFullDescription: false }),
+    'fullstack',
+    [],
+  );
+  const unhydratedSoftwareDev = evaluateAtsJob(
+    makeJob({ title: 'Junior Software Developer', description: '', hasFullDescription: false }),
+    'fullstack',
+    [],
+  );
+  const unhydratedSapDev = evaluateAtsJob(
+    makeJob({ title: 'Junior SAP ABAP Developer', description: '', hasFullDescription: false }),
+    'fullstack',
+    [],
+  );
+  expect(unhydratedFrontend.isMatch).toBe(true);
+  expect(unhydratedFrontend.matchedKeywords).toContain('Frontend');
+  expect(unhydratedSoftwareDev.isMatch).toBe(true);
+  expect(unhydratedSoftwareDev.matchedKeywords).toContain('Software Developer');
+  expect(unhydratedSapDev.isMatch).toBe(false);
+
+  // 5. Multi-country remote role including Europe alongside US is preserved in Spain + EU Remote
+  const multiRegionRemote = makeJob({
+    location: 'Remote - US, UK, Germany',
+    workplaceType: 'remote',
+  });
+  expect(hasFakeRemoteRestriction(multiRegionRemote)).toBe(false);
+  expect(classifyGeoTier(multiRegionRemote).geoTier).toBe('eu-remote');
+});
+
+
