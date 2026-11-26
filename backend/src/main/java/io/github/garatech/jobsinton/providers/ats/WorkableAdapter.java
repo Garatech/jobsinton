@@ -52,6 +52,8 @@ public final class WorkableAdapter implements AtsProviderAdapter {
         return fetchV3Fallback(board, slug, reply.status());
     }
 
+    private static final int MAX_V3_PAGES = 6;
+
     private List<RawAtsJob> fetchV3Fallback(CompanyBoard board, String encodedSlug, int v1Status) {
         URI v3Uri = URI.create(V3_JOBS_BASE + encodedSlug + "/jobs");
         var reply = http.postJson(v3Uri, V3_EMPTY_QUERY);
@@ -64,7 +66,35 @@ public final class WorkableAdapter implements AtsProviderAdapter {
             if (results == null || !results.isArray()) {
                 throw new AtsFetchException("Workable v3 payload missing results array");
             }
-            return parseArray(board, results, true);
+            java.util.Map<String, RawAtsJob> byId = new java.util.LinkedHashMap<>();
+            for (RawAtsJob job : parseArray(board, results, true)) {
+                byId.putIfAbsent(job.sourceId(), job);
+            }
+
+            java.util.Set<String> seenTokens = new java.util.HashSet<>();
+            String nextToken = AtsSupport.text(root.path("nextPage"));
+            for (int page = 1; page < MAX_V3_PAGES && nextToken != null && seenTokens.add(nextToken); page++) {
+                String tokenQuery = "{\"token\":" + json.writeValueAsString(nextToken)
+                        + ",\"query\":\"\",\"location\":[],\"department\":[],\"worktype\":[],\"remote\":[]}";
+                try {
+                    var nextReply = http.postJson(v3Uri, tokenQuery);
+                    if (nextReply.status() != 200 || nextReply.body() == null || nextReply.body().length == 0) {
+                        break;
+                    }
+                    JsonNode nextRoot = json.readTree(nextReply.body());
+                    JsonNode nextResults = nextRoot == null ? null : nextRoot.path("results");
+                    if (nextResults == null || !nextResults.isArray() || nextResults.isEmpty()) {
+                        break;
+                    }
+                    for (RawAtsJob job : parseArray(board, nextResults, true)) {
+                        byId.putIfAbsent(job.sourceId(), job);
+                    }
+                    nextToken = AtsSupport.text(nextRoot.path("nextPage"));
+                } catch (AtsFetchException | JacksonException ignored) {
+                    break;
+                }
+            }
+            return new ArrayList<>(byId.values());
         } catch (JacksonException e) {
             throw new AtsFetchException("Unreadable JSON from Workable v3", e);
         }

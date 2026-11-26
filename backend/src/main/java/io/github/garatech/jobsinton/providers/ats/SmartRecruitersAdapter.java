@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class SmartRecruitersAdapter implements AtsProviderAdapter {
     private static final String BASE_URL = "https://api.smartrecruiters.com/v1/companies/";
     private static final String PUBLIC_JOB_BASE = "https://jobs.smartrecruiters.com/";
-    private static final int MAX_DETAIL_CACHE_ENTRIES = 500;
+    private static final int MAX_DETAIL_CACHE_ENTRIES = 4_000;
 
     private final AtsHttpClient http;
     private final int maxDetailFetchesPerBoard;
@@ -42,6 +42,7 @@ public final class SmartRecruitersAdapter implements AtsProviderAdapter {
 
     private static final int PAGE_SIZE = 100;
     private static final int MAX_PAGES = 3;
+    private static final int MAX_SPAIN_PAGES = 2;
 
     @Override
     public List<RawAtsJob> fetch(CompanyBoard board) {
@@ -57,19 +58,20 @@ public final class SmartRecruitersAdapter implements AtsProviderAdapter {
             if (content == null || !content.isArray()) {
                 throw new AtsFetchException("SmartRecruiters payload missing content array");
             }
-            List<RawAtsJob> listed = new ArrayList<>(content.size());
+            Map<String, RawAtsJob> listedById = new java.util.LinkedHashMap<>();
             for (JsonNode item : content) {
                 RawAtsJob job = mapListItem(board, item);
                 if (job != null) {
-                    listed.add(job);
+                    listedById.putIfAbsent(job.sourceId(), job);
                 }
             }
+            boolean firstPageFull = content.size() == PAGE_SIZE;
             int lastPageCount = content.size();
             for (int page = 1; page < MAX_PAGES && lastPageCount == PAGE_SIZE; page++) {
                 int offset = page * PAGE_SIZE;
                 URI nextUri = URI.create(BASE_URL + slug + "/postings?limit=" + PAGE_SIZE + "&offset=" + offset);
                 var nextReply = http.get(nextUri);
-                if (nextReply.status() != 200 || nextReply.body() == null) {
+                if (nextReply.status() != 200 || nextReply.body() == null || nextReply.body().length == 0) {
                     break;
                 }
                 JsonNode nextRoot = json.readTree(nextReply.body());
@@ -80,12 +82,47 @@ public final class SmartRecruitersAdapter implements AtsProviderAdapter {
                 for (JsonNode item : nextContent) {
                     RawAtsJob job = mapListItem(board, item);
                     if (job != null) {
-                        listed.add(job);
+                        listedById.putIfAbsent(job.sourceId(), job);
                     }
                 }
                 lastPageCount = nextContent.size();
             }
-            return enrichTopCandidates(board, listed);
+
+            // Large global boards (e.g. Inetum, Sopra Steria, Bosch, SAP, Devoteam, Delivery Hero)
+            // often have 500–5,000+ worldwide postings where Spanish roles sit past page 3.
+            // Run a targeted country=es pass whenever page 1 hits the 100-item cap so zero Spanish roles are missed.
+            if (firstPageFull) {
+                int spainPageCount = PAGE_SIZE;
+                for (int spainPage = 0; spainPage < MAX_SPAIN_PAGES && spainPageCount == PAGE_SIZE; spainPage++) {
+                    int offset = spainPage * PAGE_SIZE;
+                    String suffix = offset == 0
+                            ? "/postings?limit=" + PAGE_SIZE + "&country=es"
+                            : "/postings?limit=" + PAGE_SIZE + "&country=es&offset=" + offset;
+                    URI spainUri = URI.create(BASE_URL + slug + suffix);
+                    try {
+                        var spainReply = http.get(spainUri);
+                        if (spainReply.status() != 200 || spainReply.body() == null || spainReply.body().length == 0) {
+                            break;
+                        }
+                        JsonNode spainRoot = json.readTree(spainReply.body());
+                        JsonNode spainContent = spainRoot == null ? null : spainRoot.path("content");
+                        if (spainContent == null || !spainContent.isArray() || spainContent.isEmpty()) {
+                            break;
+                        }
+                        for (JsonNode item : spainContent) {
+                            RawAtsJob job = mapListItem(board, item);
+                            if (job != null) {
+                                listedById.putIfAbsent(job.sourceId(), job);
+                            }
+                        }
+                        spainPageCount = spainContent.size();
+                    } catch (AtsFetchException | JacksonException ignored) {
+                        break;
+                    }
+                }
+            }
+
+            return enrichTopCandidates(board, new ArrayList<>(listedById.values()));
         } catch (JacksonException e) {
             throw new AtsFetchException("Unreadable JSON from SmartRecruiters", e);
         }
@@ -132,9 +169,19 @@ public final class SmartRecruitersAdapter implements AtsProviderAdapter {
         String defaultApplyUrl = PUBLIC_JOB_BASE
                 + AtsSupport.encodePathSegment(board.slug()) + "/" + AtsSupport.encodePathSegment(id);
 
+        String listMetadata = formatListMetadata(item);
+
         // Apply already-cached detail immediately without extra upstream calls.
         DetailPayload cached = detailCache.get(board.slug() + ":" + id);
-        String description = cached != null ? cached.description() : "";
+        boolean hasFullDesc = cached != null && !cached.description().isEmpty();
+        String description;
+        if (hasFullDesc) {
+            description = listMetadata.isEmpty() || cached.description().contains(listMetadata)
+                    ? cached.description()
+                    : cached.description() + "\n\n" + listMetadata;
+        } else {
+            description = listMetadata;
+        }
         String applyUrl = cached != null && cached.applyUrl() != null ? cached.applyUrl() : defaultApplyUrl;
 
         return new RawAtsJob(
@@ -150,8 +197,27 @@ public final class SmartRecruitersAdapter implements AtsProviderAdapter {
                 applyUrl,
                 department,
                 null,
-                !description.isEmpty()
+                hasFullDesc
         );
+    }
+
+    private static String formatListMetadata(JsonNode item) {
+        List<String> meta = new ArrayList<>(2);
+        JsonNode expNode = item.path("experienceLevel");
+        String expLabel = firstNonNull(AtsSupport.text(expNode.path("label")), AtsSupport.text(expNode.path("id")));
+        if (expLabel != null) {
+            meta.add("Experience Level: " + expLabel.replace('_', ' '));
+        }
+        JsonNode empNode = item.path("typeOfEmployment");
+        String empLabel = firstNonNull(AtsSupport.text(empNode.path("label")), AtsSupport.text(empNode.path("id")));
+        if (empLabel != null) {
+            meta.add("Employment: " + empLabel.replace('_', ' '));
+        }
+        return String.join(" · ", meta);
+    }
+
+    private static String firstNonNull(String first, String second) {
+        return first != null ? first : second;
     }
 
     /**
@@ -179,6 +245,12 @@ public final class SmartRecruitersAdapter implements AtsProviderAdapter {
             RawAtsJob candidate = enriched.get(idx);
             try {
                 SmartRecruitersDetail detail = fetchDetail(board, candidate.sourceId());
+                String mergedDescription = detail.description();
+                if (!candidate.description().isEmpty() && !mergedDescription.contains(candidate.description())) {
+                    mergedDescription = mergedDescription.isEmpty()
+                            ? candidate.description()
+                            : mergedDescription + "\n\n" + candidate.description();
+                }
                 enriched.set(idx, new RawAtsJob(
                         candidate.sourceId(),
                         candidate.provider(),
@@ -188,7 +260,7 @@ public final class SmartRecruitersAdapter implements AtsProviderAdapter {
                         candidate.location(),
                         candidate.workplaceType(),
                         candidate.publishedAt(),
-                        detail.description(),
+                        mergedDescription,
                         detail.applyUrl() != null ? detail.applyUrl() : candidate.applyUrl(),
                         candidate.department(),
                         candidate.compensation(),
@@ -274,8 +346,9 @@ public final class SmartRecruitersAdapter implements AtsProviderAdapter {
         String lowerLoc = loc.toLowerCase(Locale.ROOT);
         if (AtsSupport.isSpainOrEuLocation(loc)) {
             score += 100;
-            if (lowerLoc.contains("madrid") || lowerLoc.contains("spain") || lowerLoc.contains("españa")) {
-                score += 20;
+            if (lowerLoc.contains("madrid") || lowerLoc.contains("barcelona")
+                    || lowerLoc.contains("spain") || lowerLoc.contains("españa")) {
+                score += 25;
             }
         } else if (AtsSupport.isNonEuFakeRemote(loc)) {
             score -= 80;
@@ -284,17 +357,28 @@ public final class SmartRecruitersAdapter implements AtsProviderAdapter {
             score += 45;
         }
         String title = job.title().toLowerCase(Locale.ROOT);
+        String meta = (job.description() == null ? "" : job.description()).toLowerCase(Locale.ROOT);
         if (title.contains("sap") || title.contains("abap") || title.contains("s/4hana")
                 || title.contains("java") || title.contains("spring") || title.contains("full stack")
                 || title.contains("fullstack") || title.contains("angular") || title.contains("react")
                 || title.contains("node") || title.contains("typescript") || title.contains("software")
                 || title.contains("developer") || title.contains("engineer") || title.contains("backend")
                 || title.contains("frontend") || title.contains("desarrollador") || title.contains("programador")
-                || title.contains("consultor") || title.contains("python") || title.contains("data")
-                || title.contains("analyst") || title.contains("analista") || title.contains("cloud")
-                || title.contains("devops") || title.contains("ai") || title.contains("machine learning")
-                || title.contains("cyber") || title.contains("security") || title.contains("qa")) {
+                || title.contains("ingeniero") || title.contains("consultor") || title.contains("python")
+                || title.contains("data") || title.contains("analyst") || title.contains("analista")
+                || title.contains("cloud") || title.contains("devops") || title.contains("sistemas")
+                || title.contains("ai") || title.contains("machine learning")
+                || title.contains("cyber") || title.contains("security") || title.contains("ciberseguridad")
+                || title.contains("qa") || title.contains("web")) {
             score += 35;
+        }
+        if (title.contains("junior") || title.contains("jr") || title.contains("intern")
+                || title.contains("beca") || title.contains("prácticas") || title.contains("practicas")
+                || title.contains("trainee") || title.contains("graduate") || title.contains("entry")
+                || title.contains("associate") || title.contains("academy")
+                || meta.contains("entry level") || meta.contains("internship") || meta.contains("intern")
+                || meta.contains("associate")) {
+            score += 55;
         }
         return score;
     }

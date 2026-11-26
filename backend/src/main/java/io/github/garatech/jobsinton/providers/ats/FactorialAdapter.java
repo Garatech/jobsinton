@@ -22,9 +22,13 @@ import java.util.regex.Pattern;
  * cards with bounded detail page enrichment for Spain/EU eligible vacancies.
  */
 public final class FactorialAdapter implements AtsProviderAdapter {
-    private static final int DEFAULT_DETAIL_CAP = 6;
+    private static final int DEFAULT_DETAIL_CAP = 12;
     private static final Pattern LD_JSON_SCRIPT = Pattern.compile(
             "<script[^>]+type=[\"']application/ld\\+json[\"'][^>]*>([\\s\\S]*?)</script>",
+            Pattern.CASE_INSENSITIVE
+    );
+    private static final Pattern DATE_POSTED_JSON = Pattern.compile(
+            "\"datePosted\"\\s*:\\s*\"([^\"]+)\"",
             Pattern.CASE_INSENSITIVE
     );
     private static final Pattern ANCHOR_JOB_POSTING = Pattern.compile(
@@ -174,25 +178,38 @@ public final class FactorialAdapter implements AtsProviderAdapter {
             ));
         }
 
-        // 3. Enrich up to maxDetailFetchesPerBoard Spain/EU eligible postings that lack full descriptions.
+        // 3. Prioritize tech & junior/entry Spain/EU postings before spending bounded detail fetches
+        // so top-of-page Sales/HR/Marketing cards never starve engineering or junior vacancies.
         List<RawAtsJob> list = new ArrayList<>(jobsById.values());
-        int enrichedCount = 0;
-        for (int i = 0; i < list.size() && enrichedCount < maxDetailFetchesPerBoard; i++) {
+        List<Integer> candidateIndices = new ArrayList<>();
+        for (int i = 0; i < list.size(); i++) {
             RawAtsJob candidate = list.get(i);
-            if (candidate.hasFullDescription()) {
-                continue;
+            if (!candidate.hasFullDescription() && isEligibleForDetailFetch(candidate)) {
+                candidateIndices.add(i);
             }
-            if (!isEligibleForDetailFetch(candidate)) {
-                continue;
-            }
-            enrichedCount++;
+        }
+        candidateIndices.sort(java.util.Comparator
+                .comparingInt((Integer idx) -> factorialPriorityScore(list.get(idx))).reversed()
+                .thenComparingInt(Integer::intValue));
+
+        int limit = Math.min(maxDetailFetchesPerBoard, candidateIndices.size());
+        for (int k = 0; k < limit; k++) {
+            int idx = candidateIndices.get(k);
+            RawAtsJob candidate = list.get(idx);
             try {
                 var detailReply = http.get(URI.create(candidate.applyUrl()));
                 if (detailReply.status() == 200) {
                     String detailHtml = new String(detailReply.body(), StandardCharsets.UTF_8);
                     String detailDesc = extractDetailDescription(detailHtml);
-                    if (!detailDesc.isEmpty()) {
-                        list.set(i, new RawAtsJob(
+                    Instant resolvedPublished = candidate.publishedAt();
+                    if (resolvedPublished == null) {
+                        Matcher dm = DATE_POSTED_JSON.matcher(detailHtml);
+                        if (dm.find()) {
+                            resolvedPublished = AtsSupport.parseTimestampString(dm.group(1));
+                        }
+                    }
+                    if (!detailDesc.isEmpty() || resolvedPublished != null) {
+                        list.set(idx, new RawAtsJob(
                                 candidate.sourceId(),
                                 candidate.provider(),
                                 candidate.companySlug(),
@@ -200,12 +217,12 @@ public final class FactorialAdapter implements AtsProviderAdapter {
                                 candidate.title(),
                                 candidate.location(),
                                 candidate.workplaceType() != null ? candidate.workplaceType() : inferFactorialWorkplace(detailDesc),
-                                candidate.publishedAt(),
+                                resolvedPublished,
                                 detailDesc,
                                 candidate.applyUrl(),
                                 candidate.department(),
                                 candidate.compensation(),
-                                true
+                                !detailDesc.isEmpty()
                         ));
                     }
                 }
@@ -214,6 +231,35 @@ public final class FactorialAdapter implements AtsProviderAdapter {
             }
         }
         return list;
+    }
+
+    private static int factorialPriorityScore(RawAtsJob job) {
+        int score = 0;
+        String text = ((job.title() == null ? "" : job.title()) + " "
+                + (job.department() == null ? "" : job.department())).toLowerCase(Locale.ROOT);
+        if (text.contains("junior") || text.contains("jr") || text.contains("beca")
+                || text.contains("prácticas") || text.contains("practicas") || text.contains("trainee")
+                || text.contains("intern") || text.contains("graduate") || text.contains("sin experiencia")
+                || text.contains("novel") || text.contains("working student")) {
+            score += 60;
+        }
+        if (text.contains("developer") || text.contains("engineer") || text.contains("desarrollador")
+                || text.contains("programador") || text.contains("ingeniero") || text.contains("software")
+                || text.contains("full stack") || text.contains("full-stack") || text.contains("fullstack")
+                || text.contains("backend") || text.contains("frontend") || text.contains("web")
+                || text.contains("java") || text.contains("python") || text.contains("react")
+                || text.contains("angular") || text.contains("node") || text.contains("typescript")
+                || text.contains("javascript") || text.contains("php") || text.contains(".net")
+                || text.contains("data") || text.contains("analista") || text.contains("ai")
+                || text.contains("cloud") || text.contains("devops") || text.contains("sistemas")
+                || text.contains("qa") || text.contains("cyber") || text.contains("ciberseguridad")
+                || text.contains("sap") || text.contains("erp")) {
+            score += 45;
+        }
+        if (job.location() != null && AtsSupport.isSpainOrEuLocation(job.location())) {
+            score += 25;
+        }
+        return score;
     }
 
     private void parseJsonLdBlock(CompanyBoard board, String jsonText, String baseOrigin, Map<String, RawAtsJob> target) {

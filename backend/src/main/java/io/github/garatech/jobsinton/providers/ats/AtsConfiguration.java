@@ -62,7 +62,7 @@ public class AtsConfiguration {
     @Bean
     SmartRecruitersAdapter smartRecruitersAdapter(
             AtsHttpClient http,
-            @Value("${jobsinton.ats.smartrecruiters-detail-cap:6}") int detailCap
+            @Value("${jobsinton.ats.smartrecruiters-detail-cap:14}") int detailCap
     ) {
         return new SmartRecruitersAdapter(http, detailCap);
     }
@@ -95,7 +95,7 @@ public class AtsConfiguration {
     @Bean
     FactorialAdapter factorialAdapter(
             AtsHttpClient http,
-            @Value("${jobsinton.ats.factorial-detail-cap:6}") int detailCap
+            @Value("${jobsinton.ats.factorial-detail-cap:12}") int detailCap
     ) {
         return new FactorialAdapter(http, detailCap);
     }
