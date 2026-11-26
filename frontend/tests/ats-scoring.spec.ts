@@ -373,4 +373,48 @@ test('Phase 5A: detects Spanish & European junior/entry signals, penalizes Senio
   expect(classifyGeoTier(multiRegionRemote).geoTier).toBe('eu-remote');
 });
 
+test('Phase 5C: detects junior signals past 1,200 chars and structured SmartRecruiters / Personio metadata', () => {
+  const longPreamble = 'About our European product engineering teams, architecture principles, and collaborative culture. '.repeat(35);
+  expect(longPreamble.length).toBeGreaterThan(2500);
+
+  const deepRequisitosJunior = detectSenioritySignal(
+    makeJob({
+      title: 'Software Engineer (Java & React)',
+      description: `${longPreamble}\n\nRequisitos: contrato formativo o recién licenciado con ganas de crecer en desarrollo web.`,
+    }),
+  );
+  expect(deepRequisitosJunior).toEqual({ signal: 'junior', delta: 20 });
+
+  const unhydratedSmartRecruitersEntry = evaluateAtsJob(
+    makeJob({
+      id: 'smartrecruiters:Inetum2:jr-es-1',
+      provider: 'smartrecruiters',
+      providerLabel: 'SmartRecruiters',
+      title: 'Software Developer',
+      location: 'Madrid, Spain',
+      description: 'Experience Level: Entry Level · Employment: Full-time',
+      hasFullDescription: false,
+    }),
+    'fullstack',
+    [],
+  );
+  expect(unhydratedSmartRecruitersEntry.isMatch).toBe(true);
+  expect(unhydratedSmartRecruitersEntry.senioritySignal).toBe('junior');
+
+  const bottomMetadataPersonio = detectSenioritySignal(
+    makeJob({
+      title: 'Backend Developer',
+      description: `${longPreamble}\n\nSeniority: entry-level · Experience: 0-1`,
+    }),
+  );
+  expect(bottomMetadataPersonio).toEqual({ signal: 'junior', delta: 20 });
+
+  const lessThanOneYear = detectSenioritySignal(
+    makeJob({
+      title: 'Cloud Systems Engineer',
+      description: 'Experience: < 1 year working with Linux and Docker.',
+    }),
+  );
+  expect(lessThanOneYear).toEqual({ signal: 'junior', delta: 20 });
+});
 

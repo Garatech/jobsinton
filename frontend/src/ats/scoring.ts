@@ -313,10 +313,12 @@ const JUNIOR_FRIENDLY_PATTERNS = [
   /\bwerkstudent(?:in)?\b/i,
   /\bbeca(?:rio|ria)?\b/i,
   /\bpr[aá]cticas\b/i,
+  /\bcontrato (?:en pr[aá]cticas|formativo|de formaci[oó]n)\b/i,
   /\bsin experiencia\b/i,
   /\bno experience required\b/i,
   /\breci[eé]n titulado(?:a|s)?\b/i,
   /\breci[eé]n graduado(?:a|s)?\b/i,
+  /\breci[eé]n licenciado(?:a|s)?\b/i,
   /\bprimer empleo\b/i,
   /\bj[oó]ven(?:es)? talento(?:s)?\b/i,
   /\btalent program\b/i,
@@ -328,8 +330,16 @@ const JUNIOR_FRIENDLY_PATTERNS = [
   /\b(?:dam|daw|asir)\b/i,
   /\bnivel junior\b/i,
   /\bperfil junior\b/i,
+  /\bingeniero(?:a)? junior\b/i,
+  /\bconsultor(?:a)? junior\b/i,
+  /\banalista junior\b/i,
   /\bprogramador(?:a)? novel\b/i,
   /\bdesarrollador(?:a)? novel\b/i,
+  /\bexperience level:\s*(?:entry[-_\s]?level|internship|intern|junior|associate)\b/i,
+  /\bseniority:\s*(?:entry[-_\s]?level|junior|intern(?:ship)?|trainee|student|graduate|working[-_\s]?student)\b/i,
+  /\bexperience:\s*(?:<\s*1|0\s*[-–]\s*[12]|up to [12]|menos de [12])\b/i,
+  /\bemployment:\s*(?:intern(?:ship)?|trainee|working[-_\s]?student|student|apprentice)\b/i,
+  /\b(?:<\s*1|less than (?:1|one|2|two))\s*(?:year|years|a[nñ]o|a[nñ]os)\b/i,
   /\bassociate (?:software |backend |frontend |full[- ]?stack |web |data |cloud |devops |qa |security |sap |it |systems )?(?:engineer|developer|consultant|analyst|specialist)\b/i,
   /\bengineer\s+i\b/i,
   /\bdeveloper\s+i\b/i,
@@ -488,7 +498,9 @@ export function detectSenioritySignal(job: Pick<AtsJob, 'title' | 'description'>
   delta: number;
 } {
   const title = job.title ?? '';
-  const desc = (job.description ?? '').slice(0, 1200);
+  // Inspect up to 12,000 characters so "Requisitos / Qualifications" sections and Personio/SmartRecruiters
+  // bottom-appended structured seniority metadata are never cut off on long job descriptions.
+  const desc = (job.description ?? '').slice(0, 12_000);
   if (SENIOR_STAFF_TITLE_PATTERNS.some((p) => p.test(title))) {
     return { signal: 'senior-warning', delta: -25 };
   }

@@ -4,6 +4,14 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — Spain Junior Harvest, SmartRecruiters `country=es` Pass, Adapter Pagination/Priority Tuning & 334-Board Catalog
+
+- Enhanced `SmartRecruitersAdapter` to run a targeted `?limit=100&country=es` pass (up to 200 Spain postings) whenever a global enterprise board hits the 100-item page cap, extract structured list-level `experienceLevel` and `typeOfEmployment` metadata (preserving `hasFullDescription: false` until full detail hydration), prioritize Spanish junior/entry/trainee postings (`+55` pts) and Barcelona/Madrid (`+25` pts) during initial detail enrichment (`jobsinton.ats.smartrecruiters-detail-cap=14`), and expand the in-memory detail cache to `4,000` entries.
+- Enhanced `FactorialAdapter` to prioritize junior/trainee (`+60` pts) and engineering (`+45` pts) cards ahead of non-tech portal cards up to `jobsinton.ats.factorial-detail-cap=12`, and extract `datePosted` timestamps from detail HTML when missing from the portal card.
+- Enhanced `WorkableAdapter` `v3` fallback (`POST /api/v3/accounts/{slug}/jobs`) to follow `nextPage` cursor tokens across up to 6 pages with deduplication instead of stopping after the first 10 results.
+- Widened `detectSenioritySignal` description inspection in `frontend/src/ats/scoring.ts` from `1,200` to `12,000` characters and added structured ATS seniority/experience and Spanish graduate contract patterns (`contrato formativo`, `contrato en prácticas`, `recién licenciado`, `Experience Level: Entry Level`, `Seniority: entry-level`, `Experience: < 1` / `0-1` / `0-2`).
+- Expanded `backend/src/main/resources/ats/companies.json` from 317 to **334 verified public company boards** (+17 Spanish and European tech hubs including Idealista Tech, Wallapop, New Relic Barcelona Hub, Twilio Madrid Hub, MongoDB Barcelona & Dublin, Canonical Ubuntu, GitLab Europe, ServiceNow Spain & Europe, Experian Spain & Tech, SGS Digital & IT Spain, Hugging Face Europe, Lovable, Linear Europe, Deliveroo Tech, SumUp Europe, Dataiku Europe, and Algolia Europe).
+
 ### Added — ATS Loading-Speed Optimization with Zero Opportunity Loss (Disk Snapshot, Startup Pre-Warming & Stale-While-Revalidate)
 
 - Added `AtsFeedCacheStore` (`data/ats-feed-cache.json`) so cold starts and Docker restarts restore all cached opportunities into memory immediately (`< 50ms`) with zero truncation or loss of offers while revalidating live boards in the background.

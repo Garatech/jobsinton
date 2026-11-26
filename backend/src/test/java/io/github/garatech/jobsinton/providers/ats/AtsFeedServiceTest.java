@@ -23,7 +23,7 @@ class AtsFeedServiceTest {
     @Test
     void loadsDefaultRegistryAcrossAllNineAtsProviders() {
         CompanyRegistry registry = CompanyRegistry.loadDefault();
-        assertThat(registry.boards()).hasSize(317);
+        assertThat(registry.boards()).hasSize(334);
         assertThat(registry.boards()).extracting(CompanyBoard::providerType)
                 .containsOnly(
                         AtsProviderType.GREENHOUSE,

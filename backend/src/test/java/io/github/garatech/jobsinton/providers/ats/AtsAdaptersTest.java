@@ -663,4 +663,218 @@ class AtsAdaptersTest {
         assertThat(job.description()).contains("Java 21, Spring Boot, Angular, PostgreSQL y Docker");
         assertThat(job.applyUrl()).isEqualTo("https://playtomic.factorialhr.es/job_posting/full-stack-java-angular-30912");
     }
+
+    @Test
+    void smartRecruitersAdapterHarvestsCountryEsWhenFirstPageIsFullAndExtractsExperienceLevel() {
+        StringBuilder globalItems = new StringBuilder();
+        for (int i = 0; i < 100; i++) {
+            if (i > 0) {
+                globalItems.append(",");
+            }
+            globalItems.append("""
+                    {"id":"us-%d","name":"Account Manager %d","releasedDate":"2026-11-10T09:00:00Z","location":{"city":"Austin","country":"us","remote":false}}
+                    """.formatted(i, i));
+        }
+        String firstPageJson = "{\"content\":[" + globalItems + "]}";
+        String emptyPageJson = "{\"content\":[]}";
+        String spainPageJson = """
+                {
+                  "content": [
+                    {
+                      "id": "us-0",
+                      "name": "Account Manager 0",
+                      "releasedDate": "2026-11-10T09:00:00Z",
+                      "location": { "city": "Austin", "country": "us", "remote": false }
+                    },
+                    {
+                      "id": "sr-es-senior",
+                      "name": "Senior Java Architect",
+                      "releasedDate": "2026-11-18T09:00:00Z",
+                      "location": { "city": "Madrid", "country": "es", "remote": false },
+                      "experienceLevel": { "id": "mid_senior_level", "label": "Mid-Senior Level" },
+                      "typeOfEmployment": { "id": "permanent", "label": "Full-time" }
+                    },
+                    {
+                      "id": "sr-es-junior",
+                      "name": "Software Developer",
+                      "releasedDate": "2026-11-17T09:00:00Z",
+                      "location": { "city": "Barcelona", "country": "es", "remote": false },
+                      "experienceLevel": { "id": "entry_level", "label": "Entry Level" },
+                      "typeOfEmployment": { "id": "intern", "label": "Internship" }
+                    }
+                  ]
+                }
+                """;
+        String juniorDetailJson = """
+                {
+                  "applyUrl": "https://jobs.smartrecruiters.com/Inetum2/sr-es-junior/apply",
+                  "jobAd": {
+                    "sections": {
+                      "jobDescription": { "text": "<p>Contrato formativo en Barcelona con Java 21 y Spring Boot.</p>" }
+                    }
+                  }
+                }
+                """;
+
+        List<URI> requested = new ArrayList<>();
+        AtsHttpClient stub = new AtsHttpClient() {
+            @Override
+            public HttpReply get(URI uri) {
+                requested.add(uri);
+                return switch (uri.toString()) {
+                    case "https://api.smartrecruiters.com/v1/companies/Inetum2/postings?limit=100" -> ok(firstPageJson);
+                    case "https://api.smartrecruiters.com/v1/companies/Inetum2/postings?limit=100&offset=100" -> ok(emptyPageJson);
+                    case "https://api.smartrecruiters.com/v1/companies/Inetum2/postings?limit=100&country=es" -> ok(spainPageJson);
+                    case "https://api.smartrecruiters.com/v1/companies/Inetum2/postings/sr-es-junior" -> ok(juniorDetailJson);
+                    default -> status(404);
+                };
+            }
+
+            @Override
+            public HttpReply postJson(URI uri, String jsonBody) {
+                throw new AssertionError("Unexpected POST");
+            }
+        };
+
+        var board = new CompanyBoard("Inetum2", "Inetum Spain", "smartrecruiters", null, "Madrid");
+        var adapter = new SmartRecruitersAdapter(stub, 1);
+        var jobs = adapter.fetch(board);
+
+        assertThat(jobs).hasSize(102);
+        assertThat(requested).containsExactly(
+                URI.create("https://api.smartrecruiters.com/v1/companies/Inetum2/postings?limit=100"),
+                URI.create("https://api.smartrecruiters.com/v1/companies/Inetum2/postings?limit=100&offset=100"),
+                URI.create("https://api.smartrecruiters.com/v1/companies/Inetum2/postings?limit=100&country=es"),
+                URI.create("https://api.smartrecruiters.com/v1/companies/Inetum2/postings/sr-es-junior")
+        );
+
+        RawAtsJob juniorJob = jobs.stream().filter(j -> j.sourceId().equals("sr-es-junior")).findFirst().orElseThrow();
+        assertThat(juniorJob.hasFullDescription()).isTrue();
+        assertThat(juniorJob.description())
+                .contains("Contrato formativo en Barcelona con Java 21 y Spring Boot.")
+                .contains("Experience Level: Entry Level · Employment: Internship");
+
+        RawAtsJob seniorJob = jobs.stream().filter(j -> j.sourceId().equals("sr-es-senior")).findFirst().orElseThrow();
+        assertThat(seniorJob.hasFullDescription()).isFalse();
+        assertThat(seniorJob.description()).isEqualTo("Experience Level: Mid-Senior Level · Employment: Full-time");
+    }
+
+    @Test
+    void factorialAdapterPrioritizesJuniorDeveloperAheadOfTopOfPageSalesAndExtractsDatePosted() {
+        String portalHtml = """
+                <html>
+                  <body>
+                    <h3>Madrid</h3>
+                    <div class="job-card">
+                      <a href="/job_posting/account-executive-101">
+                        <h4>Account Executive</h4>
+                        <span>Madrid</span>
+                      </a>
+                    </div>
+                    <div class="job-card">
+                      <a href="/job_posting/people-partner-102">
+                        <h4>HR People Partner</h4>
+                        <span>Madrid</span>
+                      </a>
+                    </div>
+                    <h3>Barcelona</h3>
+                    <div class="job-card">
+                      <a href="/job_posting/junior-backend-java-103">
+                        <h4>Junior Backend Java Developer</h4>
+                        <span>Barcelona · Híbrido</span>
+                      </a>
+                    </div>
+                  </body>
+                </html>
+                """;
+        String juniorDetailHtml = """
+                <html>
+                  <head>
+                    <script type="application/json">{"datePosted":"2026-11-18T08:00:00Z"}</script>
+                  </head>
+                  <body>
+                    <main>
+                      <h1>Junior Backend Java Developer</h1>
+                      <p>Contrato en prácticas con Spring Boot, Docker y PostgreSQL en Barcelona.</p>
+                    </main>
+                  </body>
+                </html>
+                """;
+
+        List<URI> requested = new ArrayList<>();
+        AtsHttpClient stub = new AtsHttpClient() {
+            @Override
+            public HttpReply get(URI uri) {
+                requested.add(uri);
+                if (uri.getPath().contains("/job_posting/junior-backend-java-103")) {
+                    return ok(juniorDetailHtml);
+                }
+                return ok(portalHtml);
+            }
+
+            @Override
+            public HttpReply postJson(URI uri, String jsonBody) {
+                throw new AssertionError("Unexpected POST");
+            }
+        };
+
+        var board = new CompanyBoard("mvst", "MVST Barcelona", "factorial", "eu", "Barcelona");
+        var jobs = new FactorialAdapter(stub, 1).fetch(board);
+
+        assertThat(jobs).hasSize(3);
+        assertThat(requested).containsExactly(
+                URI.create("https://mvst.factorialhr.es/"),
+                URI.create("https://mvst.factorialhr.es/job_posting/junior-backend-java-103")
+        );
+
+        RawAtsJob juniorJob = jobs.stream().filter(j -> j.sourceId().equals("103")).findFirst().orElseThrow();
+        assertThat(juniorJob.hasFullDescription()).isTrue();
+        assertThat(juniorJob.publishedAt()).isEqualTo(Instant.parse("2026-11-18T08:00:00Z"));
+        assertThat(juniorJob.description()).contains("Spring Boot, Docker y PostgreSQL");
+
+        RawAtsJob salesJob = jobs.stream().filter(j -> j.sourceId().equals("101")).findFirst().orElseThrow();
+        assertThat(salesJob.hasFullDescription()).isFalse();
+    }
+
+    @Test
+    void workableAdapterFollowsV3NextPageCursorAndDeduplicates() {
+        List<String> postBodies = new ArrayList<>();
+        AtsHttpClient stub = new AtsHttpClient() {
+            @Override
+            public HttpReply get(URI uri) {
+                return status(404);
+            }
+
+            @Override
+            public HttpReply postJson(URI uri, String jsonBody) {
+                postBodies.add(jsonBody);
+                if (!jsonBody.contains("\"token\"")) {
+                    return ok("""
+                            {
+                              "results": [
+                                { "shortcode": "W1", "title": "Junior Python Engineer", "location": { "city": "Madrid", "country": "Spain" } },
+                                { "shortcode": "W2", "title": "Frontend React Developer", "location": { "city": "Barcelona", "country": "Spain" } }
+                              ],
+                              "nextPage": "cursor-2"
+                            }
+                            """);
+                }
+                return ok("""
+                        {
+                          "results": [
+                            { "shortcode": "W2", "title": "Frontend React Developer", "location": { "city": "Barcelona", "country": "Spain" } },
+                            { "shortcode": "W3", "title": "AI Engineer", "remote": true, "location": { "city": "Paris", "country": "France" } }
+                          ]
+                        }
+                        """);
+            }
+        };
+
+        var board = new CompanyBoard("huggingface", "Hugging Face Europe", "workable", null, "Europe");
+        var jobs = new WorkableAdapter(stub).fetch(board);
+
+        assertThat(postBodies).hasSize(2);
+        assertThat(postBodies.get(1)).contains("\"token\":\"cursor-2\"");
+        assertThat(jobs).extracting(RawAtsJob::sourceId).containsExactly("W1", "W2", "W3");
+    }
 }

@@ -188,7 +188,7 @@ public final class AtsFeedService {
 
     /**
      * Merges a newly discovered company board and its live jobs directly into the active feed cache
-     * so the frontend immediately sees the new jobs without re-fetching all 317+ boards.
+     * so the frontend immediately sees the new jobs without re-fetching all 334+ boards.
      */
     public void mergeDiscoveredBoard(CompanyBoard board, List<RawAtsJob> jobs, long durationMs) {
         if (board == null) {
