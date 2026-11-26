@@ -1,22 +1,18 @@
-# Client languages
+# Client Localization (ES / EN)
 
-The header offers Español and English. On first visit the client uses the first supported language in the browser's preference list, falling back to English. An explicit choice takes priority on subsequent visits to the same origin. If browser storage is unavailable, the choice still works for the current session. Ports 5173 and 8080 have separate browser storage.
+The application header offers instant switching between **Español** and **English**.
 
-Only presentation changes. Routes, saved profiles, shortlist IDs, filter values, API requests and ranking rules are language-independent. The fictional catalog is translated. Live advert titles, company names, locations and excerpts are displayed as supplied; user-entered skills, cities and search terms are preserved.
+- **First-visit detection:** Selects the first supported language in the browser's `navigator.languages` preference list, falling back to English (`en`).
+- **Persistence:** Explicit selection is saved in `localStorage` (`jobsinton.language`) on the current origin and survives reloads. If storage access is blocked, language switching continues to work in-memory for the active session.
+- **Presentation-only scope:** Routes, saved profiles, triage states (`⭐ Save`, `✅ Applied`, `✕ Dismiss`), filter IDs, API payloads, and matching/ranking rules are completely language-independent. Live ATS titles, company names, locations, and descriptions are rendered faithfully as published by the employer, while all UI controls, badges, and explainable matching reasons localize immediately without re-fetching.
 
-## Verify from the repository root
+## Automated Verification
 
-```powershell
+From the repository root:
+
+```bash
 npm --prefix frontend run build
-npm --prefix frontend run test:e2e -- language-switch.spec.ts
-npm --prefix frontend run test:adzuna
+npm --prefix frontend run test:e2e -- language-switch.spec.ts locale.spec.ts live-ats.spec.ts
 ```
 
-The checks use desktop and mobile Chromium, the local backend and invented provider responses. No credentials are needed.
-
-## Manual checks
-
-- Start in a fresh browser context with Spanish preferred. Check the heading, document language and navigation. Select English, reload, and check that English remains selected.
-- Start editing a profile without saving. Switch languages; verify that the draft, selected option values and validation state remain intact.
-- Open a demo listing and inspect pay, publication date, comparison explanations and saved controls. Switch back without leaving the listing.
-- In local Adzuna search, go to page two and expand an excerpt. Change the language. The page and excerpt stay open; only interface text changes. No provider request is made.
+The Playwright suite exercises both desktop (`1440×900`) and mobile (`390×844` / `320px`) Chromium viewports against deterministic fixtures with zero external network calls.

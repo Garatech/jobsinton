@@ -1,303 +1,52 @@
-# JobSinton — Project Plan
+# JobSinton — Product Scope, Architectural Decisions & Roadmap
 
-This plan brings together JobSinton's scope, decisions, milestones, open questions, and development notes. It is versioned in the public repository and excludes credentials and private personal information.
+This document summarizes **JobSinton**'s product goals, engineering constraints, key architectural decisions, and milestone progression.
 
-The [README](../README.md) provides a concise product introduction. Implementation planning and the development journal are maintained here.
+---
 
-## Current status
+## 1. Product Vision & Scope
 
-The runnable foundation connects a React interface to a Spring Boot status endpoint. A professional profile editor adds explicit browser-local saving, validation, recovery, and a summary. Build and integration checks run in GitHub Actions. There is no production deployment or database. The pure matching domain engine now has a separate HTTP adapter and opportunity-detail integration. The owner reported successful Windows foundation startup and verification on 2026-10-20; the owner has also confirmed successful completion of the profile acceptance checklist. The owner selected the Current preversion on 2026-10-30. Its application integration adds the fictional catalog, company and opportunity pages, and browser-local saved opportunities. [DESIGN.md](DESIGN.md) records the baseline and post-merge acceptance steps. The owner has verified the integrated application and closed the visual-design stage with a brief page-entry fade. The owner accepted the [matching v1 contract](MATCHING.md), merged in PR #18. The [Java domain engine](MATCHING_ENGINE.md) implements versioned comparisons, validation and executable reference cases. The [matching API and detail panel](MATCHING_API.md) connect those comparisons to saved profiles with loading, error recovery and stale-response protection. The owner reports that the integrated comparison passes local verification. The [compatibility ranker](RANKING.md) implements the accepted order in Java. The [batch API and Compatibility sort](RANKING.md#batch-api-and-search-behavior) connect the ranker to filtered search. Earlier Adzuna exploration ([ADZUNA_PROBE.md](ADZUNA_PROBE.md), [ADZUNA_PAGE_STUDY.md](ADZUNA_PAGE_STUDY.md)) confirmed limited evidence quality and key-gating friction; Adzuna has now been deprecated and removed from the active pipeline in favor of the zero-config **Multi-ATS Direct Provider Engine** ([ATS_PROVIDERS.md](ATS_PROVIDERS.md)), which aggregates 5 public company ATS JSON APIs (Greenhouse, Lever, SmartRecruiters, Workable, Ashby) across 22 pre-seeded company boards with instant startup, developer stack presets, freshness badges, and direct company application links. Checkout synchronization has not been independently inspected; Codespaces startup remains optional and unverified.
+**JobSinton** helps software engineers—particularly early-career developers, recent graduates, and full-stack/backend/data/cloud specialists in **Spain and Europe**—discover genuine, fresh job openings directly from employer career portals and evaluate how well each role fits their working preferences.
 
-The public repository is [Garatech/jobsinton](https://github.com/Garatech/jobsinton). Initial documentation was published on 2026-10-17.
+### Core Principles
 
-## Purpose
+1. **Zero-Friction, EUR 0 Operation:** Runs locally or in Docker with zero API keys, zero paid subscriptions, and zero external database setup.
+2. **Direct Source Provenance:** Queries official public company Applicant Tracking System (ATS) endpoints rather than third-party job boards, preserving original job descriptions, real timestamps, and direct `https://` employer application links.
+3. **Honest Compatibility Semantics:** Matching and ranking express alignment with a candidate's stated profile—never a black-box "probability of getting hired." Hard constraints, advisory preferences, and missing facts remain explicitly separated.
+4. **Local-First Candidate Privacy:** Candidate profiles and application triage state (`⭐ Save`, `✅ Applied`, `✕ Dismiss`) stay in browser `localStorage` without user accounts or server-side tracking.
 
-JobSinton helps software professionals prioritize job opportunities that match their experience, skills, and working preferences. As a professional portfolio project, it documents decisions, limitations, and verification results so they can be understood and reproduced.
+---
 
-## Decisions and constraints
+## 2. Key Architectural Decisions
 
-| Area | Decision | Status |
+| Area | Decision | Rationale |
 | --- | --- | --- |
-| Product name | JobSinton | Agreed on 2026-10-17 |
-| Portfolio | Gara's Workshop | Agreed |
-| Professional focus | Java backend / full stack development | Agreed |
-| Backend | Java 21 and Spring Boot 4.0.8 | Foundation implemented |
-| Frontend | React and strict TypeScript | Current interface integrated; versions pinned in package.json |
-| Visual design | Current; Ledger list structure and Atlas card search | Owner-selected baseline on 2026-10-30 |
-| Database | PostgreSQL | Technical proposal; not yet finalized |
-| Editor | Visual Studio Code | Agreed |
-| Weekly commitment | 6–10 hours | Agreed |
-| Working method | Incremental development with ongoing documentation | Agreed |
-| Budget | EUR 0; local development as the primary workflow, included cloud quota optional | Agreed; no paid resources created |
-| Initial market | Spain, with a model prepared for other European countries | Agreed |
-| Hosting | Evaluate a free option once a demo exists | Pending |
-| Documentation structure | Product README; separate working plan | Agreed on 2026-10-17 |
-| Code license | No open-source license declared yet | Pending |
+| **Backend Runtime** | Java 21 LTS + Spring Boot 4.0.8 | Virtual threads allow high-concurrency I/O fan-out across 334+ upstream ATS boards with simple, readable blocking code bounded by a `Semaphore`. |
+| **Live Job Ingestion** | Direct 9-ATS Provider Engine ([ATS_PROVIDERS.md](ATS_PROVIDERS.md)) | Replaced early key-gated aggregator prototypes (which returned truncated excerpts and required credentials) with 9 unauthenticated public ATS adapters across 334 verified Spain & Europe company boards. |
+| **Cold-Start & Refresh Latency** | Disk Snapshot (`AtsFeedCacheStore`) + Stale-While-Revalidate (`AtsFeedService`) | Restores cached openings in `< 50ms` on startup, pre-warms asynchronously on `ApplicationReadyEvent`, and revalidates expired feeds in the background without dropping a single vacancy. |
+| **Freshness Integrity** | Local `FirstSeenRegistry` (`data/ats-seen-jobs.json`) | Computes age from `min(publishedAt, firstSeenAt)` so recruiter edits to older postings (`updated_at`) never falsely trigger `< 24h` (`🔥`) freshness badges. |
+| **Core Matching Domain** | Framework-free `matching` & `ranking` Java packages ([MATCHING.md](MATCHING.md), [RANKING.md](RANKING.md)) | Pure Java records and deterministic fraction math keep rule verification fast, reproducible, and decoupled from Spring/HTTP transport. |
+| **Frontend Stack** | React 19 + strict TypeScript + Vite ([DESIGN.md](DESIGN.md)) | Lightweight bundle with runtime JSON validation, `AbortController` race-condition protection, bilingual `ES`/`EN` support, and custom token-boundary keyword scoring. |
+| **Containerization** | Multi-stage Docker Compose ([../INSTRUCTIONS.md](../INSTRUCTIONS.md)) | Non-root `eclipse-temurin:21-jre-alpine` + `nginx:1.27-alpine` with a named `jobsinton-data` volume lets anyone boot the entire platform with `docker compose up --build -d`. |
+| **License** | MIT License (`Garatech`) | Permissive open-source licensing suitable for public inspection, portfolio review, and community reuse. |
 
-The name was chosen after a preliminary web search found no exact matches. Trademark registration, domains, and hosting identifiers have not been verified.
+---
 
-## Initial release scope
+## 3. Completed Milestones
 
-Target journey: **configure a profile → browse opportunities → understand the match → save an opportunity**.
-
-- An editable professional profile with priorities and constraints.
-- A clearly labeled fictional job catalog for development and demonstrations.
-- One live provider, subject to access availability and usage terms.
-- Search, filters, opportunity details, and explainable scores.
-- Saved opportunities; application tracking follows in a later milestone.
-
-Initially out of scope: automatic job applications, automated CV extraction, multiple simultaneous providers, microservices, and paid services. Public user accounts require verified data isolation; earlier demonstrations use fictional data.
-
-## Profile configuration
-
-The first increment implements one target role, technologies, whole years of experience, residence, one preferred work mode, and conditional on-site days. See [the implemented contract and manual checklist](PROFILE.md). Other dimensions below remain proposals.
-
-Profile configuration will offer a short setup flow with optional advanced controls. Proposed dimensions:
-
-| Dimension | Examples |
-| --- | --- |
-| Career goals | Backend, frontend, full stack, SAP development, or consulting |
-| Skills | Technology, self-assessed proficiency, recency, and context: employment, internship, or project |
-| Experience | Responsibilities and relevant experience; mandatory versus desirable requirements |
-| Location | Country of residence, countries accepted by the employer, cities, and relocation |
-| Work mode | Remote, hybrid, on-site, and maximum on-site days |
-| Conditions | Minimum and target pay, currency, pay period, working hours, contract, travel, and on-call duties |
-| Languages and education | Language proficiency and relevant qualifications |
-| Priorities | Mandatory, preferred, or indifferent; adjustable weights |
-
-## Matching principles
-
-1. Evaluate mandatory constraints before ranking by preferences.
-2. Use deterministic rules and documented weights.
-3. Distinguish missing information from a mismatch or a match.
-4. Show the available information and the reasons behind each score.
-5. Version the rules so results can be reproduced.
-
-**A match score is not a probability of being hired.** Professional suitability must not be inferred from personal characteristics unrelated to the role.
-
-The accepted [matching v1 contract and review checklist](MATCHING.md) separate advisory preferences, explicit constraints, unknown information and unevaluated conditions. Its reference cases are owner-accepted expectations implemented as executable domain tests.
-
-Delivery proceeds through separate PRs: rule contract, Java domain engine, application integration, then ranking. The first engine returns explanations and constraint outcomes; [the ranking domain](RANKING.md) applies the accepted weights, coverage and tie-breaking independently of the search interface. Current profile fields must not imply skill proficiency, scoped experience or unconfigured constraints.
-
-## European scope
-
-Company location, job location, and countries eligible for remote work remain separate. A remote listing may still restrict the employee's country of residence.
-
-Salary data retains its currency, pay period, and gross/net classification; incompatible amounts are not compared directly. The interface will support localization, with coverage determined by the selected providers.
-
-## Job providers
-
-The [first live source review](PROVIDERS.md) selects an Adzuna evaluation for Spain at EUR 0. The authenticated evaluation is recorded in [issue #31](https://github.com/Garatech/jobsinton/issues/31); permission for an ongoing public demo remains unresolved. The table below is the preliminary inventory from 2026-10-17; the new review supersedes its next steps for InfoJobs and Adzuna.
-
-| Provider | Evidence | Next step |
+| Milestone | Scope Delivered | Verification |
 | --- | --- | --- |
-| InfoJobs | Documented API requiring application credentials | Validate registration, search access, quotas, and usage terms |
-| LinkedIn | Restricted job-posting API; not evidence of general job-search access | Do not commit to an initial integration |
-| AIApply | Internal job-search documentation; no public API for this use located | Ask the provider if this becomes a priority |
-| Adzuna | Job-search API with quotas and usage conditions | Assess geographic coverage and permitted use |
+| **M1 · Runnable Foundation** | Spring Boot `/api/status` contract, React shell, `AbortController` timeout/retry handling, and GitHub Actions CI | Backend MockMvc + Playwright desktop/mobile E2E |
+| **M2 · Local Profile & *Current* UI** | Versioned `localStorage` profile editor, *Current* visual design system, responsive `320px`–`1440px` layouts, and bilingual `ES`/`EN` localization | Storage corruption recovery + viewport & locale specs |
+| **M3 · Explainable Matching & Ranking** | Pure Java `MatchingEngine` (M01–M24 reference cases), `CompatibilityRanker` (R01–R14 exact-fraction ordering), and `/api/matching/*` endpoints | 90+ domain & API integration tests + browser race-guard specs |
+| **M4 · Multi-ATS Direct Engine & Auto-Discovery** | 9 ATS adapters (`Greenhouse`, `Lever`, `SmartRecruiters`, `Workable`, `Ashby`, `Personio`, `Teamtailor`, `Recruitee`, `Factorial HR`), URL Auto-Sniffer, parallel slug prober, and `FirstSeenRegistry` | Deterministic adapter unit tests & stubbed E2E journeys |
+| **M5 · Multi-Discipline Tracks, Dockerization & Spain Junior Tuning** | 8 developer stack presets, 14 profile roles, 1-command Docker Compose, 3-tier Spain/EU geo filter + anti-fake-remote engine, SWR disk cache, SmartRecruiters `?country=es` pass, and expansion to **334 verified boards** | **136 backend tests + 148 Playwright E2E tests** passing offline in CI |
+| **M6 · Portfolio & Documentation Polish** | Flagship `README.md` with Retina product tour and Mermaid architecture diagram, MIT `LICENSE`, cleaned `docs/` handbook, and aligned contributor guide | Full link integrity & CI suite verification |
 
-References:
+---
 
-- [InfoJobs operations](https://developer.infojobs.net/documentation/operation-list/index.xhtml)
-- [LinkedIn Job Posting API](https://learn.microsoft.com/en-us/linkedin/talent/job-postings/api/overview)
-- [AIApply Job Search](https://support.aiapply.co/en/articles/16889656-how-to-use-the-job-search-section)
-- [Adzuna API](https://developer.adzuna.com/overview)
-- [Adzuna terms](https://developer.adzuna.com/docs/terms_of_service)
+## 4. Future Exploration Ideas
 
-Each connector must address pagination, normalization, attribution, rate limits, timeouts, failures, deduplication, and expiry. Demonstrations must remain usable with fictional data if a provider is unavailable.
-
-## Proposed architecture
-
-The frontend, backend, and documentation share one repository.
-
-The backend will be a modular monolith organized around profiles, opportunities, connectors, matching, and applications. Connectors will translate provider responses into a common model so the matching engine does not depend on provider-specific formats.
-
-The foundation implements the documented status API and GitHub Actions checks. A small system package owns the connectivity endpoint; feature modules will follow when needed. See [architecture](ARCHITECTURE.md).
-
-Proposals still to finalize: PostgreSQL, versioned database migrations, and Docker Compose. No database is needed to run this increment.
-
-## Roadmap
-
-Milestones have exit criteria rather than fixed deadlines. Estimates follow once each milestone is broken down into small tasks.
-
-| Milestone | Deliverable | Exit criteria | Status |
-| --- | --- | --- | --- |
-| 0. Definition | Name, scope, stack, and quality criteria | Main decisions recorded and open questions identified | In progress |
-| 1. Foundation | Remote repository, reproducible environment, and automated checks | A clean clone starts using verified instructions | Complete for local workflow: owner reported Windows startup and verification on 2026-10-20; Codespaces remains optional and unverified |
-| 2. First journey | Profile, fictional catalog, details, and saved opportunities | The journey works with loading, empty, and error states | Complete for the fictional catalog journey: browser-local profile and shortlist, with owner verification reported on 2026-10-30 |
-| 3. Matching v1 | Rules, domain engine, integration, then ranking | Accepted reference cases pass; later ranking cases cover changed weights | Compatibility ordering connected to search; [owner acceptance checklist](RANKING.md#manual-acceptance-checklist) ready |
-| 4. Live provider | Multi-ATS direct provider engine (5 public ATS JSON APIs, 22 pre-seeded boards) | Unauthenticated live fetching; timeouts, duplicates, and board failures isolated; offline CI verified | Phase 1 implemented on `feat/multi-ats-providers` ([ATS_PROVIDERS.md](ATS_PROVIDERS.md)); Adzuna deprecated and removed |
-| 5. Personal use | Persistence, application tracking, and accounts | User isolation and data deletion verified | Pending |
-| 6. Demonstration | Refined interface and a viable zero-cost deployment | Main journey works accessibly on mobile and desktop with fictional data | Pending |
-| 7. Portfolio presentation | Screenshots, documentation, and technical explanation | Reproducible demonstration and defensible decisions | Pending |
-
-## Local development
-
-See [the development guide](DEVELOPMENT.md) for local and optional Codespaces setup, startup commands, verification, and switching devices without losing changes.
-
-GitHub is the source of truth for shared work. Commit and push changes to a feature branch before switching machines. A Codespace can be reopened from either device, but its unpushed commits are not yet backed up in the repository.
-
-The owner confirmed successful local foundation startup and verification on 2026-10-20. Local Git status has not been independently inspected because the remote development terminal cannot initialize. Preserve local changes and inspect Git status before synchronizing. Codespaces remains optional; its unverified startup does not block the local workflow.
-
-No provider API keys or database are required for this stage.
-
-## Development and evaluation
-
-Each session follows: **small objective → design → implementation → verification → documentation**.
-
-Each update records what changed, why, how it was checked, and what remains unresolved. An issue defines observable acceptance criteria, and a focused branch and pull request track the work. Review covers correctness, clarity, relevant security risks, user experience, and the effect on data or integrations before merging.
-
-Verification is proportional to the change: reference cases for matching, integration checks for persistence and connectors, and end-to-end checks for critical journeys. Documentation changes require accurate content and valid internal links. Verification records include only tests and independent reviews that actually took place.
-
-See [CONTRIBUTING](../CONTRIBUTING.md) for the detailed review process and [the pull request template](../.github/pull_request_template.md) for change records.
-
-Each milestone closes with an explanation of the implementation, an important design decision, and an alternative considered. Open questions are revisited before expanding the scope.
-
-## Repository access and data
-
-The repository is public. Direct changes and merges are reserved for `Garatech` and tools explicitly authorized by the owner. Others can work in forks and propose pull requests; submitting a PR does not integrate it or grant write access.
-
-See the [repository access review](repository-access.md). GitHub settings enforce permissions; documentation only records their reviewed state.
-
-Credentials, real CVs, personal demonstration profiles, and job listings without redistribution rights are excluded from the public repository. The code license remains undecided.
-
-## Session log
-
-### 2026-10-17 — Project foundation
-
-- Chose JobSinton as the product name.
-- Recorded the agreed technologies, weekly commitment, budget, and initial market.
-- Prepared the README, contribution process, pull request template, and VS Code workspace.
-- Published the initial documentation in `Garatech/jobsinton`.
-- Reviewed repository permissions and required workflow approval for all external contributors.
-- No application, CI pipeline, deployment, or live integrations were implemented.
-- Next technical step: inspect the development environment and build the first runnable increment.
-
-### 2026-10-17 — Documentation and product README
-
-- Separated the concise product introduction from this working plan.
-- Preserved the detailed scope, provider notes, roadmap, review process, and session history.
-- Updated the contribution guide, access review, pull request template, and configuration comments.
-- Local terminal access was unavailable during this documentation update because the execution environment could not initialize its sandbox. Remote changes can be completed through GitHub; refresh the local checkout before the next coding session.
-
-### 2026-10-18 — Runnable foundation and shared development
-
-- Confirmed that owner-approved PR #2 is merged into main at `3a73c67`.
-- Opened issue #3 and implemented the first real Java-to-browser connection on a focused branch.
-- Added a bounded connection check, retry behavior, backend HTTP tests, and desktop/mobile browser integration tests.
-- Added GitHub Actions, a development guide, an optional dev container, architecture notes, and CHANGELOG.md.
-- Decision: keep this increment free of database/provider setup so its startup and connectivity behavior can be understood and checked independently.
-- Alternative deferred: building profile, storage, and matching scaffolding together would make the first review much larger without validating user value.
-- Local terminal initialization failed before checkout inspection. Local cleanliness, installed tools, and synchronization cannot be certified.
-- Review CI evidence in the implementation PR; Codespaces and owner Windows startup remain separate acceptance checks.
-- Next session: start this foundation, review the request path and visual direction, then define the smallest profile-preferences contract before implementing it.
-
-### 2026-10-18 — Documentation update
-
-- Opened `docs/documentation-update` to refine wording across the project documentation.
-- Followed up in `docs/editorial-refinement` with a consistent, project-focused tone.
-- Preserved the technical scope, decisions, instructions, and verification records.
-- Checked command examples and link targets against the previous revision; application code and configuration are unchanged.
-- Next step remains starting the foundation and reviewing the first profile-preferences contract.
-
-### 2026-10-20 — Professional profile and local verification
-
-- Recorded owner-reported Windows foundation startup and verification after selecting Java 21 and Node 24; Maven 3.10.0 was reported during setup.
-- Opened issue #9 and branch `feat/profile-preferences` for the first profile editor.
-- Added explicit browser-local saving, editing, a last-saved summary, confirmed clearing, and recovery from invalid or unavailable storage.
-- Added validation and browser tests, including keyboard use, narrow viewports, conditional day limits, and backend outages.
-- Decision: keep one profile in the current browser without introducing accounts or database setup. Profiles do not transfer between devices with Git.
-- Alternative deferred: a profile API and database would require server-side validation, persistence, and isolation beyond this increment.
-- Added `docs/PROFILE.md` with post-merge commands and a manual acceptance checklist. Updated Windows troubleshooting in `docs/DEVELOPMENT.md`.
-- Verification: see the profile PR checks for the final tested commit. Local execution of this increment and human visual acceptance remain pending.
-- Next step: complete the profile acceptance checklist, then define the fictional job catalog and first browsing journey.
-
-### 2026-10-29 — Visual design studies
-
-- Prepared a source-based Current reference and four standalone HTML/CSS/JavaScript alternatives on `design/visual-exploration`, tracked in issue #11.
-- Added color and layout research, an offline comparison page, review-note export and browser verification.
-- Resolved the interrupted study's mobile layout failure and completed the pending keyboard focus correction.
-- Decision: compare fictional journeys in an isolated package before applying a design system to the application.
-- Alternative deferred: selecting a palette and immediately restyling the production interface would make visual comparison and review harder.
-- Verification evidence is supplied by the design workflow and the implementation PR. Package creation requires successful browser checks.
-- Owner confirmation of the existing profile's manual checklist is recorded above; it is separate from visual acceptance of these new studies.
-- Next step: review the alternatives, record the chosen combination in `docs/DESIGN.md`, then implement the selected system before the fictional catalog.
-
-### 2026-10-30 — Current application integration
-
-- The owner selected the Current preversion as the primary design, with no further visual exploration requested.
-- Kept `design/current-preversion` separate and implemented its approved design in the existing React application on `feat/current-interface`.
-- Added routed overview, search, company, detail, saved and profile pages; retained the real service check on a dedicated status page.
-- Preserved existing profile records and draft/save separation. Added independently stored saved opportunities with explicit error recovery.
-- Decision: retain the project's typed build and shared components while adopting the approved HTML structure and CSS. A separate static application would duplicate state and lose the tested profile behavior.
-- The fictional catalog supports the first complete journey; descriptive profile facts do not implement matching v1 or live applications.
-- Verification: the PR records build, integration, storage-recovery and responsive results. Local terminal access remains unavailable; owner acceptance follows the checklist in DESIGN.md after merge.
-- Next step: verify the integrated journey, then define deterministic matching rules and a reviewed set of reference cases using this visual baseline.
-
-### 2026-10-30 — Page transitions and design-stage close
-
-- Recorded owner confirmation that the integrated Current application works as expected.
-- Added a 200 ms incoming-page fade, preserving the shared shell, profile drafts and immediate interaction.
-- Respected reduced-motion preferences, including changes during a transition, and retained immediate navigation when the animation API is unavailable.
-- Decision: animate only page identity changes with a small native hook. Exit delays and remounting the page tree would add latency or risk losing local drafts.
-- Added focused browser coverage for animation completion, keyboard navigation, history, rapid changes, reduced motion and fallback behavior. The PR records the actual results for its tested commit.
-- The current visual-design stage is closed. Further work uses Current as the baseline; no additional redesign is planned.
-- Next step: define deterministic matching constraints, missing-data treatment and a reviewed set of examples before implementing matching v1.
-
-### 2026-10-30 — Matching rule contract
-
-- Confirmed PR #16 is merged into main at `a89f9c8`; no open PRs were present when this increment started.
-- Opened issue #17 and branch `docs/matching-v1-contract` for a documentation-only proposal.
-- Added MATCHING.md with advisory preferences, explicit constraints, missing-data semantics, normalization limits, 24 fictional reference cases and an owner review checklist.
-- Decision: implement explanations before ranking, preserving the existing profile schema. Total experience, descriptive tags and company location do not establish scoped experience, mandatory skills or residence eligibility.
-- Alternative deferred: delivering rules, scores, new profile controls and backend integration together would make the initial domain review unnecessarily broad.
-- Verification: checked the current profile/catalog models, case consistency and relative document links. These examples are proposed expectations, not executed engine tests. The PR records automated workflow results separately.
-- Handoff: review and merge the contract, then start the Java domain engine and executable reference tests in a fresh branch from updated main. No runtime code, stored data or design changes are part of this increment.
-
-### 2026-10-30 — Matching domain engine
-
-- Confirmed owner-merged PR #18 on main at `400e6ee`, with the matching rule baseline accepted.
-- Opened issue #19 and branch `feat/matching-domain` for the pure Java domain implementation.
-- Added immutable normalized facts, structured validation, versioned assessments, explicit evidence and constraint aggregation.
-- Converted M01–M24 into executable expectations, with additional incomplete-data, normalization, order-independence and defensive-copy checks.
-- Decision: keep the domain independent of Spring, HTTP, provider formats and storage. The existing website and browser profile remain unchanged.
-- Alternative deferred: adding endpoints, frontend requests and ranking in the same increment would broaden verification before the rules have an independently tested implementation.
-- Added MATCHING_ENGINE.md with the catalog mapping plan, commands and implementation boundaries. CI evidence and the tested revision are recorded in the PR; the local terminal still cannot initialize.
-- Next step: after review and merge, connect normalized saved-profile/catalog inputs to the engine through a reviewed API and the existing interface. Scores and weights remain a later increment.
-
-### 2026-10-31 — Matching API and opportunity details
-
-- Confirmed owner-merged PR #20 on main at `2159cf7`; the owner reported successful verification of the domain engine.
-- Opened issue #21 and branch `feat/matching-integration` for the application connection.
-- Added a bounded, validated matching endpoint using saved-profile snapshots and server-owned fictional listing facts. Requests and results are not persisted.
-- Connected the existing Current detail panel to versioned results, with loading, error/timeout feedback, retry and guards against superseded responses.
-- Updated profile transmission wording while retaining the browser storage format and successful-save boundary.
-- Decision: send an offer ID and resolve comparison facts on the server. A small explicit catalog bridge is checked against frontend display facts to prevent drift; accepting arbitrary client requirements would make the demo boundary less clear.
-- Added HTTP, browser and catalog-consistency checks, plus MATCHING_API.md with the contract and manual acceptance steps. The implementation PR records actual CI evidence for its checked commit.
-- Next step: owner verification of the complete comparison journey, then define ranking weights, missing-information coverage and tie-breaking with reviewed examples. No further redesign is planned.
-
-### 2026-11-11 — Compatibility order for search
-
-The owner reported successful testing of the comparison journey from PR #22. [RANKING.md](RANKING.md) proposes a separate ordering policy for issue #23. Constraint conflicts remain visible; the sort uses confirmed advisory evidence and reports coverage separately. Sorting by agreement alone was rejected because one known preference could otherwise look like a perfect match. The examples cover the current fictional catalog, changed priorities, sparse evidence and stable ties. After owner acceptance, the next increment is a tested Java ranker, followed by search integration.
-
-### 2026-11-12 — Compatibility ranking domain
-
-PR #24 established the ranking policy. Issue #25 implements the domain calculation in Java and exercises R01–R14. Each batch takes one profile and reuses the existing matching engine. Keeping exact fractions avoids a false tie where display percentages coincide; grouping by confirmed conflict prevents a strong preference score from cancelling an explicit limit. The [verification guide](RANKING.md#verification-after-merge) includes the focused Maven command. The implementation PR records CI results. Next: batch delivery and the optional search sort.
-
-### 2026-11-12 — Compatibility in search
-
-The ranking policy and Java implementation are integrated through one bounded batch request for the saved profile and filtered offer IDs (issue #27). Search receives the domain order without copying weights into the browser or issuing a detail request for every card. Unavailable entries remain visible. Missing profiles and failed batches explicitly use Newest; stale results cannot replace new filters. The [guide](RANKING.md#verify-compatibility-search) includes commands and a manual checklist. The PR records CI results. After owner verification, review authorized zero-cost access for a first live provider before connector work.
-
-### 2026-11-13 — First live source review
-
-Reviewed official access conditions and search contracts for Adzuna, InfoJobs, Tecnoempleo and Remotive in issue #29. Adzuna is the proposed first local probe; InfoJobs' published aggregator restriction rules it out under standard terms. [PROVIDERS.md](PROVIDERS.md) records the trade-offs, matching gaps and acceptance criteria. No live query, account or application change was part of this review.
-
-### 2026-11-17 — Phase 1: Multi-ATS direct provider engine
-
-- Deprecated and removed the key-gated Adzuna backend/frontend/probe pipeline (`providers/adzuna`, `opportunities`, `tools/adzuna`, `playwright.adzuna.config.ts`, `.github/workflows/adzuna-windows.yml`).
-- Implemented the zero-configuration **Multi-ATS Direct Provider Engine** (`backend/.../providers/ats/`) supporting 5 public unauthenticated ATS JSON APIs: **Greenhouse**, **Lever** (Global + EU + 404 fallback), **SmartRecruiters** (list + bounded priority detail enrichment + on-demand detail endpoint), **Workable** (v1 widget + v3 POST fallback), and **Ashby** (`?includeCompensation=true`).
-- Pre-seeded `backend/src/main/resources/ats/companies.json` with 22 company boards across Madrid, Spain, Europe, and Remote employers.
-- Implemented Java 21 virtual-thread parallel fetching with board-level fault isolation, 8-second timeouts, 12 MiB payload cap, `https://` URL validation, deduplication, newest-first freshness ordering, and a 5-minute TTL cache with stampede coalescing.
-- Connected `#home` (**Live ATS Radar**) and `#opportunities` (defaulting to **Live ATS Boards**, with `Sample catalog` retained via toggle and `?source=sample`) with developer stack presets (`All Tech / Software Roles`, `Track A · SAP & Enterprise`, `Track B · Full Stack (Java / JS)`, `Custom Profile`), token-boundary skill scoring, one-click freshness/location filters, first-48h freshness badges, board diagnostics, and direct `Apply on Company Site` links.
-- Added offline backend unit/MockMvc tests, frontend scoring & deterministic Playwright E2E tests, and [ATS_PROVIDERS.md](ATS_PROVIDERS.md). Verification is tracked in GitHub Actions CI on the `feat/multi-ats-providers` PR.
-- Next step: Phase 2 — Gemini AI semantic fit scoring, local persistence (first-seen timestamps & application tracker), and custom company board management.
+- **Exportable Triage & Application Notes:** Optional JSON/CSV export and import of saved/applied ATS roles across browsers without requiring server accounts.
+- **Custom Feed Schedules & Notifications:** Optional local desktop/webhook digest for newly sighted `< 24h` Spain junior roles matching the saved profile.
+- **Additional Regional European ATS Adapters:** Support for custom Workday/SuccessFactors JSON feeds where publicly exposed by Spanish and European tech employers.

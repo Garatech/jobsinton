@@ -1,107 +1,57 @@
-# Application architecture
+# Application Architecture
 
-## Scope and request path
+## Request Topologies
 
-The first increment establishes one real request through the complete stack:
+JobSinton runs identically across both containerized production builds and local development without broad CORS policies:
 
-Browser → Vite development proxy → Spring Boot → JSON response → connection state.
+- **Docker Compose (`http://localhost:5173`):** Browser → `nginx:1.27-alpine` (serves static Vite bundle and proxies `/api/*` to `http://backend:8080/api/`) → Spring Boot 4 (`eclipse-temurin:21-jre-alpine`).
+- **Local Development (`http://localhost:5173`):** Browser → Vite dev proxy (`/api/status`, `/api/matching`, `/api/ats` forwarded to `http://127.0.0.1:8080`) → Spring Boot 4.
 
-The browser calls `/api/status`, `/api/matching/*`, and `/api/ats/*` on its own origin. Vite forwards `/api/status`, `/api/matching`, and `/api/ats` to `http://127.0.0.1:8080`, so local development and private Codespaces port forwarding use the same frontend code. The Vite host allowlist is derived from this Codespace's name and forwarding domain; it does not trust every host. No broad CORS policy is needed. Production routing is not configured.
+---
 
-## Responsibilities
+## Module Responsibilities
 
 | Location | Responsibility |
 | --- | --- |
-| `backend/.../JobSintonApplication.java` | Start Spring Boot |
-| `backend/.../system/SystemStatusController.java` | Own the public service-status contract |
-| `backend/.../providers/ats/` | Multi-ATS direct provider & auto-discovery engine: 9 public ATS adapters (Personio, Teamtailor, Recruitee, Factorial HR, Greenhouse, Lever, SmartRecruiters, Workable, Ashby), Europe-eligibility ingestion filter, 293-company Spain/EU registry + `data/custom-companies.json`, `FirstSeenRegistry` (`data/ats-seen-jobs.json`), bounded virtual-thread feed service with TTL cache, and `/api/ats/*` REST API |
-| `backend/src/main/resources/ats/companies.json` | Pre-seeded registry of 293 public company ATS boards focused on Madrid, Spain, European tech hubs, and EU Remote |
-| `backend/.../matching/` | Pure Java matching domain, immutable facts, validation and versioned explanations |
-| `backend/.../matching/api/` | Bounded matching endpoint, saved-profile validation and fictional catalog adapter |
-| `frontend/src/api/ats.ts` | Live ATS feed & auto-discovery client, runtime validation, TTL cache, and SmartRecruiters on-demand detail hydration |
-| `frontend/src/ats/` | Multi-discipline developer stack presets (`All Tech`, `Software & Web`, `Python & Data`, `AI & ML`, `Cloud & DevOps`, `QA & Cyber`, `SAP & ERP`, `Custom Profile`), 3-Tier Spain/EU Geo Filter, Anti-Fake-Remote Blocker, Junior/Seniority signals, and bilingual token-boundary keyword scoring |
-| `frontend/src/pages/LiveJobsBoard.tsx` | Zero-friction live ATS feed UI with board health bar, ATS Auto-Discovery panel, 3-tier geo filter, 1-click job triage (`⭐ Save`, `✅ Applied`, `✕ Dismiss`), preset pills, and direct company apply links |
-| `frontend/src/api/matching.ts` | Matching requests and complete response validation |
-| `frontend/src/matching/Comparison.tsx` | Saved-profile comparison lifecycle and Current panel |
-| `frontend/src/api/status.ts` | HTTP request and runtime validation of external JSON |
-| `frontend/src/App.tsx` | Shared Current shell, route composition, profile and shortlist state |
-| `frontend/src/navigation.ts` | Hash navigation and direct-link handling |
-| `frontend/src/pages/` | Home (with Live ATS Radar), live/sample opportunities search, companies, details and service status |
-| `frontend/src/catalog/` | Typed fictional catalog and validated shortlist storage |
-| `frontend/src/profile/model.ts` | Profile contract, normalization, validation, and saved-data parsing |
-| `frontend/src/profile/storage.ts` | Guarded reads, writes, and removal of the browser-local profile |
-| `frontend/src/profile/ProfileEditor.tsx` | Editable draft, validation feedback, and last-saved summary |
-| `frontend/src/styles.css` | Responsive visual foundation without external assets |
-| `frontend/tests/` | Browser journeys against the real API, deterministic ATS stubs, and controlled failures |
-| `.github/workflows/ci.yml` | Reproduce builds and integration checks in GitHub |
-| `.devcontainer/` | Optional shared cloud development environment |
+| `backend/.../JobSintonApplication.java` | Spring Boot entry point |
+| `backend/.../system/SystemStatusController.java` | Lightweight `GET /api/status` health contract |
+| `backend/.../providers/ats/` | Multi-ATS direct provider & auto-discovery engine: 9 public ATS adapters (Personio, Teamtailor, Recruitee, Factorial HR, Greenhouse, Lever, SmartRecruiters, Workable, Ashby), Europe-eligibility ingestion filter, 334-company Spain/EU registry + `data/custom-companies.json`, `AtsFeedCacheStore` (`data/ats-feed-cache.json`) with startup pre-warming and Stale-While-Revalidate, `FirstSeenRegistry` (`data/ats-seen-jobs.json`), bounded virtual-thread feed service, and `/api/ats/*` REST API |
+| `backend/src/main/resources/ats/companies.json` | Pre-seeded registry of 334 verified public company ATS boards across Spain, European tech hubs, and EU Remote employers |
+| `backend/.../matching/` | Pure Java matching domain (`MatchingEngine`), immutable facts, validation, and versioned explanations with zero framework dependencies |
+| `backend/.../matching/api/` | Bounded matching & batch ranking HTTP controllers, 14-role saved-profile validation (`SavedProfileAdapter`), and catalog fact lookup |
+| `backend/.../ranking/` | Pure Java compatibility ranker (`CompatibilityRanker`) ordering filtered sets by conflict tier, exact preference fractions, and evidence coverage |
+| `frontend/src/api/` | Runtime-validated HTTP clients for `/api/ats/*`, `/api/matching/*`, and `/api/status` with `AbortController` deadlines |
+| `frontend/src/ats/` | 8 multi-discipline developer stack presets, 3-Tier Spain/EU Geo Filter, Anti-Fake-Remote Blocker, Junior/Seniority & freshness scoring, and bilingual token-boundary keyword matcher |
+| `frontend/src/pages/` | Home (with **Live ATS Radar**), Live ATS / Sample Opportunities board, Companies, Opportunity Detail, Saved shortlist, and Service Status |
+| `frontend/src/profile/` | 14-role professional profile schema, input normalization, validation, guarded `localStorage` persistence, and `ProfileEditor` |
+| `frontend/src/matching/Comparison.tsx` | Saved-profile compatibility lifecycle and explainable criteria breakdown |
+| `frontend/src/i18n/` | Bilingual (`Español` / `English`) message catalogs and locale detection |
+| `frontend/src/styles.css` | Responsive *Current* design system (`320px`–`1440px`) without external CSS frameworks |
+| `frontend/tests/` | 148 Playwright desktop & mobile Chromium E2E journeys and deterministic unit specs |
+| `docker-compose.yml` | Two-container orchestration (`frontend` + `backend`) with healthcheck-gated startup and persistent `jobsinton-data` volume |
+| `.github/workflows/ci.yml` | Automated offline backend (`mvn verify`) and frontend/Playwright (`npm run build` + `test:e2e`) CI pipeline |
 
-The profile editor persists the saved snapshot in the browser; comparison requests send it transiently to the backend. The catalog module supplies fictional data and browser-local saved IDs. The matching domain module is independent of the HTTP and frontend boundaries. The pure Java [ranker](RANKING.md#java-implementation) reuses the matching engine across one profile and a filtered offer set. Its result preserves each comparison, its exact sorting evidence and any unavailable offers. The [batch endpoint](RANKING.md#batch-api-and-search-behavior) returns ordered IDs and unavailable IDs for the filtered set. The client validates membership, versions and request ownership before updating search. Live public ATS fetching is implemented in `providers/ats/` without API keys or database setup; see [ATS_PROVIDERS.md](ATS_PROVIDERS.md).
+---
 
-## API contract
+## Concurrency, Caching & Resilience
 
-`GET /api/status` returns HTTP 200 with JSON:
+### 1. Virtual-Thread Fan-Out & Fault Isolation (`AtsFeedService`)
+Live ATS aggregation queries all 334+ configured boards concurrently on **Java 21 Virtual Threads**, bounded by a `Semaphore` (`jobsinton.ats.max-concurrency=24`), an 8-second per-request timeout, and a 12 MiB payload cap. If an individual board times out or returns HTTP 4xx/5xx or malformed JSON/XML, the error is isolated to that board's diagnostic entry (`ok: false`) while all remaining boards succeed.
 
-```json
-{"name":"JobSinton","status":"UP"}
-```
+### 2. Disk Snapshot & Stale-While-Revalidate (`AtsFeedCacheStore`)
+To eliminate cold-start latency without sacrificing a single job offer:
+- On startup, `AtsFeedService` loads the last persisted feed from `data/ats-feed-cache.json` in `< 50ms` and triggers an asynchronous background pre-warm (`ApplicationReadyEvent`).
+- When the 10-minute cache TTL expires, `GET /api/ats/jobs` returns the cached feed immediately (`cached: true`, `refreshing: true`) and launches a single coalesced background refresh on virtual threads. The React client renders immediately and seamlessly merges newly discovered openings once revalidation finishes.
+- Explicit `Force Refresh` (`?refresh=true`) performs a synchronous live refresh, falling back to the cached snapshot if the machine is temporarily offline.
 
-The endpoint confirms that this process can handle an HTTP request. It does not verify databases, providers, authentication, or overall application readiness. It exposes no host information, framework versions, or secrets. Unknown routes return 404.
+### 3. Client Async & Race-Condition Safety
+Every frontend HTTP call owns an `AbortController` and request-generation guard. Navigating away, changing filters, or saving a new profile cancels in-flight requests so superseded responses can never overwrite current UI state. Every external `applyUrl` is validated on both server and client to require `https://`.
 
-The client validates both required fields before declaring success. A non-success response, malformed JSON, unexpected contract, network failure, or five-second timeout produces the same recoverable unavailable state. Error details remain outside the product interface.
+---
 
-## Async behavior
+## Pure Matching & Ranking Domain
 
-Each request owns an `AbortController`. Cleanup cancels work when the component unmounts or a new attempt replaces it. An active-request guard prevents stale responses from changing the current state. The retry button is disabled while checking; there is no automatic polling or retry traffic.
-
-## Why this stack and scope
-
-Java 21 provides a stable JDK baseline. Spring Boot supplies HTTP routing and JSON serialization. React and strict TypeScript own the interface. Maven manages the backend; an npm lockfile makes frontend installs reproducible.
-
-Vite handles development and the static production build. The initial application does not need an additional React bundler plugin. Playwright tests the actual browser-to-Java connection and failure recovery on two viewport configurations.
-
-A database and provider credentials would introduce setup and data concerns without helping prove this first connection. Those decisions remain in the project plan. GitHub Codespaces is an optional development environment, not application hosting.
-
-## Local profile
-
-The profile editor keeps its draft separate from the last successful save. Saving validates and normalizes the draft, then writes a versioned record to browser storage. Only a successful write updates the saved summary. Invalid input focuses the first affected control; failed storage operations retain the draft and show an error.
-
-Saved records are untrusted input: loading checks their version, shape, size, and values before rendering. There are no storage writes on mount or while typing. Invalid records are preserved until an explicit successful save or clear. The same pure validation functions protect submission and loading.
-
-The profile never passes through the status API and remains usable during an API outage. Storage is scoped to the browser and origin, with no account or device synchronization. Multiple tabs use last-save-wins behavior. These frontend checks are not a substitute for server validation when a profile API is introduced.
-
-See [the profile contract and verification guide](PROFILE.md).
-
-## Documentation policy
-
-API contracts, design reasons, boundary validation, and non-obvious behavior are documented next to the code. Comments explain intent rather than restate syntax. This document tracks changes in responsibilities, `CHANGELOG.md` records observable increments and verification, and the project plan covers decisions and next steps.
-
-## Current limitations
-
-Persistence is limited to browser-local profile and shortlist storage. There are no user accounts, server-side profile storage, provider access, production deployment, or published release. Current is the owner-selected visual baseline; see [DESIGN.md](DESIGN.md) for the selected system and acceptance checklist. Desktop/mobile browser automation covers the first journey but does not replace a complete accessibility audit or human visual review.
-
-## Current application composition
-
-The approved design is implemented in shared React components and CSS within the existing Vite build. The preversion branch is retained as a visual reference, not merged as a second application. Hash routes avoid adding deployment rewrite requirements and support direct links, reloads and history. Unknown routes render a recovery view.
-
-The profile editor stays mounted while hidden on other routes, preserving an unsaved draft during navigation. Successful saves notify the shell; the home direction and detail facts use only that saved profile. The profile storage key and v1 envelope remain unchanged. No profile is seeded or reset during startup.
-
-The shortlist uses its own versioned localStorage record. Reads are bounded and validated; unknown catalog IDs are ignored without rewriting storage. A failed write or clear leaves the displayed saved state unchanged and reports the error. Storage events refresh open tabs. There is no cross-device synchronization or user account.
-
-The catalog is bundled fictional content, not an API response. Opportunity facts compare explicit values without scoring or eligibility inference. Application actions explain that no submission occurs. The matching endpoint compares server-owned fictional facts; provider credentials and database setup remain unnecessary.
-
-## Matching domain
-
-The `matching` package implements the accepted [rule contract](MATCHING.md) using Java records and enums. `MatchingEngine.evaluate` returns either a complete versioned evaluation or structured validation errors. It has no Spring annotations, external I/O, clock, database or provider dependency.
-
-Input snapshots preserve unknown facts and explicit limits. Assessments retain compared evidence, stable reasons and scope limitations. Only constraint outcomes influence the constraint summary; advisory differences never remove offers. Technology terms and country evidence are ordered deterministically, and result collections are immutable.
-
-The separate matching API adapter exposes POST /api/matching/evaluate. It bounds request bodies, validates the saved-profile schema, normalizes explicit place mappings and looks up server-owned fictional listing facts. The status endpoint and browser profile storage format remain unchanged. The [engine guide](MATCHING_ENGINE.md) records domain types; the [API guide](MATCHING_API.md) documents data transmission, response validation, cancellation and acceptance checks. The ranking domain is separate from the detail endpoint.
-
-## Comparison lifecycle
-
-Opening an opportunity with a valid saved profile posts its snapshot and the offer ID to the matching endpoint. Draft edits and failed saves do not change that snapshot. Responses carry the offer ID and API/rules versions, use no-store, and are validated before rendering.
-
-The detail panel is keyed by offer and profile content. Each request owns cancellation, an eight-second deadline and an active flag, so superseded responses cannot update the current panel. Results are not stored in browser storage. Errors retain browsing/shortlist access and provide explicit retry.
-
-Profiles are transmitted for transient comparison but are neither persisted nor logged by the application backend. The domain engine remains free of HTTP, Spring and provider dependencies. See MATCHING_API.md for the deliberately limited country/city normalization and the duplicated fictional-facts boundary checked by integration tests.
+The `matching` and `ranking` packages implement the versioned contracts in [MATCHING.md](MATCHING.md) and [RANKING.md](RANKING.md) using immutable Java records and enums:
+- **Zero framework coupling:** No Spring annotations, HTTP types, system clocks, databases, or ATS-specific DTOs enter the domain packages.
+- **Honest semantics:** Hard constraint conflicts (`RESIDENCE`, `ONSITE_DAYS`, `WORK_MODE` incompatibilities), advisory matches, partial overlaps, and unknown facts remain distinct. Missing information is never penalized as a conflict or inflated into a match.
+- **Transient profile privacy:** Profiles live in browser `localStorage` (`jobsinton.professional-profile`); when evaluating compatibility, the snapshot is posted transiently in memory and never persisted or logged on the server.

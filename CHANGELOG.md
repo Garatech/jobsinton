@@ -4,6 +4,12 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Changed — Repository Showcase, Flagship README, MIT License & Documentation Alignment
+
+- Rewrote root [README.md](README.md) with live CI/stack badges, Retina UI screenshots (`docs/assets/`), a Mermaid system architecture diagram, engineering highlights, repository layout, and verified documentation links.
+- Added root MIT [LICENSE](LICENSE) under `Garatech` and created [docs/README.md](docs/README.md) as a structured technical documentation index.
+- Updated [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md), [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md), [docs/PROJECT_PLAN.md](docs/PROJECT_PLAN.md), [docs/LANGUAGES.md](docs/LANGUAGES.md), and [CONTRIBUTING.md](CONTRIBUTING.md) to match the current 334-board Multi-ATS, Docker Compose, Stale-While-Revalidate caching, and 14-role architecture, and removed deprecated Adzuna scratch documents.
+
 ### Added — Spain Junior Harvest, SmartRecruiters `country=es` Pass, Adapter Pagination/Priority Tuning & 334-Board Catalog
 
 - Enhanced `SmartRecruitersAdapter` to run a targeted `?limit=100&country=es` pass (up to 200 Spain postings) whenever a global enterprise board hits the 100-item page cap, extract structured list-level `experienceLevel` and `typeOfEmployment` metadata (preserving `hasFullDescription: false` until full detail hydration), prioritize Spanish junior/entry/trainee postings (`+55` pts) and Barcelona/Madrid (`+25` pts) during initial detail enrichment (`jobsinton.ats.smartrecruiters-detail-cap=14`), and expand the in-memory detail cache to `4,000` entries.
@@ -92,27 +98,27 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ### Removed — Deprecated Adzuna integration
 
-- Removed the key-gated Adzuna backend adapter, local Spring profile, frontend search/comparison components, PowerShell/Node probe scripts, and dedicated Adzuna CI/Playwright configs in favor of direct public company ATS endpoints. Historical evaluation docs remain archived for reference.
+- Removed the key-gated Adzuna backend adapter, local Spring profile, frontend search/comparison components, PowerShell/Node probe scripts, and dedicated Adzuna CI/Playwright configs in favor of direct public company ATS endpoints.
 
 ### Decision — Adzuna result order
 
-- Retain provider order and per-listing profile comparisons. The first measured live page produced no evidence-based ordering across ten listings. [Observation and review criteria](docs/ADZUNA_PAGE_STUDY.md#ordering-decision-5d2).
+- Retain provider order and per-listing profile comparisons. The first measured live page produced no evidence-based ordering across ten listings.
 
 ### Added — Local Adzuna page study
 
-- Measure comparable facts, confirmed conflicts and evidence ties on a returned page without another provider request. [Offline checks and report guide](docs/ADZUNA_PAGE_STUDY.md).
+- Measure comparable facts, confirmed conflicts and evidence ties on a returned page without another provider request.
 
 ### Added — Compare Adzuna results in search
 
-- Open a bilingual profile comparison on a returned listing without losing the page or repeating the search. Weekly attendance shows the stated requirement and saved limit when known. [Verification](docs/ADZUNA_COMPARISON.md#verify-the-search-card).
+- Open a bilingual profile comparison on a returned listing without losing the page or repeating the search. Weekly attendance shows the stated requirement and saved limit when known.
 
 ### Added — Compare an Adzuna result locally
 
-- Compare the selected search result with a saved profile without fetching or storing the advert. The response uses the existing matching rules and preserves unknown conditions. See [the contract and offline checks](docs/ADZUNA_COMPARISON.md).
+- Compare the selected search result with a saved profile without fetching or storing the advert. The response uses the existing matching rules and preserves unknown conditions.
 
 ### Added — Explicit facts from Adzuna listings
 
-- Recognise exact role titles and explicit work mode and weekly attendance statements in the supplied advert. Missing or conflicting schedules stay unknown. See [examples and offline verification](docs/ADZUNA_MAPPING.md#explicit-matching-facts-5a).
+- Recognise exact role titles and explicit work mode and weekly attendance statements in the supplied advert. Missing or conflicting schedules stay unknown.
 
 ### Added — Spanish and English interface (2026-11-14)
 
@@ -125,7 +131,7 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 ### Added — Local Adzuna search in Opportunities (2026-11-14)
 
 - Added an optional Spain source beside the sample catalog. Explicit searches and page controls use the backend; opening an excerpt reuses the current result. Unknown facts stay visible and provider results remain in memory.
-- Added [local browser setup and offline checks](docs/ADZUNA_SEARCH.md#verify-the-browser-without-keys). The default development server continues to serve the sample catalog.
+- Added local browser setup and offline checks while keeping the sample catalog as the default development view.
 
 ### Fixed — Office-day limit in the saved profile (2026-11-14)
 
@@ -133,26 +139,25 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ### Fixed — Encoding in local Adzuna search responses (2026-11-13)
 
-- Declared UTF-8 on local search JSON responses so clients can decode Spanish accents. Added an [offline PowerShell check](docs/ADZUNA_SEARCH.md#verify-without-keys) using a fictional excerpt.
+- Declared UTF-8 on local search JSON responses so clients can decode Spanish accents, verified with an offline fictional excerpt check.
 
 ### Added — Optional local Adzuna search (2026-11-13)
 
 - Added a loopback-only Spring profile for one bounded page of Spanish vacancies. The backend reuses the listing mapper, preserves provider order and distinguishes duplicate, rejected and absent results from provider errors.
-- Added offline verification and [PowerShell instructions for the optional live check](docs/ADZUNA_SEARCH.md). Regular startup and the fictional frontend require no credentials.
+- Regular startup and the fictional frontend continue to require no credentials.
 
 ### Added — Offline Adzuna listing conversion (2026-11-13)
 
 - Added a Java mapper for individual search results. It preserves listing metadata and salary provenance, rejects unusable referrals and keeps unstated matching facts unknown.
-- Added [offline verification steps](docs/ADZUNA_MAPPING.md). The website and its catalog have not changed.
 
 ### Added — Local Adzuna evaluation (2026-11-13)
 
-- Added a [one-request evaluation tool and review guide](docs/ADZUNA_PROBE.md) for Java vacancies in Madrid. The tool reports aggregate evidence and leaves unknown fields explicit.
-- Added offline checks for the request limit, failure handling and evaluation counts. The authenticated result is pending; the application catalog remains fictional.
+- Added a one-request evaluation tool for Java vacancies in Madrid reporting aggregate evidence and leaving unknown fields explicit.
+- Added offline checks for the request limit, failure handling and evaluation counts.
 
 ### Documented — First live source review (2026-11-13)
 
-- Compared four job sources for Spain and selected Adzuna for a bounded, zero-cost evaluation, subject to account access. [Provider decision and next probe](docs/PROVIDERS.md).
+- Compared four job sources for Spain and selected Adzuna for a bounded, zero-cost evaluation prior to adopting direct public company ATS feeds.
 - Documented display, retention and matching limitations. The application still uses fictional listings; there is no live connector or new setup requirement.
 
 ### Added — Compatibility sort in opportunity search (2026-11-12)

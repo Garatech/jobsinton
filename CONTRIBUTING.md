@@ -1,60 +1,61 @@
 # Contributing to JobSinton
 
-JobSinton develops through small, focused changes that can be understood and verified. The initial commits establish the documentation baseline; subsequent increments follow the issue and pull request workflow.
+Thank you for your interest in contributing to **JobSinton**! This repository is developed through focused, well-tested increments that keep the domain logic clean, observable, and easy to verify offline.
 
-## Documentation
+---
 
-The [README](README.md) provides a concise product introduction. Scope, decisions, milestones, and session notes belong in [the project plan](docs/PROJECT_PLAN.md). [CHANGELOG.md](CHANGELOG.md) records each implementation increment: purpose, behavior, verification, and limitations. Non-obvious contracts and design decisions are documented alongside the code.
+## Development Setup
 
-## External contributions
+### Prerequisites
 
-This public repository is owned by `Garatech`. External contributors should work in a fork and open a pull request. Opening a PR does not grant write access or guarantee acceptance. The owner decides what to merge; automatic merging is disabled.
+- **Java 21** (Eclipse Temurin or equivalent JDK)
+- **Maven 3.9+**
+- **Node.js 24** (including `npm`)
+- **Docker & Docker Compose** *(optional, for single-command containerized execution)*
 
-Authorized tools may act on the owner's behalf. Accepting a contribution does not automatically add its author as a collaborator.
+See [INSTRUCTIONS.md](INSTRUCTIONS.md) for quick Docker startup or [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for native multi-terminal development.
 
-## Change workflow
+---
 
-1. Define an issue with the problem, scope, and observable acceptance criteria.
-2. Create a focused branch, such as `feat/profile-preferences`, `fix/missing-salary`, or `docs/local-setup`.
-3. Define the design and implement the change.
-4. Run relevant checks and record their actual results.
-5. Open a PR explaining the motivation, changes, evidence, and limitations.
-6. Review the change and resolve blocking findings.
-7. Merge and verify the resulting state of `main`.
+## Architectural Guardrails
 
-Use descriptive commit messages with prefixes such as `feat`, `fix`, `docs`, `test`, and `chore`. GitHub Actions runs build and integration checks. Branch protection has not been configured yet; the owner must check the results before merging.
+When proposing changes, please preserve these core boundaries:
 
-## Verification by risk
+1. **Zero-Config & EUR 0 Runtime:** The application must boot and aggregate live openings out of the box without API keys, `.env` secrets, or paid third-party services.
+2. **Pure Matching & Ranking Domain:** `io.github.garatech.jobsinton.matching` and `io.github.garatech.jobsinton.ranking` remain pure Java (`record`/`enum`) modules with zero Spring, HTTP, clock, or provider coupling.
+3. **Fault Isolation & Safe External Data:** Every external ATS adapter in `providers/ats/` must enforce bounded timeouts, payload caps, strict `https://` URL validation, and board-level fault isolation so a failing upstream endpoint never degrades the rest of the feed.
+4. **Offline Deterministic Verification:** Automated unit, integration, and Playwright end-to-end tests must never depend on live third-party servers in CI.
 
-| Change | Expected evidence |
-| --- | --- |
-| Documentation | Accurate content, valid internal links, and current instructions |
-| Interface | Affected journey, keyboard use, relevant screen sizes, and empty/error states |
-| Matching | Reference cases, constraints, missing data, weights, and explanations |
-| Persistence | Database integration and migration impact |
-| Connector | Contract, pagination, failures, timeouts, and limits without requiring credentials in CI |
-| Accounts | Authentication, authorization, and isolation between two users |
-| Critical journey | An end-to-end check of the affected behavior |
+---
 
-Tests should protect behavior and concrete risks rather than repeat implementation details. Do not impose an arbitrary coverage percentage. Evaluate matching-rule changes against a stable set of reviewed examples.
+## Running the Full Verification Suite
 
-## Merge criteria
+Before opening a pull request, stop any running local dev servers (`5173` / `8080`) and run the complete verification pipeline from the repository root:
 
-- Acceptance criteria are satisfied.
-- Applicable build, static analysis, and tests pass once configured.
-- No credentials, personal test data, or known unresolved regressions are introduced.
-- Domain logic is understandable and separate from provider-specific formats.
-- Relevant invalid inputs, failures, and incomplete data are handled.
-- Documentation and CHANGELOG.md reflect the actual state of the project.
-- Sensitive data or configuration changes include a recovery plan.
-- Review records identify the reviewer; self-review is not presented as independent human review.
+```bash
+# 1. Backend unit, adapter & Spring MockMvc integration tests (JUnit 5)
+mvn -B -ntp -f backend/pom.xml verify
 
-Use [the development guide](docs/DEVELOPMENT.md) to synchronize work safely between devices. Push work branches before switching machines.
+# 2. Frontend strict TypeScript check & production Vite build
+npm --prefix frontend ci
+npm --prefix frontend run build
 
-## Session close
+# 3. Playwright desktop & mobile Chromium E2E + ATS scoring suite
+npm --prefix frontend run test:e2e
+```
 
-Session notes cover the objective, decisions, relevant files, checks, limitations, and next step, including an important design decision and an alternative considered. Unresolved questions are revisited before the scope expands.
+---
 
-## Data and external services
+## Pull Request Workflow
 
-Use fictional data in tests and demonstrations. Keep credentials outside version control. Review provider access, quotas, attribution, and retention before integration. The agreed budget is EUR 0; discuss any proposed paid dependency with the project owner.
+1. Create a focused feature branch from `main` using conventional prefixes (`feat/...`, `fix/...`, `docs/...`, `test/...`, `chore/...`).
+2. Keep commits atomic with descriptive conventional commit messages (e.g., `feat(ats): ...`, `fix(matching): ...`, `docs: ...`).
+3. Update relevant technical documentation under [docs/](docs/README.md) and add a concise note under `[Unreleased]` in [CHANGELOG.md](CHANGELOG.md) when user-facing or architectural behavior changes.
+4. Open a Pull Request against `main` summarizing the problem, design trade-offs, and test verification results. All GitHub Actions checks (**Build and integration tests**) must pass before merge.
+
+---
+
+## Security & Data Hygiene
+
+- Never commit API tokens, personal CVs, real candidate data, or runtime cache files (`data/*.json`).
+- Use deterministic synthetic fixtures in automated tests and documentation examples.

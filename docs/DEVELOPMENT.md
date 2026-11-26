@@ -1,39 +1,35 @@
-# Development guide
+# Development Guide
 
-GitHub is the source of truth for shared code and history. A commit on your computer or in a Codespace is not backed up to GitHub until it is pushed.
+GitHub is the source of truth for shared code and history. All automated tests run 100% offline with deterministic fixtures and require **zero API keys, `.env` files, or external databases**.
 
-## What works today
+---
 
-The React interface checks a real Java service through `GET /api/status` and immediately loads live openings through `GET /api/ats/jobs` from 22 pre-seeded company boards across 5 public ATS JSON APIs (**Greenhouse, Lever, SmartRecruiters, Workable, and Ashby**) with zero API keys or `.env` setup. Home previews the freshest openings in **Live ATS Radar**, and Opportunities defaults to **Live ATS Boards** with developer stack presets (`All Tech`, `Track A · SAP`, `Track B · Full Stack`, `Custom Profile`), one-click freshness/location toggles, board health diagnostics, and direct `Apply on Company Site` links. The professional profile editor saves preferences in this browser and restores them after reload. The approved Current interface also retains the searchable fictional `Sample catalog`, company and opportunity pages, a browser-local shortlist, and Java matching/compatibility ranking. No database or provider account is required. See [ATS_PROVIDERS.md](ATS_PROVIDERS.md) and [the profile verification guide](PROFILE.md).
+## What Runs Out of the Box
 
-The services are development processes. This guide does not deploy a public application.
+- **Backend (`backend/` — Java 21 + Spring Boot 4):** Exposes `GET /api/status`, `/api/ats/*` (aggregating **334 pre-seeded Spain & Europe company boards across 9 public ATS platforms**, plus live URL/slug auto-discovery, first-seen freshness tracking, and Stale-While-Revalidate disk caching), and `/api/matching/*` (deterministic profile evaluation and compatibility batch ranking).
+- **Frontend (`frontend/` — React 19 + strict TypeScript + Vite):** Opens onto **Live ATS Radar** (`#home`) and **Live ATS Boards** (`#opportunities`) with **8 developer stack presets**, **3-tier Spain/Europe geo filtering**, **Junior/Entry & `< 48h` freshness filters**, **1-click triage** (`⭐ Save`, `✅ Applied`, `✕ Dismiss`), **14-role local profile editor** (`#profile`), searchable sample catalog & explainable matching, and instant **Español / English** switching.
 
-## Choose an environment
+---
 
-Local development is the primary workflow for the EUR 0 budget. Codespaces remains optional and is not required to complete the local setup.
+## Option A — Run with Docker Compose (Fastest)
 
-### Browser development with GitHub Codespaces (optional)
+From the repository root:
 
-This is the most direct way to use the same development environment from a desktop and a laptop.
+```bash
+docker compose up --build -d
+```
 
-1. In the repository, select the branch you want to work on.
-2. Open **Code → Codespaces** and create an environment on that branch, or reopen your existing one.
-3. The dev container installs Java 21, Maven 3.9.11, Node 24, and the locked frontend dependencies.
-4. Open two terminals and run the startup commands below.
-5. Open the forwarded frontend port **5173**. Keep forwarded ports **private**; the frontend proxies API requests internally to port 8080.
-6. Commit and push work before finishing. Stop the Codespace when you are done and reopen the same one from your other computer.
+Open **[http://localhost:5173](http://localhost:5173)**. Persistent runtime state (`ats-feed-cache.json`, `custom-companies.json`, `ats-seen-jobs.json`) is stored in the named `jobsinton-data` Docker volume. Stop with `docker compose down`. See [../INSTRUCTIONS.md](../INSTRUCTIONS.md) for full container commands.
 
-Codespaces is optional and has limited included usage depending on your GitHub plan. Check remaining usage and billing settings before creating it. Do not enable paid overages for this EUR 0 project. This update does not create a Codespace or change billing settings. If the included quota is unavailable, use local development.
+---
 
-The dev container configuration is provided but has not yet been started and verified in Codespaces. Its first startup remains a milestone acceptance check.
+## Option B — Local Native Development (Hot Reload)
 
-### Local development on either computer
+### Prerequisites
 
-Install Git, VS Code, a Java 21 JDK, Maven 3.9.x or 3.10.x, and Node.js 24 (including npm). Java 21 must be the JDK used by Maven. Docker is not required for the local workflow.
+Install Git, a **Java 21 JDK**, **Maven 3.9+**, and **Node.js 24** (with `npm`):
 
-Check the tools in the same terminal that will run the application:
-
-```sh
+```bash
 git --version
 java --version
 javac --version
@@ -42,133 +38,57 @@ node --version
 npm --version
 ```
 
-For a **new** checkout:
+Install locked frontend dependencies once:
 
-```sh
-git clone https://github.com/Garatech/jobsinton.git
-cd jobsinton
-code JobSinton.code-workspace
+```bash
 npm --prefix frontend ci
 ```
 
-An existing checkout must be inspected and synchronized using the next section; do not clone over it.
+### Start Both Services
 
-## Start the application
+Terminal 1 (Spring Boot API on `http://localhost:8080`):
 
-From the repository root, in terminal 1:
-
-```sh
+```bash
 mvn -f backend/pom.xml spring-boot:run
 ```
 
-From the repository root, in terminal 2:
+Terminal 2 (Vite dev server on `http://localhost:5173`, proxying `/api/*` to `127.0.0.1:8080`):
 
-```sh
+```bash
 npm --prefix frontend run dev
 ```
 
-Locally, open [http://localhost:5173](http://localhost:5173). In Codespaces, open the forwarded **5173** URL instead. Select **Service status** in the footer; it should report **Connected to the JobSinton API**.
+Open **[http://localhost:5173](http://localhost:5173)**. You can verify backend connectivity directly at `http://localhost:8080/api/status` (`{"name":"JobSinton","status":"UP"}`) or via **Service status** in the application footer.
 
-The API itself is available locally at [http://localhost:8080/api/status](http://localhost:8080/api/status) and responds:
+*(Optional)* A `.devcontainer/` configuration is also included for GitHub Codespaces with Java 21, Maven, and Node 24 preconfigured.
 
-```json
-{"name":"JobSinton","status":"UP"}
-```
+---
 
-Stop either process with `Ctrl+C`. To exercise recovery, open **Service status**, stop the backend, click **Check connection again**, restart the backend, and retry.
+## Run the Full Verification Suite
 
-No environment variables, API keys, real CVs, or database are needed.
+Stop any running development servers (`Ctrl+C`) on ports `8080` and `5173` before running Playwright so the test harness boots isolated offline instances.
 
-## Move safely between devices
+From the repository root, run each step in order:
 
-Work on one shared branch at a time. Keep source files in Git; do not synchronize `node_modules`, build output, or the Git directory through a general-purpose cloud folder.
-
-Before changing machines, inspect your changes, stage only intended files, commit, and push:
-
-```sh
-git status --short --branch
-git diff
-git add <intended-file-paths>
-git commit -m "feat: describe the completed increment"
-git push -u origin <your-branch>
-```
-
-Replace angle-bracket placeholders with your actual paths and branch. Temporary work can be committed on your feature branch with a clear work-in-progress message; do not merge incomplete work into `main`.
-
-On the other machine:
-
-1. Run `git status --short --branch` and `git remote -v`. Confirm that `origin` points to `Garatech/jobsinton`.
-2. If there are uncommitted changes, review and commit them on their existing work branch before switching. Do not discard or overwrite them.
-3. Run `git fetch origin --prune`.
-4. Switch to the shared branch with `git switch <your-branch>`. If it is not present locally, use `git switch --track origin/<your-branch>`.
-5. Run `git pull --ff-only`. If Git reports divergent history, stop and inspect the commits; do not force push or reset.
-6. Run `npm --prefix frontend ci` after dependency changes.
-
-After a PR has been merged, update a **clean** checkout:
-
-```sh
-git switch main
-git pull --ff-only
-```
-
-Create the next feature branch from this updated `main`.
-
-## Verify an increment
-
-Stop the frontend, backend, and test runners with Ctrl+C before verification. In particular, `npm ci` replaces `node_modules`; a running Vite/esbuild process can lock `esbuild.exe` on Windows and cause an EPERM error.
-
-From the repository root, run each command separately and continue only if it succeeds:
-
-```sh
+```bash
+# 1. Backend unit, ATS adapter & MockMvc integration tests (136 tests)
 mvn -B -ntp -f backend/pom.xml verify
+
+# 2. Frontend dependencies, strict TypeScript check & production build
 npm --prefix frontend ci
 npm --prefix frontend run build
+
+# 3. Install Playwright Chromium (first run only; add --with-deps on Linux)
+npx --prefix frontend playwright install chromium
+
+# 4. Playwright desktop & mobile E2E + ATS scoring suite (148 active tests)
+npm --prefix frontend run test:e2e
 ```
 
-For browser tests, install Chromium once from the frontend directory:
-
-```sh
-cd frontend
-npx playwright install chromium
-npm run test:e2e
-```
-
-On a Linux machine missing browser system libraries, use `npx playwright install --with-deps chromium`. Browser tests start the API and frontend automatically. Locally they may reuse services already running on ports 8080 and 5173; stop existing servers to ensure a fresh startup.
-
-GitHub Actions runs the backend HTTP tests, TypeScript checking, frontend build, and Playwright tests on desktop and mobile Chromium. Its job token is read-only, checkout credentials are not persisted, and failure reports are retained for seven days. A green run is evidence for that commit; it is not a production-readiness claim.
-
-Inspect the workflow linked from the PR before merging. Branch protection has not yet been enabled, so passing checks are currently a review rule rather than a GitHub-enforced merge gate.
-
-For the latest search increment, follow the [compatibility search checklist](RANKING.md#manual-acceptance-checklist) after pulling the merged changes. The [Current design checklist](DESIGN.md#manual-acceptance-checklist) covers the shared interface. The [profile checklist](PROFILE.md#verify-after-merging-the-pull-request) remains valid.
+---
 
 ## Troubleshooting
 
-| Symptom | Check |
-| --- | --- |
-| Port 8080 already in use | Check `/api/status`; JobSinton may already be running. Stop its existing terminal with Ctrl+C before starting a second instance. Identify an unknown process before stopping it. |
-| EPERM while removing esbuild.exe | Stop the frontend and any test runners, then retry `npm ci`. If it persists, identify the process holding the file before changing permissions. |
-| VS Code uses an older Java or Node | Close all VS Code windows and reopen from a terminal with Java 21 and Node 24. Check `mvn --version` as well as `java --version`. |
-| API unavailable | Start Java, inspect its terminal, confirm port 8080 is free, then retry |
-| Frontend port already used | Stop the previous frontend process; Vite intentionally fails rather than silently selecting another port |
-| Java compilation/version error | Check `mvn --version`; it must show Java 21 |
-| Node engine warning | Use Node 24, then reinstall with `npm ci` |
-| Dependencies differ between computers | Pull the branch and use `npm ci`; do not copy dependency directories |
-| Codespaces page cannot reach API | Open frontend port 5173; requests must use relative `/api` URLs through Vite |
-| Pull cannot fast-forward | Preserve both sets of commits and inspect history before deciding how to integrate them |
-
-## Verification limits
-
-On 2026-10-20, the owner reported successful Windows startup and completion of the foundation verification commands after configuring Java 21 and Node 24. The reported Maven installation is 3.10.0. This records a local user verification; its terminal logs were not independently captured.
-
-The profile increment is checked separately in its PR and requires the manual checklist after merging. The development terminal used to prepare remote changes remains unavailable, so local checkout cleanliness and synchronization have not been independently inspected. Codespaces startup remains unverified and optional.
-
-## Platform references
-
-- [Codespaces included usage and billing](https://docs.github.com/en/billing/concepts/product-billing/github-codespaces)
-- [Codespaces default environment variables](https://docs.github.com/en/codespaces/developing-in-a-codespace/default-environment-variables-for-your-codespace)
-- [Codespaces port forwarding](https://docs.github.com/en/codespaces/developing-in-a-codespace/forwarding-ports-in-your-codespace)
-- [Vite host allowlists](https://vite.dev/config/server-options#server-allowedhosts)
-
-## Live Multi-ATS boards (zero setup)
-
-Starting the backend and frontend with the two commands above immediately activates live fetching from the 22 pre-seeded company boards across Greenhouse, Lever, SmartRecruiters, Workable, and Ashby — no `.env` file, credentials, or extra Spring profiles are required. See [ATS_PROVIDERS.md](ATS_PROVIDERS.md) for endpoints, cache settings, company registry customization, and offline verification details.
+- **Port `8080` or `5173` already in use:** Stop existing `spring-boot:run`, `vite`, or Docker (`docker compose down`) instances before starting native processes or running `npm --prefix frontend run test:e2e`.
+- **Windows `EPERM` on `esbuild.exe` during `npm ci`:** Stop any running Vite dev server or VS Code terminal holding `frontend/node_modules` before running `npm --prefix frontend ci`.
+- **Separate browser `localStorage` per origin:** `http://localhost:5173` and `http://127.0.0.1:5173` maintain separate browser storage scopes; use `http://localhost:5173` consistently to keep your saved profile and job triage state together.
