@@ -320,3 +320,45 @@ test('home page renders Live ATS Radar preview, supports ES/EN switch, and fits 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   expect(errors).toEqual([]);
 });
+
+test('Phase 5B: renders Stale-While-Revalidate snapshot immediately and silently merges background-refreshed roles', async ({ page }) => {
+  let callCount = 0;
+  await page.route('**/api/ats/jobs*', async (route) => {
+    callCount++;
+    if (callCount === 1) {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json; charset=utf-8',
+        body: JSON.stringify({
+          ...MOCK_FEED,
+          cached: true,
+          refreshing: true,
+          cacheAgeSeconds: 900,
+          jobs: [MOCK_FEED.jobs[0]],
+        }),
+      });
+      return;
+    }
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json; charset=utf-8',
+      body: JSON.stringify({
+        ...MOCK_FEED,
+        cached: true,
+        refreshing: false,
+        cacheAgeSeconds: 2,
+      }),
+    });
+  });
+
+  await page.goto('/#opportunities');
+
+  // Snapshot job renders immediately with background sync indicator (no blocking skeleton).
+  await expect(page.locator('[data-ats-job]')).toHaveCount(1);
+  await expect(page.getByText(/Syncing in background…/)).toBeVisible();
+
+  // Silent background poll swaps in the refreshed 4 Spain/EU tech roles automatically.
+  await expect(page.locator('[data-ats-job]')).toHaveCount(4, { timeout: 8000 });
+  await expect(page.getByText(/Syncing in background…/)).toHaveCount(0);
+});
+

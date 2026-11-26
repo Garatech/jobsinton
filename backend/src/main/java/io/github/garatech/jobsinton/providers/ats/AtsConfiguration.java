@@ -1,6 +1,8 @@
 package io.github.garatech.jobsinton.providers.ats;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.ApplicationListener;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -37,6 +39,14 @@ public class AtsConfiguration {
     ) {
         Path path = seenFile == null || seenFile.isBlank() ? null : Path.of(seenFile.strip());
         return new FirstSeenRegistry(path);
+    }
+
+    @Bean
+    AtsFeedCacheStore atsFeedCacheStore(
+            @Value("${jobsinton.ats.feed-cache-file:data/ats-feed-cache.json}") String cacheFile
+    ) {
+        Path path = cacheFile == null || cacheFile.isBlank() ? null : Path.of(cacheFile.strip());
+        return new AtsFeedCacheStore(path);
     }
 
     @Bean
@@ -104,8 +114,9 @@ public class AtsConfiguration {
             FactorialAdapter factorial,
             Clock clock,
             FirstSeenRegistry firstSeenRegistry,
+            AtsFeedCacheStore feedCacheStore,
             @Value("${jobsinton.ats.cache-ttl-seconds:600}") long cacheTtlSeconds,
-            @Value("${jobsinton.ats.max-concurrency:18}") int maxConcurrency
+            @Value("${jobsinton.ats.max-concurrency:24}") int maxConcurrency
     ) {
         return new AtsFeedService(
                 registry,
@@ -114,8 +125,21 @@ public class AtsConfiguration {
                 clock,
                 Duration.ofSeconds(Math.max(0L, cacheTtlSeconds)),
                 firstSeenRegistry,
-                maxConcurrency
+                maxConcurrency,
+                feedCacheStore
         );
+    }
+
+    @Bean
+    ApplicationListener<ApplicationReadyEvent> atsStartupWarmupListener(
+            AtsFeedService feedService,
+            @Value("${jobsinton.ats.warm-on-startup:true}") boolean warmOnStartup
+    ) {
+        return event -> {
+            if (warmOnStartup) {
+                feedService.warmUpOnStartup();
+            }
+        };
     }
 
     @Bean

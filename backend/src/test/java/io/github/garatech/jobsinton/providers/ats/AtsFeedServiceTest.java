@@ -1,13 +1,20 @@
 package io.github.garatech.jobsinton.providers.ats;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.file.Path;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -216,5 +223,195 @@ class AtsFeedServiceTest {
         assertThat(feed.jobs()).extracting(AtsJob::sourceId)
                 .containsExactly("es-1", "es-muni", "eu-1", "eu-rem", "multi-eu-rem");
         assertThat(feed.boards().getFirst().jobCount()).isEqualTo(5);
+    }
+
+    @Test
+    void restoresFeedInstantlyFromDiskSnapshotAndRevalidatesInBackgroundWithoutBlocking(@TempDir Path tempDir) throws Exception {
+        Path snapshotFile = tempDir.resolve("ats-feed-cache.json");
+        AtomicReference<Instant> nowRef = new AtomicReference<>(Instant.parse("2026-11-26T10:00:00Z"));
+        Clock mutableClock = new Clock() {
+            @Override
+            public ZoneId getZone() {
+                return ZoneOffset.UTC;
+            }
+
+            @Override
+            public Clock withZone(ZoneId zone) {
+                return this;
+            }
+
+            @Override
+            public Instant instant() {
+                return nowRef.get();
+            }
+        };
+
+        CompanyBoard board = new CompanyBoard("cabify", "Cabify", "greenhouse", null, "Madrid");
+        CompanyRegistry registry = new CompanyRegistry(List.of(board));
+        SmartRecruitersAdapter sr = new SmartRecruitersAdapter(null, 0);
+
+        AtsProviderAdapter initialGh = new AtsProviderAdapter() {
+            @Override
+            public AtsProviderType type() {
+                return AtsProviderType.GREENHOUSE;
+            }
+
+            @Override
+            public List<RawAtsJob> fetch(CompanyBoard b) {
+                return List.of(
+                        new RawAtsJob("101", AtsProviderType.GREENHOUSE, "cabify", "Cabify",
+                                "Junior Java Developer", "Madrid, Spain", "hybrid",
+                                Instant.parse("2026-11-26T08:00:00Z"), "Java 21, Spring Boot",
+                                "https://example.com/101", "Engineering", "€32K", true)
+                );
+            }
+        };
+
+        // First service instance fetches live and persists data/ats-feed-cache.json.
+        AtsFeedService firstInstance = new AtsFeedService(
+                registry,
+                List.of(initialGh),
+                sr,
+                mutableClock,
+                Duration.ofMinutes(10),
+                new FirstSeenRegistry(),
+                24,
+                new AtsFeedCacheStore(snapshotFile)
+        );
+        AtsFeedResponse initialFeed = firstInstance.getFeed(false);
+        assertThat(initialFeed.cached()).isFalse();
+        assertThat(initialFeed.jobs()).hasSize(1);
+        assertThat(snapshotFile).isRegularFile();
+
+        // Advance time by 30 minutes (past the 10-minute TTL) and simulate a restart with a gated upstream adapter.
+        nowRef.set(Instant.parse("2026-11-26T10:30:00Z"));
+        CountDownLatch backgroundStarted = new CountDownLatch(1);
+        CountDownLatch releaseUpstream = new CountDownLatch(1);
+
+        AtsProviderAdapter slowUpdatedGh = new AtsProviderAdapter() {
+            @Override
+            public AtsProviderType type() {
+                return AtsProviderType.GREENHOUSE;
+            }
+
+            @Override
+            public List<RawAtsJob> fetch(CompanyBoard b) {
+                backgroundStarted.countDown();
+                try {
+                    releaseUpstream.await(5, TimeUnit.SECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                return List.of(
+                        new RawAtsJob("101", AtsProviderType.GREENHOUSE, "cabify", "Cabify",
+                                "Junior Java Developer", "Madrid, Spain", "hybrid",
+                                Instant.parse("2026-11-26T08:00:00Z"), "Java 21, Spring Boot",
+                                "https://example.com/101", "Engineering", "€32K", true),
+                        new RawAtsJob("102", AtsProviderType.GREENHOUSE, "cabify", "Cabify",
+                                "Junior Frontend Developer", "Madrid, Spain", "remote",
+                                Instant.parse("2026-11-26T10:25:00Z"), "React, TypeScript",
+                                "https://example.com/102", "Engineering", null, true)
+                );
+            }
+        };
+
+        AtsFeedService restartedInstance = new AtsFeedService(
+                registry,
+                List.of(slowUpdatedGh),
+                sr,
+                mutableClock,
+                Duration.ofMinutes(10),
+                new FirstSeenRegistry(),
+                24,
+                new AtsFeedCacheStore(snapshotFile)
+        );
+
+        // Stale-While-Revalidate returns the disk-loaded snapshot immediately without waiting for slowUpdatedGh.
+        AtsFeedResponse instantStale = restartedInstance.getFeed(false);
+        assertThat(instantStale.cached()).isTrue();
+        assertThat(instantStale.refreshing()).isTrue();
+        assertThat(instantStale.jobs()).hasSize(1);
+        assertThat(instantStale.jobs().getFirst().description()).isEqualTo("Java 21, Spring Boot");
+        assertThat(instantStale.jobs().getFirst().compensation()).isEqualTo("€32K");
+
+        assertThat(backgroundStarted.await(2, TimeUnit.SECONDS)).isTrue();
+        releaseUpstream.countDown();
+
+        // Join the single-flight background refresh and verify both jobs are now cached with refreshing=false.
+        restartedInstance.triggerBackgroundRefresh().join();
+        AtsFeedResponse refreshed = restartedInstance.getFeed(false);
+        assertThat(refreshed.cached()).isTrue();
+        assertThat(refreshed.refreshing()).isFalse();
+        assertThat(refreshed.jobs()).extracting(AtsJob::sourceId).containsExactly("102", "101");
+    }
+
+    @Test
+    void warmUpOnStartupPreloadsCacheAndOfflineRefreshPreservesExistingJobs() {
+        AtomicReference<Instant> nowRef = new AtomicReference<>(Instant.parse("2026-11-26T12:00:00Z"));
+        Clock mutableClock = new Clock() {
+            @Override
+            public ZoneId getZone() {
+                return ZoneOffset.UTC;
+            }
+
+            @Override
+            public Clock withZone(ZoneId zone) {
+                return this;
+            }
+
+            @Override
+            public Instant instant() {
+                return nowRef.get();
+            }
+        };
+
+        AtomicBoolean offline = new AtomicBoolean(false);
+        AtomicInteger calls = new AtomicInteger();
+        CompanyBoard board = new CompanyBoard("cabify", "Cabify", "greenhouse", null, "Madrid");
+        CompanyRegistry registry = new CompanyRegistry(List.of(board));
+
+        AtsProviderAdapter gh = new AtsProviderAdapter() {
+            @Override
+            public AtsProviderType type() {
+                return AtsProviderType.GREENHOUSE;
+            }
+
+            @Override
+            public List<RawAtsJob> fetch(CompanyBoard b) {
+                calls.incrementAndGet();
+                if (offline.get()) {
+                    throw new AtsFetchException("Network unreachable");
+                }
+                return List.of(
+                        new RawAtsJob("201", AtsProviderType.GREENHOUSE, "cabify", "Cabify",
+                                "Software Developer", "Madrid, Spain", "hybrid",
+                                Instant.parse("2026-11-26T11:00:00Z"), "Java, React",
+                                "https://example.com/201", "Eng", null, true)
+                );
+            }
+        };
+
+        AtsFeedService service = new AtsFeedService(
+                registry, List.of(gh), new SmartRecruitersAdapter(null, 0), mutableClock, Duration.ofMinutes(10)
+        );
+
+        // Startup warm-up populates the cache before any browser request arrives.
+        service.warmUpOnStartup().join();
+        assertThat(calls.get()).isEqualTo(1);
+
+        AtsFeedResponse warmHit = service.getFeed(false);
+        assertThat(warmHit.cached()).isTrue();
+        assertThat(warmHit.refreshing()).isFalse();
+        assertThat(warmHit.jobs()).hasSize(1);
+        assertThat(calls.get()).isEqualTo(1);
+
+        // Expire TTL while network is offline: background refresh must NOT wipe out the cached job.
+        offline.set(true);
+        nowRef.set(Instant.parse("2026-11-26T12:25:00Z"));
+        service.triggerBackgroundRefresh().join();
+
+        assertThat(service.isRefreshing()).isFalse();
+        AtsFeedResponse preservedAfterOfflineRefresh = service.getFeed(false);
+        assertThat(preservedAfterOfflineRefresh.jobs()).extracting(AtsJob::sourceId).containsExactly("201");
     }
 }

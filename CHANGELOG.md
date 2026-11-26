@@ -4,6 +4,12 @@ This is a record of notable changes to JobSinton: their purpose, behavior, verif
 
 ## [Unreleased]
 
+### Added — ATS Loading-Speed Optimization with Zero Opportunity Loss (Disk Snapshot, Startup Pre-Warming & Stale-While-Revalidate)
+
+- Added `AtsFeedCacheStore` (`data/ats-feed-cache.json`) so cold starts and Docker restarts restore all cached opportunities into memory immediately (`< 50ms`) with zero truncation or loss of offers while revalidating live boards in the background.
+- Added `ApplicationReadyEvent` startup pre-warming (`jobsinton.ats.warm-on-startup=true`) and Stale-While-Revalidate (SWR) background virtual-thread refreshes in `AtsFeedService` (`refreshing: true`), returning cached postings immediately when the 10-minute TTL expires while preserving existing cached postings if the host is temporarily offline (`Force Refresh` / `?refresh=true` continues to refresh synchronously).
+- Updated `LiveJobsBoard.tsx`, `Home.tsx`, and `frontend/src/api/ats.ts` (`FEED_TIMEOUT_MS=50_000`, `bypassClientCache`) to display cached opportunities immediately and seamlessly merge newly refreshed roles in place once background revalidation completes.
+
 ### Added — ATS Tuning, Junior & Freshness Overhaul, Web/Java Role Recovery & 317-Board Catalog
 
 - Expanded `FULLSTACK_KEYWORDS` (`frontend/src/ats/presets.ts`) and bilingual EN/ES `KEYWORD_ALIASES` (`frontend/src/ats/scoring.ts`) with software and web role/ecosystem descriptors (`Software Engineer`, `Software Developer`, `Backend`, `Frontend`, `Full Stack`, `Web Developer`, `Spring`, `Hibernate`, `Express`, `NestJS`, `HTML/CSS`) so unhydrated listings match immediately by title.

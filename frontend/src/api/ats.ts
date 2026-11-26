@@ -44,6 +44,7 @@ export interface BoardStatus {
 export interface AtsFeedResponse {
   fetchedAt: string;
   cached: boolean;
+  refreshing?: boolean;
   cacheAgeSeconds: number;
   totalBoards: number;
   succeededBoards: number;
@@ -90,7 +91,7 @@ const VALID_PROVIDERS = new Set<AtsProviderId>([
 ]);
 const VALID_WORKPLACE = new Set(['remote', 'hybrid', 'onsite']);
 const CLIENT_CACHE_TTL_MS = 10 * 60 * 1000;
-const FEED_TIMEOUT_MS = 25_000;
+const FEED_TIMEOUT_MS = 50_000;
 const DETAIL_TIMEOUT_MS = 10_000;
 
 let memoryCache: { feed: AtsFeedResponse; storedAt: number } | null = null;
@@ -204,6 +205,7 @@ export function parseAtsFeed(payload: unknown): AtsFeedResponse {
   return {
     fetchedAt: payload.fetchedAt,
     cached: payload.cached,
+    refreshing: Boolean(payload.refreshing),
     cacheAgeSeconds: payload.cacheAgeSeconds,
     totalBoards: payload.totalBoards,
     succeededBoards: payload.succeededBoards,
@@ -262,14 +264,16 @@ export function patchCachedAtsJob(detail: SmartRecruitersDetail): AtsFeedRespons
   return memoryCache.feed;
 }
 
-export async function fetchAtsFeed(options: { refresh?: boolean; signal?: AbortSignal } = {}): Promise<AtsFeedResponse> {
-  const { refresh = false, signal } = options;
-  if (!refresh) {
+export async function fetchAtsFeed(
+  options: { refresh?: boolean; bypassClientCache?: boolean; signal?: AbortSignal } = {},
+): Promise<AtsFeedResponse> {
+  const { refresh = false, bypassClientCache = false, signal } = options;
+  if (!refresh && !bypassClientCache) {
     const cached = getCachedAtsFeed();
     if (cached) return cached;
   }
 
-  let sharedRun = !refresh ? inflightFeed : null;
+  let sharedRun = !refresh && !bypassClientCache ? inflightFeed : null;
   if (!sharedRun) {
     const run = (async () => {
       const controller = new AbortController();
@@ -300,7 +304,7 @@ export async function fetchAtsFeed(options: { refresh?: boolean; signal?: AbortS
     })();
 
     sharedRun = run;
-    if (!refresh) {
+    if (!refresh && !bypassClientCache) {
       inflightFeed = run;
       run.finally(() => {
         if (inflightFeed === run) inflightFeed = null;

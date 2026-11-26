@@ -48,6 +48,34 @@ export function Home({ profile, ...actions }: SavedActions & { profile: Professi
     return () => controller.abort();
   }, [feed]);
 
+  useEffect(() => {
+    if (!feed?.refreshing) return;
+    const controller = new AbortController();
+    let attempts = 0;
+    const timer = window.setInterval(() => {
+      attempts++;
+      if (attempts > 16) {
+        window.clearInterval(timer);
+        return;
+      }
+      fetchAtsFeed({ bypassClientCache: true, signal: controller.signal })
+        .then((next) => {
+          if (controller.signal.aborted) return;
+          setFeed(next);
+          if (!next.refreshing) {
+            window.clearInterval(timer);
+          }
+        })
+        .catch(() => {
+          // Keep existing preview cards intact.
+        });
+    }, 3000);
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+    };
+  }, [feed?.refreshing]);
+
   const previewJobs = feed
     ? sortScoredJobs(
         feed.jobs

@@ -18,11 +18,12 @@ import java.util.regex.Pattern;
 /**
  * Aggregates live postings across all configured public ATS company boards in parallel,
  * isolating individual board failures, bounding upstream concurrency with a Semaphore,
- * tracking first-seen timestamps via {@link FirstSeenRegistry}, and caching the combined feed in memory.
+ * tracking first-seen timestamps via {@link FirstSeenRegistry}, persisting disk snapshots via
+ * {@link AtsFeedCacheStore}, and serving Stale-While-Revalidate (SWR) responses with zero content loss.
  */
 public final class AtsFeedService {
     private static final Pattern SAFE_POSTING_ID = Pattern.compile("^[A-Za-z0-9._-]{1,100}$");
-    public static final int DEFAULT_MAX_CONCURRENCY = 18;
+    public static final int DEFAULT_MAX_CONCURRENCY = 24;
 
     private final CompanyRegistry registry;
     private final Map<AtsProviderType, AtsProviderAdapter> adapters;
@@ -31,6 +32,7 @@ public final class AtsFeedService {
     private final Duration cacheTtl;
     private final FirstSeenRegistry firstSeenRegistry;
     private final int maxConcurrency;
+    private final AtsFeedCacheStore cacheStore;
 
     private final Object lock = new Object();
     private volatile CachedFeed cache;
@@ -39,7 +41,7 @@ public final class AtsFeedService {
     private record BoardOutcome(BoardStatus status, List<RawAtsJob> jobs) {}
 
     private record CachedFeed(Instant fetchedAt, List<BoardStatus> boards, List<RawAtsJob> jobs) {
-        AtsFeedResponse toResponse(Instant now, boolean cached, FirstSeenRegistry firstSeen) {
+        AtsFeedResponse toResponse(Instant now, boolean cached, boolean refreshing, FirstSeenRegistry firstSeen) {
             long ageSeconds = Math.max(0L, Duration.between(fetchedAt, now).getSeconds());
             int succeeded = (int) boards.stream().filter(BoardStatus::ok).count();
             int failed = boards.size() - succeeded;
@@ -49,6 +51,7 @@ public final class AtsFeedService {
             return new AtsFeedResponse(
                     fetchedAt.toString(),
                     cached,
+                    refreshing,
                     cached ? ageSeconds : 0L,
                     boards.size(),
                     succeeded,
@@ -66,7 +69,7 @@ public final class AtsFeedService {
             Clock clock,
             Duration cacheTtl
     ) {
-        this(registry, adapterList, smartRecruitersAdapter, clock, cacheTtl, new FirstSeenRegistry(), DEFAULT_MAX_CONCURRENCY);
+        this(registry, adapterList, smartRecruitersAdapter, clock, cacheTtl, new FirstSeenRegistry(), DEFAULT_MAX_CONCURRENCY, new AtsFeedCacheStore());
     }
 
     public AtsFeedService(
@@ -77,7 +80,7 @@ public final class AtsFeedService {
             Duration cacheTtl,
             FirstSeenRegistry firstSeenRegistry
     ) {
-        this(registry, adapterList, smartRecruitersAdapter, clock, cacheTtl, firstSeenRegistry, DEFAULT_MAX_CONCURRENCY);
+        this(registry, adapterList, smartRecruitersAdapter, clock, cacheTtl, firstSeenRegistry, DEFAULT_MAX_CONCURRENCY, new AtsFeedCacheStore());
     }
 
     public AtsFeedService(
@@ -89,6 +92,19 @@ public final class AtsFeedService {
             FirstSeenRegistry firstSeenRegistry,
             int maxConcurrency
     ) {
+        this(registry, adapterList, smartRecruitersAdapter, clock, cacheTtl, firstSeenRegistry, maxConcurrency, new AtsFeedCacheStore());
+    }
+
+    public AtsFeedService(
+            CompanyRegistry registry,
+            List<AtsProviderAdapter> adapterList,
+            SmartRecruitersAdapter smartRecruitersAdapter,
+            Clock clock,
+            Duration cacheTtl,
+            FirstSeenRegistry firstSeenRegistry,
+            int maxConcurrency,
+            AtsFeedCacheStore cacheStore
+    ) {
         this.registry = registry;
         this.adapters = new EnumMap<>(AtsProviderType.class);
         for (AtsProviderAdapter adapter : adapterList) {
@@ -99,6 +115,11 @@ public final class AtsFeedService {
         this.cacheTtl = cacheTtl;
         this.firstSeenRegistry = firstSeenRegistry != null ? firstSeenRegistry : new FirstSeenRegistry();
         this.maxConcurrency = Math.max(1, maxConcurrency);
+        this.cacheStore = cacheStore != null ? cacheStore : new AtsFeedCacheStore();
+
+        this.cacheStore.load().ifPresent(snapshot -> {
+            this.cache = new CachedFeed(snapshot.fetchedAt(), snapshot.boards(), snapshot.jobs());
+        });
     }
 
     public List<CompanyBoard> boards() {
@@ -113,9 +134,61 @@ public final class AtsFeedService {
         return adapters.get(type);
     }
 
+    public boolean isRefreshing() {
+        synchronized (lock) {
+            return inFlight != null && !inFlight.isDone();
+        }
+    }
+
+    /**
+     * Triggered when the application finishes starting so cold boots begin warming all ATS boards
+     * immediately in the background (or revalidate an expired disk snapshot without blocking requests).
+     */
+    public CompletableFuture<?> warmUpOnStartup() {
+        CachedFeed current = cache;
+        if (current == null || isExpired(current, clock.instant())) {
+            return triggerBackgroundRefresh();
+        }
+        return CompletableFuture.completedFuture(current);
+    }
+
+    /**
+     * Starts a non-blocking, single-flight virtual-thread refresh of all registered ATS boards.
+     */
+    public CompletableFuture<?> triggerBackgroundRefresh() {
+        CompletableFuture<CachedFeed> future;
+        boolean owner = false;
+        synchronized (lock) {
+            if (inFlight != null && !inFlight.isDone()) {
+                return inFlight;
+            }
+            future = new CompletableFuture<>();
+            inFlight = future;
+            owner = true;
+        }
+        if (owner) {
+            final CompletableFuture<CachedFeed> ownedFuture = future;
+            Thread.ofVirtual().name("ats-feed-bg-refresh").start(() -> {
+                try {
+                    CachedFeed fresh = fetchAllBoards();
+                    CachedFeed active = storeFetchedFeed(fresh, true);
+                    ownedFuture.complete(active);
+                } catch (Throwable error) {
+                    synchronized (lock) {
+                        if (inFlight == ownedFuture) {
+                            inFlight = null;
+                        }
+                    }
+                    ownedFuture.completeExceptionally(error);
+                }
+            });
+        }
+        return future;
+    }
+
     /**
      * Merges a newly discovered company board and its live jobs directly into the active feed cache
-     * so the frontend immediately sees the new jobs without re-fetching all 220+ boards.
+     * so the frontend immediately sees the new jobs without re-fetching all 317+ boards.
      */
     public void mergeDiscoveredBoard(CompanyBoard board, List<RawAtsJob> jobs, long durationMs) {
         if (board == null) {
@@ -139,6 +212,7 @@ public final class AtsFeedService {
                 null
         );
 
+        CachedFeed updatedSnapshot = null;
         synchronized (lock) {
             CachedFeed current = cache;
             if (current == null) {
@@ -173,24 +247,36 @@ public final class AtsFeedService {
                     .thenComparing(RawAtsJob::companyName, String.CASE_INSENSITIVE_ORDER)
                     .thenComparing(RawAtsJob::title, String.CASE_INSENSITIVE_ORDER));
 
-            cache = new CachedFeed(current.fetchedAt(), List.copyOf(updatedBoards), List.copyOf(sortedJobs));
+            updatedSnapshot = new CachedFeed(current.fetchedAt(), List.copyOf(updatedBoards), List.copyOf(sortedJobs));
+            cache = updatedSnapshot;
         }
+        cacheStore.save(updatedSnapshot.fetchedAt(), updatedSnapshot.boards(), updatedSnapshot.jobs());
     }
 
     public AtsFeedResponse getFeed(boolean forceRefresh) {
         Instant now = clock.instant();
         if (!forceRefresh) {
             CachedFeed current = cache;
-            if (current != null && !isExpired(current, now)) {
-                return current.toResponse(now, true, firstSeenRegistry);
+            if (current != null) {
+                if (!isExpired(current, now)) {
+                    return current.toResponse(now, true, isRefreshing(), firstSeenRegistry);
+                }
+                // Stale-While-Revalidate: return cached opportunities immediately and refresh in background.
+                triggerBackgroundRefresh();
+                return current.toResponse(now, true, true, firstSeenRegistry);
             }
         }
 
         CompletableFuture<CachedFeed> future;
         boolean owner = false;
         synchronized (lock) {
-            if (!forceRefresh && cache != null && !isExpired(cache, clock.instant())) {
-                return cache.toResponse(clock.instant(), true, firstSeenRegistry);
+            if (!forceRefresh && cache != null) {
+                Instant checkNow = clock.instant();
+                if (!isExpired(cache, checkNow)) {
+                    return cache.toResponse(checkNow, true, inFlight != null && !inFlight.isDone(), firstSeenRegistry);
+                }
+                triggerBackgroundRefresh();
+                return cache.toResponse(checkNow, true, true, firstSeenRegistry);
             }
             if (inFlight != null && !inFlight.isDone()) {
                 future = inFlight;
@@ -204,15 +290,14 @@ public final class AtsFeedService {
         if (owner) {
             try {
                 CachedFeed fresh = fetchAllBoards();
-                synchronized (lock) {
-                    cache = fresh;
-                    inFlight = null;
-                }
-                future.complete(fresh);
-                return fresh.toResponse(clock.instant(), false, firstSeenRegistry);
+                CachedFeed active = storeFetchedFeed(fresh, false);
+                future.complete(active);
+                return active.toResponse(clock.instant(), false, false, firstSeenRegistry);
             } catch (Throwable error) {
                 synchronized (lock) {
-                    inFlight = null;
+                    if (inFlight == future) {
+                        inFlight = null;
+                    }
                 }
                 future.completeExceptionally(error);
                 throw error;
@@ -220,7 +305,28 @@ public final class AtsFeedService {
         }
 
         CachedFeed joined = future.join();
-        return joined.toResponse(clock.instant(), false, firstSeenRegistry);
+        return joined.toResponse(clock.instant(), false, false, firstSeenRegistry);
+    }
+
+    private CachedFeed storeFetchedFeed(CachedFeed fresh, boolean preserveExistingOnTotalFailure) {
+        int succeeded = (int) fresh.boards().stream().filter(BoardStatus::ok).count();
+        boolean totalOutage = !fresh.boards().isEmpty() && succeeded == 0;
+        CachedFeed persisted = null;
+        synchronized (lock) {
+            if (preserveExistingOnTotalFailure && totalOutage && cache != null && !cache.jobs().isEmpty()) {
+                inFlight = null;
+                return cache;
+            }
+            cache = fresh;
+            inFlight = null;
+            persisted = fresh;
+        }
+        if (!totalOutage || persisted.jobs().isEmpty()) {
+            if (!totalOutage) {
+                cacheStore.save(persisted.fetchedAt(), persisted.boards(), persisted.jobs());
+            }
+        }
+        return persisted;
     }
 
     /** On-demand SmartRecruiters posting detail hydration for registered boards only. */
@@ -238,6 +344,7 @@ public final class AtsFeedService {
     }
 
     private void updateCachedSmartRecruitersJob(SmartRecruitersDetail detail) {
+        CachedFeed updatedSnapshot = null;
         synchronized (lock) {
             CachedFeed current = cache;
             if (current == null) {
@@ -268,8 +375,12 @@ public final class AtsFeedService {
                 }
             }
             if (changed) {
-                cache = new CachedFeed(current.fetchedAt(), current.boards(), List.copyOf(updated));
+                updatedSnapshot = new CachedFeed(current.fetchedAt(), current.boards(), List.copyOf(updated));
+                cache = updatedSnapshot;
             }
+        }
+        if (updatedSnapshot != null) {
+            cacheStore.save(updatedSnapshot.fetchedAt(), updatedSnapshot.boards(), updatedSnapshot.jobs());
         }
     }
 
