@@ -206,8 +206,21 @@ test('parseAtsFeed validates structure across all 9 ATS providers and strips uns
     ],
   });
   expect(parsed.jobs).toHaveLength(2);
+  expect(parsed.refreshing).toBe(false);
   expect(parsed.jobs[0].id).toBe('greenhouse:cabify:1');
   expect(parsed.jobs[1].provider).toBe('personio');
+  const refreshingParsed = parseAtsFeed({
+    fetchedAt: '2026-11-17T12:00:00Z',
+    cached: true,
+    refreshing: true,
+    cacheAgeSeconds: 610,
+    totalBoards: 0,
+    succeededBoards: 0,
+    failedBoards: 0,
+    boards: [],
+    jobs: [],
+  });
+  expect(refreshingParsed.refreshing).toBe(true);
   expect(() => parseAtsFeed(null)).toThrow();
   expect(() => parseAtsFeed({ jobs: [] })).toThrow();
 });

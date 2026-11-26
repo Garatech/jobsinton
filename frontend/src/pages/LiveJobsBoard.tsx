@@ -201,6 +201,36 @@ export function LiveJobsBoard({ query, profile }: LiveJobsBoardProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const isBackgroundRefreshing = state.kind === 'ready' && Boolean(state.feed.refreshing);
+
+  useEffect(() => {
+    if (!isBackgroundRefreshing) return;
+    const controller = new AbortController();
+    let attempts = 0;
+    const timer = window.setInterval(() => {
+      attempts++;
+      if (attempts > 16) {
+        window.clearInterval(timer);
+        return;
+      }
+      fetchAtsFeed({ bypassClientCache: true, signal: controller.signal })
+        .then((next) => {
+          if (controller.signal.aborted) return;
+          setState({ kind: 'ready', feed: next });
+          if (!next.refreshing) {
+            window.clearInterval(timer);
+          }
+        })
+        .catch(() => {
+          // Keep currently displayed cached opportunities intact if background check fails.
+        });
+    }, 3000);
+    return () => {
+      controller.abort();
+      window.clearInterval(timer);
+    };
+  }, [isBackgroundRefreshing]);
+
   const activeFeed = state.kind === 'ready' ? state.feed : state.previous;
   const allJobs = activeFeed?.jobs ?? [];
 
@@ -1301,11 +1331,14 @@ export function SavedAtsJobsSection({ profile }: { profile: ProfessionalProfile 
 }
 
 function formatCacheLabel(feed: AtsFeedResponse, language: 'en' | 'es'): string {
+  const syncSuffix = feed.refreshing
+    ? (language === 'es' ? ' · Sincronizando en segundo plano…' : ' · Syncing in background…')
+    : '';
   if (!feed.cached || feed.cacheAgeSeconds < 30) {
-    return language === 'es' ? 'Actualizado ahora' : 'Updated just now';
+    return (language === 'es' ? 'Actualizado ahora' : 'Updated just now') + syncSuffix;
   }
   const minutes = Math.max(1, Math.round(feed.cacheAgeSeconds / 60));
-  return language === 'es'
+  return (language === 'es'
     ? `En caché hace ${minutes} min`
-    : `Cached ${minutes}m ago`;
+    : `Cached ${minutes}m ago`) + syncSuffix;
 }

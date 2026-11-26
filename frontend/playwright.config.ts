@@ -22,6 +22,12 @@ export default defineConfig({
       url: 'http://127.0.0.1:8080/api/status',
       timeout: 180_000,
       reuseExistingServer: !process.env.CI,
+      env: {
+        ...process.env,
+        JOBSINTON_ATS_WARM_ON_STARTUP: 'false',
+        JOBSINTON_ATS_FEED_CACHE_FILE: '',
+        JOBSINTON_ATS_SEEN_JOBS_FILE: '',
+      },
     },
     {
       command: 'npm run dev -- --host 127.0.0.1',
